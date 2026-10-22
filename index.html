@@ -692,3 +692,25 @@ Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura esatta:
     }
     function clearApiKey() {
       localStorage.removeItem('gemini_api_key');
+      document.getElementById('apiKeyInput').value = '';
+      updateKeyUI();
+      closeApiKeyModal();
+    }
+    function updateKeyUI() {
+      const key = localStorage.getItem('gemini_api_key');
+      const label = document.getElementById('keyLabel');
+      const btn = document.getElementById('keyStatusBtn');
+      if (key) {
+        label.textContent = 'AI Attiva';
+        btn.classList.add('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.remove('text-amber-400');
+      } else {
+        label.textContent = 'API Key';
+        btn.classList.remove('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.add('text-amber-400');
+      }
+    }
+  </script>
+</body>
+</html>
+
