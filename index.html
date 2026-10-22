@@ -1,19 +1,3 @@
-I sistemi di chat AI come questo generano il codice direttamente nella conversazione ma non possono pubblicare siti web o generare link HTTP pubblici autonomi (come https://...) su server esterni. Per avere un link reale, cliccabile e condivisibile con chiunque, il codice deve risiedere su un servizio di hosting gratuito.
-Ecco i due metodi più rapidi (meno di 60 secondi) per ottenere un link pubblico condivisibile:
-Metodo 1: Tiiny Host (Il più veloce in assoluto, zero registrazioni)
- * Salva il codice qui sotto sul tuo computer o telefono come file chiamato index.html (puoi usare il Blocco Note o qualsiasi editor di testo).
- * Vai su tiiny.host.
- * Trascina dentro il file index.html e dai un nome al tuo link (es. mie-scarpe).
- * Clicca su Publish: otterrai all'istante un link funzionante e condivisibile (es. mie-scarpe.tiiny.site) che chiunque potrà aprire da Android o iPhone.
-Metodo 2: GitHub Pages (Gratuito per sempre, ideale per aggiornamenti)
- * Crea un account gratuito su github.com.
- * Crea un nuovo repository pubblico (es. archivio-scarpe).
- * Carica il file index.html.
- * Vai su Settings > Pages > sotto Branch seleziona main e clicca Save.
- * Dopo circa 1 minuto avrai il tuo link pubblico permanente:
-   [https://tuo-username.github.io/archivio-scarpe/](https://tuo-username.github.io/archivio-scarpe/)
-Il file completo pronto da salvare come index.html
-Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host o GitHub Pages:
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -267,9 +251,17 @@ Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host 
   </nav>
 
   <script>
-    // Immagini SVG locali di fallback (non dipendono da internet o link esterni)
-    function createShoeSvg(brand, model, bgHex) {
-      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="300" height="300" fill="${encodeURIComponent(bgHex)}"/><path d="M40 210 Q60 170 110 165 Q170 160 200 120 Q230 110 250 140 Q265 170 260 210 Z" fill="%23ffffff" opacity="0.9"/><path d="M35 210 L265 210 L260 230 L30 230 Z" fill="%231e293b"/><text x="150" y="270" font-family="sans-serif" font-size="14" font-weight="bold" fill="%23ffffff" text-anchor="middle">${encodeURIComponent(brand + ' ' + model)}</text></svg>`;
+    // Generatore SVG codificato in Base64 (perfettamente compatibile con tutti i browser mobile)
+    function createShoeSvgBase64(brand, model, bgHex) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+        <rect width="300" height="300" fill="${bgHex}"/>
+        <circle cx="150" cy="130" r="70" fill="rgba(255,255,255,0.05)"/>
+        <path d="M45 195 Q70 155 120 150 Q180 145 205 110 Q235 105 250 135 Q265 165 255 195 Z" fill="#ffffff" opacity="0.95"/>
+        <path d="M40 195 L260 195 L255 215 L35 215 Z" fill="#0f172a"/>
+        <text x="150" y="255" font-family="system-ui, sans-serif" font-size="15" font-weight="bold" fill="#f8fafc" text-anchor="middle">${brand}</text>
+        <text x="150" y="275" font-family="system-ui, sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">${model}</text>
+      </svg>`;
+      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
     }
 
     const DEFAULT_SHOES = [
@@ -280,17 +272,17 @@ Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host 
         category: 'Sneakers',
         colors: ['Bianco'],
         notes: 'Pelle bianca totale',
-        image: createShoeSvg('Nike', 'Air Force 1', '#1e293b'),
+        image: createShoeSvgBase64('Nike', 'Air Force 1', '#1e293b'),
         dateAdded: '2026-01-10'
       },
       {
         id: '2',
         brand: 'Nike',
-        model: 'Dunk Low Retro Panda',
+        model: 'Dunk Low Panda',
         category: 'Sneakers',
         colors: ['Nero', 'Bianco'],
         notes: 'Bicolore bianco e nero',
-        image: createShoeSvg('Nike', 'Dunk Panda', '#0f172a'),
+        image: createShoeSvgBase64('Nike', 'Dunk Panda', '#020617'),
         dateAdded: '2026-02-15'
       },
       {
@@ -300,7 +292,7 @@ Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host 
         category: 'Sneakers',
         colors: ['Bianco', 'Verde'],
         notes: 'Bianca con talloncino verde',
-        image: createShoeSvg('Adidas', 'Stan Smith', '#064e3b'),
+        image: createShoeSvgBase64('Adidas', 'Stan Smith', '#064e3b'),
         dateAdded: '2026-02-20'
       },
       {
@@ -310,22 +302,25 @@ Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host 
         category: 'Sport / Running',
         colors: ['Grigio', 'Bianco'],
         notes: 'Suede grigio classico',
-        image: createShoeSvg('NB', '574 Core', '#334155'),
+        image: createShoeSvgBase64('NB', '574 Core', '#334155'),
         dateAdded: '2026-03-01'
       }
     ];
 
-    let shoes = JSON.parse(localStorage.getItem('kicks_archive')) || DEFAULT_SHOES;
+    // Reset automatico se ci sono vecchi dati con immagini danneggiate
+    let savedData = localStorage.getItem('kicks_archive_v2');
+    let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
     let currentCategory = 'all';
 
     window.addEventListener('DOMContentLoaded', () => {
+      saveToStorage();
       renderArchive();
       updateKeyUI();
     });
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_v2', JSON.stringify(shoes));
       renderArchive();
     }
 
@@ -414,9 +409,7 @@ Copia questo codice integrale, salvalo come index.html e caricalo su Tiiny Host 
       renderArchive();
     }
 
-    function filterArchive() {
-      renderArchive();
-    }
+    function filterArchive() { renderArchive(); }
 
     function deleteShoe(id) {
       if (confirm('Vuoi rimuovere questa scarpa dal tuo archivio?')) {
@@ -538,7 +531,7 @@ Restituisci SOLO un JSON valido:
         modello: "Dunk Low",
         categoria: "Sneakers",
         colori: ["Bianco", "Nero"],
-        note: "Classica bicolore"
+        note: "Bicolore rilevato"
       };
       applyAIData(mock, targetMode);
     }
@@ -557,7 +550,7 @@ Restituisci SOLO un JSON valido:
         category: document.getElementById('addCategory').value,
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
-        image: selectedImageBase64 || createShoeSvg(brand, model, '#1e293b'),
+        image: selectedImageBase64 || createShoeSvgBase64(brand, model, '#1e293b'),
         dateAdded: new Date().toISOString().split('T')[0]
       };
 
@@ -571,7 +564,6 @@ Restituisci SOLO un JSON valido:
       switchTab('archive');
     }
 
-    // Algoritmo di confronto acquisto
     function evaluatePurchase(candidate) {
       const container = document.getElementById('checkResultContainer');
       container.classList.remove('hidden');
@@ -719,4 +711,3 @@ Restituisci SOLO un JSON valido:
   </script>
 </body>
 </html>
-
