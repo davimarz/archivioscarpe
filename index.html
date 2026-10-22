@@ -13,7 +13,7 @@
     @keyframes scan { 0% { top: 5%; } 100% { top: 95%; } }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-20">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-24">
 
   <!-- Header -->
   <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
@@ -38,7 +38,6 @@
     </div>
   </header>
 
-  <!-- Main Views -->
   <main class="flex-1 max-w-lg w-full mx-auto p-4">
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
@@ -56,8 +55,8 @@
 
       <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
         <button onclick="setCategoryFilter('all')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-slate-950 transition whitespace-nowrap" data-cat="all">Tutte</button>
-        <button onclick="setCategoryFilter('Sneakers')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sneakers">Sneakers</button>
         <button onclick="setCategoryFilter('Sport / Running')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sport / Running">Running</button>
+        <button onclick="setCategoryFilter('Sneakers')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sneakers">Sneakers</button>
         <button onclick="setCategoryFilter('Eleganti')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Eleganti">Eleganti</button>
         <button onclick="setCategoryFilter('Stivali')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Stivali">Stivali</button>
       </div>
@@ -69,7 +68,7 @@
           <i class="fa-solid fa-box-open"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-300">Nessuna scarpa trovata</h3>
-        <p class="text-xs text-slate-500 max-w-xs mx-auto">Scatta una foto a una tua scarpa per aggiungerla alla scarpiera.</p>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto">Scatta una foto a una scarpa o alla sua etichetta per aggiungerla.</p>
         <button onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
           <i class="fa-solid fa-plus"></i> Aggiungi ora
         </button>
@@ -81,7 +80,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
-          <p class="text-xs text-slate-400 mt-1">Fotografa la scarpa per rilevare marca, modello e tutti i colori.</p>
+          <p class="text-xs text-slate-400 mt-1">Fotografa la scarpa oppure l'etichetta della scatola per la massima precisione.</p>
         </div>
 
         <div id="addDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
@@ -89,14 +88,14 @@
           
           <div id="addPlaceholder" class="p-6 text-center space-y-2">
             <i class="fa-solid fa-camera text-4xl text-slate-500"></i>
-            <p class="text-xs font-medium text-slate-400">Scatta o seleziona una foto</p>
-            <span class="text-[10px] text-slate-500 block">Inquadra bene profilo e logo</span>
+            <p class="text-xs font-medium text-slate-400">Scatta foto alla scarpa o etichetta</p>
+            <span class="text-[10px] text-slate-500 block">L'AI leggerà testo, codici e colori</span>
           </div>
 
-          <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
             <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
-            <i class="fa-solid fa-brain text-amber-400 text-3xl animate-bounce mb-2"></i>
-            <span class="text-xs font-semibold text-amber-300">Riconoscimento AI...</span>
+            <i class="fa-solid fa-microchip text-amber-400 text-3xl animate-pulse mb-2"></i>
+            <span id="scanStatusText" class="text-xs font-semibold text-amber-300">Analisi visiva in corso con Gemini...</span>
           </div>
 
           <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleImageSelected(this, 'add')">
@@ -105,34 +104,34 @@
         <form id="addShoeForm" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Marca</label>
-            <input type="text" id="addBrand" required placeholder="es. Nike, Adidas, New Balance..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <input type="text" id="addBrand" required placeholder="es. Asics, Nike, Adidas..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Modello</label>
-            <input type="text" id="addModel" required placeholder="es. Dunk Low, Air Max 90..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Nimbus..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-[11px] font-semibold text-slate-400 block mb-1">Categoria</label>
               <select id="addCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
-                <option value="Sneakers">Sneakers</option>
                 <option value="Sport / Running">Sport / Running</option>
+                <option value="Sneakers">Sneakers</option>
                 <option value="Eleganti">Eleganti</option>
                 <option value="Stivali">Stivali</option>
                 <option value="Casual">Casual / Altro</option>
               </select>
             </div>
             <div>
-              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Colori (anche 2 o più)</label>
-              <input type="text" id="addColors" required placeholder="es. Bianco, Nero, Rosso" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Colori (2 o più)</label>
+              <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
           <div>
-            <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note / Dettagli</label>
-            <input type="text" id="addNotes" placeholder="es. Suola in gomma ambrata, pelle liscia" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note / Finiture</label>
+            <input type="text" id="addNotes" placeholder="es. Suola FF Turbo, etichetta box" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
 
-          <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2">
+          <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2 mt-2">
             <i class="fa-solid fa-floppy-disk"></i> Salva nell'Archivio
           </button>
         </form>
@@ -147,7 +146,7 @@
             Radar Acquisti
           </span>
           <h2 class="text-base font-bold text-slate-100">Vuoi comprare una nuova scarpa?</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Inquadra la scarpa: controllerò se ne possiedi già una simile o identica.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Inquadra la scarpa o la scatola per verificare se ne hai già una simile.</p>
         </div>
 
         <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
@@ -159,7 +158,7 @@
             <span class="text-[10px] text-slate-500 block">Tocca per scattare la foto</span>
           </div>
 
-          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
             <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
             <i class="fa-solid fa-radar text-indigo-400 text-3xl animate-spin mb-2"></i>
             <span class="text-xs font-semibold text-indigo-300">Confronto con le tue scarpe...</span>
@@ -197,11 +196,11 @@
       </div>
 
       <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
-        <p>Se l'AI non riconosce con precisione la variante o l'edizione limitata:</p>
+        <p>Google Lens è l'ideale se vuoi confrontare direttamente l'etichetta o la scarpa con il catalogo Google:</p>
         <ol class="list-decimal list-inside space-y-1 text-slate-400">
-          <li>Apri <strong>Google Lens</strong> sul telefono (o l'icona della fotocamera nel widget Google).</li>
-          <li>Inquadra la scarpa per ottenere scheda tecnica, marca e modello ufficiali.</li>
-          <li>Torna qui e compila o correggi il nome della scarpa.</li>
+          <li>Apri <strong>Google Lens</strong> sul telefono.</li>
+          <li>Inquadra la scarpa o l'etichetta della scatola.</li>
+          <li>Copia modello e colore esatto e incollali nel form.</li>
         </ol>
       </div>
 
@@ -218,15 +217,15 @@
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
       <div class="flex items-center justify-between">
-        <h3 class="font-bold text-sm text-slate-100">Chiave Gemini Vision</h3>
+        <h3 class="font-bold text-sm text-slate-100">Chiave Gemini Vision API</h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <p class="text-xs text-slate-400 leading-relaxed">
-        Inserisci la tua API Key gratuita da <a href="https://aistudio.google.com" target="_blank" class="text-amber-400 underline">Google AI Studio</a> per abilitare il riconoscimento visivo automatico.
+        Inserisci la chiave gratuita presa da <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
       </p>
       <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
       <div class="flex gap-2">
-        <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva</button>
+        <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva Chiave</button>
         <button onclick="clearApiKey()" class="py-2 px-3 bg-slate-800 text-slate-400 text-xs rounded-xl hover:text-red-400">Rimuovi</button>
       </div>
     </div>
@@ -251,7 +250,6 @@
   </nav>
 
   <script>
-    // Generatore SVG codificato in Base64 (perfettamente compatibile con tutti i browser mobile)
     function createShoeSvgBase64(brand, model, bgHex) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
         <rect width="300" height="300" fill="${bgHex}"/>
@@ -267,48 +265,17 @@
     const DEFAULT_SHOES = [
       {
         id: '1',
-        brand: 'Nike',
-        model: 'Air Force 1 \'07',
-        category: 'Sneakers',
-        colors: ['Bianco'],
-        notes: 'Pelle bianca totale',
-        image: createShoeSvgBase64('Nike', 'Air Force 1', '#1e293b'),
-        dateAdded: '2026-01-10'
-      },
-      {
-        id: '2',
-        brand: 'Nike',
-        model: 'Dunk Low Panda',
-        category: 'Sneakers',
-        colors: ['Nero', 'Bianco'],
-        notes: 'Bicolore bianco e nero',
-        image: createShoeSvgBase64('Nike', 'Dunk Panda', '#020617'),
-        dateAdded: '2026-02-15'
-      },
-      {
-        id: '3',
-        brand: 'Adidas',
-        model: 'Stan Smith',
-        category: 'Sneakers',
-        colors: ['Bianco', 'Verde'],
-        notes: 'Bianca con talloncino verde',
-        image: createShoeSvgBase64('Adidas', 'Stan Smith', '#064e3b'),
-        dateAdded: '2026-02-20'
-      },
-      {
-        id: '4',
-        brand: 'New Balance',
-        model: '574 Core',
+        brand: 'Asics',
+        model: 'Novablast 6',
         category: 'Sport / Running',
-        colors: ['Grigio', 'Bianco'],
-        notes: 'Suede grigio classico',
-        image: createShoeSvgBase64('NB', '574 Core', '#334155'),
-        dateAdded: '2026-03-01'
+        colors: ['Nero', 'Azzurro Artico'],
+        notes: 'Intersuola FF Turbo2',
+        image: createShoeSvgBase64('Asics', 'Novablast 6', '#0f172a'),
+        dateAdded: '2026-10-22'
       }
     ];
 
-    // Reset automatico se ci sono vecchi dati con immagini danneggiate
-    let savedData = localStorage.getItem('kicks_archive_v2');
+    let savedData = localStorage.getItem('kicks_archive_v4');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
     let currentCategory = 'all';
@@ -320,7 +287,7 @@
     });
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive_v2', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_v4', JSON.stringify(shoes));
       renderArchive();
     }
 
@@ -418,13 +385,35 @@
       }
     }
 
+    // Ridimensiona immagine lato client prima di mandarla all'API per evitare timeout
+    function resizeImage(file, maxWidth, callback) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          callback(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function handleImageSelected(input, mode) {
       const file = input.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64Url = e.target.result;
+      resizeImage(file, 1024, async (base64Url) => {
         selectedImageBase64 = base64Url;
 
         if (mode === 'add') {
@@ -444,8 +433,7 @@
           await analyzeShoeWithAI(base64Url, 'check');
           document.getElementById('checkScanningAnim').classList.add('hidden');
         }
-      };
-      reader.readAsDataURL(file);
+      });
     }
 
     async function analyzeShoeWithAI(base64Data, targetMode) {
@@ -453,24 +441,33 @@
       const cleanBase64 = base64Data.split(',')[1];
 
       if (!apiKey) {
-        simulateExtraction(targetMode);
+        alert("Inserisci prima la tua Google Gemini API Key toccando 'API Key' in alto.");
+        openApiKeyModal();
         return;
       }
 
       const promptText = `
-Analizza questa foto di calzatura con massima precisione:
-1. MARCA: Identifica il brand esatto (es. Nike, Adidas, New Balance, Jordan, Puma, Asics, ecc.).
-2. MODELLO: Indica la silhouette esatta (es. Dunk Low, Air Force 1, Stan Smith, 574, Chuck 70).
-3. CATEGORIA: Scegli SOLO una tra: "Sneakers", "Sport / Running", "Eleganti", "Stivali", "Casual".
-4. COLORI: Elenca TUTTI i colori significativi presenti (almeno 2 o più se bicolore o multicolore). Restituisci come array JSON di stringhe in italiano (es. ["Bianco", "Nero", "Rosso"]).
-5. NOTE: Dettagli su materiali e suola.
+Sei un sistema esperto di riconoscimento scarpe ed etichette di scatole calzature.
+Analizza con estrema attenzione questa foto:
 
-Restituisci SOLO un JSON valido:
+SE È UN'ETICHETTA DELLA SCATOLA (BOX LABEL):
+1. Leggi il modello esatto stampato a caratteri grandi (es. "NOVABLAST 6", "GEL-KAYANO", "AIR MAX 90").
+2. Leggi il brand (se non scritto esplicitamente, deducilo dal layout e dal modello, es. NOVABLAST è di ASICS).
+3. Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE", traducila o riportala fedelmente).
+4. Categoria: Sport / Running.
+
+SE È LA FOTO DELLA SCARPA:
+1. Leggi loghi o scritte su linguetta, intersuola o tomaia (es. "asics", "FF Turbo", "Nike").
+2. Rileva marca e modello esatti.
+3. Elenca TUTTI i colori visibili (almeno 2 o più: es. Nero, Azzurro Artico, Bianco).
+4. Categoria: scegli tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual".
+
+Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura esatta:
 {
   "marca": "string",
   "modello": "string",
-  "categoria": "Sneakers",
-  "colori": ["Colore1", "Colore2"],
+  "categoria": "Sport / Running",
+  "colori": ["Colore 1", "Colore 2"],
   "note": "string"
 }`;
 
@@ -493,15 +490,24 @@ Restituisci SOLO un JSON valido:
         });
 
         const data = await response.json();
-        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (textResult) {
-          applyAIData(JSON.parse(textResult), targetMode);
-        } else {
-          simulateExtraction(targetMode);
+        
+        if (data.error) {
+          alert("Errore API Google: " + data.error.message);
+          return;
         }
+
+        const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!textResult) {
+          alert("Nessun testo generato dal modello. Riprova con un'altra foto.");
+          return;
+        }
+
+        const parsed = JSON.parse(textResult);
+        applyAIData(parsed, targetMode);
+
       } catch (err) {
-        console.error(err);
-        simulateExtraction(targetMode);
+        console.error("Errore analisi:", err);
+        alert("Errore durante l'analisi: " + err.message);
       }
     }
 
@@ -511,29 +517,18 @@ Restituisci SOLO un JSON valido:
       if (targetMode === 'add') {
         document.getElementById('addBrand').value = data.marca || '';
         document.getElementById('addModel').value = data.modello || '';
-        document.getElementById('addCategory').value = data.categoria || 'Sneakers';
+        document.getElementById('addCategory').value = data.categoria || 'Sport / Running';
         document.getElementById('addColors').value = colorsStr;
         document.getElementById('addNotes').value = data.note || '';
       } else if (targetMode === 'check') {
         evaluatePurchase({
           brand: data.marca,
           model: data.modello,
-          category: data.categoria || 'Sneakers',
+          category: data.categoria || 'Sport / Running',
           colors: Array.isArray(data.colori) ? data.colori : [colorsStr],
           image: selectedImageBase64
         });
       }
-    }
-
-    function simulateExtraction(targetMode) {
-      const mock = {
-        marca: "Nike",
-        modello: "Dunk Low",
-        categoria: "Sneakers",
-        colori: ["Bianco", "Nero"],
-        note: "Bicolore rilevato"
-      };
-      applyAIData(mock, targetMode);
     }
 
     function saveShoe(e) {
@@ -670,11 +665,11 @@ Restituisci SOLO un JSON valido:
     }
 
     function triggerManualCheckPrompt() {
-      const brand = prompt("Marca della scarpa:", "Nike");
+      const brand = prompt("Marca della scarpa:", "Asics");
       if (!brand) return;
-      const model = prompt("Modello della scarpa:", "Dunk Low");
-      const colors = (prompt("Colori (separati da virgola):", "Bianco, Nero") || "").split(',').map(c => c.trim());
-      evaluatePurchase({ brand, model, category: 'Sneakers', colors });
+      const model = prompt("Modello della scarpa:", "Novablast 6");
+      const colors = (prompt("Colori (separati da virgola):", "Nero, Azzurro") || "").split(',').map(c => c.trim());
+      evaluatePurchase({ brand, model, category: 'Sport / Running', colors });
     }
 
     function openGoogleLensHelp() { document.getElementById('lensModal').classList.remove('hidden'); }
@@ -686,28 +681,14 @@ Restituisci SOLO un JSON valido:
     }
     function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
     function saveApiKey() {
-      localStorage.setItem('gemini_api_key', document.getElementById('apiKeyInput').value.trim());
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) {
+        alert("Inserisci una chiave valida.");
+        return;
+      }
+      localStorage.setItem('gemini_api_key', key);
       updateKeyUI();
       closeApiKeyModal();
     }
     function clearApiKey() {
       localStorage.removeItem('gemini_api_key');
-      document.getElementById('apiKeyInput').value = '';
-      updateKeyUI();
-      closeApiKeyModal();
-    }
-    function updateKeyUI() {
-      const key = localStorage.getItem('gemini_api_key');
-      const label = document.getElementById('keyLabel');
-      const btn = document.getElementById('keyStatusBtn');
-      if (key) {
-        label.textContent = 'AI Attiva';
-        btn.classList.add('text-emerald-400', 'border-emerald-500/40');
-      } else {
-        label.textContent = 'API Key';
-        btn.classList.remove('text-emerald-400', 'border-emerald-500/40');
-      }
-    }
-  </script>
-</body>
-</html>
