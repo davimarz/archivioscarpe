@@ -494,7 +494,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
         generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
       };
-      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+      const modelsToTry = ['gemini-2.5-flash'];
+      // Evita fallback a modelli non disponibili per la chiave corrente.
+      // La disponibilità dei modelli dipende dall'account Google AI Studio.
       let lastErrorMsg = "";
 
       for (let i = 0; i < modelsToTry.length; i++) {
@@ -520,9 +522,16 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             if (data.error) {
               const code = data.error.code;
               lastErrorMsg = data.error.message;
+              if (/no longer available|not found|not supported/i.test(lastErrorMsg)) {
+                lastErrorMsg = 'Il modello AI non è disponibile per questa chiave. Controlla i modelli abilitati in Google AI Studio.';
+              } else if (code === 429) {
+                lastErrorMsg = 'Limite di richieste Gemini raggiunto. Attendi il ripristino della quota o verifica il piano in Google AI Studio.';
+              } else if (code === 403 || code === 401) {
+                lastErrorMsg = 'Chiave API non autorizzata. Controlla la chiave in Imposta AI.';
+              }
 
               // 503 (Unavailable), 429 (Too Many Requests) o 500 sono errori transitori
-              if ([503, 429, 500].includes(code)) {
+              if ([503, 500].includes(code)) {
                 if (attempt === 0) {
                   const delay = (1000 * Math.pow(2, attempt)) + (Math.random() * 500); // Backoff esponenziale con jitter
                   await new Promise(resolve => setTimeout(resolve, delay));
@@ -576,7 +585,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       if (errorTextEl) {
         errorTextEl.textContent = lastErrorMsg.includes('high demand') 
           ? "I server AI di Google sono momentaneamente sovraccarichi. Attendi qualche secondo e riprova." 
-          : `Errore: ${lastErrorMsg.substring(0, 80)}...`;
+          : `Errore: ${lastErrorMsg}`;
       }
       document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
     }
