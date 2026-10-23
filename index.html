@@ -228,6 +228,10 @@
         <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva e Attiva</button>
         <button onclick="clearApiKey()" class="py-2 px-3 bg-slate-800 text-slate-400 text-xs rounded-xl hover:text-red-400">Rimuovi</button>
       </div>
+      <button type="button" id="testAiBtn" onclick="testAiConnection()" class="w-full py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">Test connessione AI</button>
+      <div id="aiTestResult" role="status" aria-live="polite" class="hidden max-h-60 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap break-words bg-slate-950 rounded-xl p-3 text-slate-200"></div>
+      <div class="hidden">
+      </div>
     </div>
   </div>
 
@@ -789,6 +793,45 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       localStorage.setItem('gemini_api_key', key);
       updateKeyUI();
       closeApiKeyModal();
+    }
+    async function testAiConnection() {
+      const key = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gemini_api_key');
+      const output = document.getElementById('aiTestResult');
+      const button = document.getElementById('testAiBtn');
+      output.classList.remove('hidden');
+      output.textContent = 'Verifica della chiave e dei modelli in corso...';
+      if (!key) { output.textContent = 'Inserisci prima una chiave API.'; return; }
+      button.disabled = true;
+      try {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || 'Errore HTTP ' + response.status);
+        const models = (data.models || []).filter(m =>
+          (m.supportedGenerationMethods || []).includes('generateContent') &&
+          /gemini/i.test(m.name || '') &&
+          !/embedding|tts|audio|image-generation|robotics/i.test(m.name || '')
+        );
+        if (!models.length) { output.textContent = 'Chiave accettata, ma nessun modello Gemini compatibile con generateContent.'; return; }
+        output.textContent = 'Chiave accettata. Modelli candidati:\\n' + models.map(m => '• ' + m.name.replace('models/', '')).join('\\n') + '\\n\\nVerifica generazione e comprensione immagini...';
+        // Pixel PNG 1x1 di prova: controlla la capacità di elaborare un input immagine.
+        const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/mXcAAAAASUVORK5CYII=';
+        let errors = [];
+        let working = '';
+        for (const m of models.slice(0, 8)) {
+          const test = await fetch('https://generativelanguage.googleapis.com/v1beta/' + m.name + ':generateContent?key=' + encodeURIComponent(key), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'Descrivi brevemente questa immagine.' }, { inlineData: { mimeType: 'image/png', data: tinyPng } }] }], generationConfig: { maxOutputTokens: 60 } })
+          });
+          const result = await test.json();
+          if (test.ok && result.candidates?.length) { working = m.name.replace('models/', ''); break; }
+          errors.push(m.name.replace('models/', '') + ': ' + (result.error?.message || 'Risposta senza contenuto').slice(0, 130));
+        }
+        output.textContent = working
+          ? 'Connessione e analisi immagini riuscite.\\nModello funzionante: ' + working + '\\n\\nPuoi riprovare a fotografare la scatola.'
+          : 'Chiave riconosciuta, ma nessun modello ha superato il test immagini.\\n' + errors.join('\\n');
+      } catch (error) {
+        output.textContent = 'Test non riuscito: ' + error.message;
+      } finally { button.disabled = false; }
     }
     function clearApiKey() {
       localStorage.removeItem('gemini_api_key');
