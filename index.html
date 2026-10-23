@@ -11,6 +11,8 @@
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .scanner-line { animation: scan 1.6s linear infinite alternate; }
     @keyframes scan { 0% { top: 5%; } 100% { top: 95%; } }
+    .spin-slow { animation: spin 3s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-24">
@@ -91,14 +93,14 @@
           <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
             <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
             <i class="fa-solid fa-brain text-amber-400 text-3xl animate-bounce mb-2"></i>
-            <span class="text-xs font-semibold text-amber-300">Analisi con Gemini Flash...</span>
+            <span id="addScanStatus" class="text-xs font-semibold text-amber-300">Analisi con Gemini AI...</span>
             <span class="text-[10px] text-slate-400 mt-1">Riconoscimento marca, modello e colori</span>
           </div>
 
           <!-- Overlay di Errore con Pulsante Riprova -->
           <div id="addErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
             <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
-            <p class="text-sm font-semibold text-slate-200 mb-3">Errore durante l'analisi AI</p>
+            <p id="addErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
             <button type="button" onclick="retryAnalysis('add')" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
               <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
             </button>
@@ -178,13 +180,13 @@
           <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
             <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
             <i class="fa-solid fa-compass text-indigo-400 text-3xl animate-spin mb-2"></i>
-            <span class="text-xs font-semibold text-indigo-300">Confronto con le scarpe già comprate...</span>
+            <span id="checkScanStatus" class="text-xs font-semibold text-indigo-300">Confronto con le scarpe già comprate...</span>
           </div>
 
           <!-- Overlay di Errore con Pulsante Riprova -->
           <div id="checkErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
             <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
-            <p class="text-sm font-semibold text-slate-200 mb-3">Errore durante l'analisi AI</p>
+            <p id="checkErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
             <button type="button" onclick="retryAnalysis('check')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
               <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
             </button>
@@ -273,7 +275,7 @@
       }
     ];
 
-    let savedData = localStorage.getItem('kicks_archive_v16'); // Aggiornata versione per forzare il refresh
+    let savedData = localStorage.getItem('kicks_archive_v17');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
     let currentCategory = 'all';
@@ -285,7 +287,7 @@
     });
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive_v16', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_v17', JSON.stringify(shoes));
       renderArchive();
     }
 
@@ -302,7 +304,6 @@
       activeBtn.classList.add('text-amber-400');
       activeBtn.classList.remove('text-slate-400');
       
-      // Pulisce le anteprime e gli errori quando si cambia scheda
       if(tabId !== 'add') {
          document.getElementById('addPreviewImg').classList.add('hidden');
          document.getElementById('addPlaceholder').classList.remove('hidden');
@@ -426,8 +427,6 @@
 
       resizeImage(file, 700, async (base64Url) => {
         selectedImageBase64 = base64Url;
-
-        // Nasconde eventuali errori precedenti
         document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
 
         if (mode === 'add') {
@@ -435,7 +434,6 @@
           document.getElementById('addPreviewImg').classList.remove('hidden');
           document.getElementById('addPlaceholder').classList.add('hidden');
           document.getElementById('addScanningAnim').classList.remove('hidden');
-
           try {
             await analyzeShoeWithGemini(base64Url, 'add');
           } finally {
@@ -447,7 +445,6 @@
           document.getElementById('checkPlaceholder').classList.add('hidden');
           document.getElementById('checkScanningAnim').classList.remove('hidden');
           document.getElementById('checkResultContainer').classList.add('hidden');
-
           try {
             await analyzeShoeWithGemini(base64Url, 'check');
           } finally {
@@ -458,19 +455,14 @@
       input.value = '';
     }
 
-    // FUNZIONE AGGIUNTA PER RIPROVARE
     function retryAnalysis(mode) {
       if (!selectedImageBase64) {
         alert("Nessuna immagine da riprovare. Carica nuovamente la foto.");
         return;
       }
-      
       document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
       document.getElementById(`${mode}ScanningAnim`).classList.remove('hidden');
-      
-      if (mode === 'check') {
-        document.getElementById('checkResultContainer').classList.add('hidden');
-      }
+      if (mode === 'check') document.getElementById('checkResultContainer').classList.add('hidden');
 
       analyzeShoeWithGemini(selectedImageBase64, mode).finally(() => {
         document.getElementById(`${mode}ScanningAnim`).classList.add('hidden');
@@ -480,6 +472,8 @@
     async function analyzeShoeWithGemini(base64Data, targetMode) {
       const apiKey = localStorage.getItem('gemini_api_key');
       const cleanBase64 = base64Data.split(',')[1];
+      const statusEl = document.getElementById(`${targetMode}ScanStatus`);
+      const errorTextEl = document.getElementById(`${targetMode}ErrorText`);
 
       if (!apiKey) {
         alert("Inserisci la tua API Key di Google AI Studio toccando 'Imposta AI' in alto.");
@@ -499,78 +493,92 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
 `;
 
       const requestBody = {
-        contents: [{
-          parts: [
-            { text: promptInstructions },
-            { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
-          ]
-        }],
-        generationConfig: {
-          temperature: 0.1
-        }
+        contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
+        generationConfig: { temperature: 0.1 }
       };
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000);
+      // Fallback a cascata: se un modello è sovraccarico, prova il successivo
+      const modelsToTry = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      let lastErrorMsg = "";
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify(requestBody)
-        });
+      for (let i = 0; i < modelsToTry.length; i++) {
+        const currentModel = modelsToTry[i];
+        if (statusEl) statusEl.textContent = i === 0 ? "Analisi con Gemini AI..." : `Tentativo con modello alternativo (${i + 1}/${modelsToTry.length})...`;
 
-        clearTimeout(timeoutId);
-        const data = await response.json();
+        // Max 2 tentativi per singolo modello in caso di sovraccarico temporaneo (503/429)
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-        // Se l'API restituisce un errore, mostra l'overlay
-        if (data.error) {
-          document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
-          alert("Errore API Google:\n" + data.error.message);
-          return;
-        }
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: controller.signal,
+              body: JSON.stringify(requestBody)
+            });
 
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) {
-          document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
-          alert("L'AI non ha rilevato informazioni. Prova con una foto più nitida.");
-          return;
-        }
+            clearTimeout(timeoutId);
+            const data = await response.json();
 
-        let parsed = { marca: "", modello: "", categoria: "Sport / Running", colori: "", note: "" };
-        const lines = rawText.split('\n');
+            if (data.error) {
+              const code = data.error.code;
+              lastErrorMsg = data.error.message;
 
-        for (let rawLine of lines) {
-          const line = rawLine.replace(/^[*#-]\s*/, '').trim();
+              // 503 (Unavailable), 429 (Too Many Requests) o 500 sono errori transitori
+              if ([503, 429, 500].includes(code)) {
+                if (attempt === 0) {
+                  const delay = (1000 * Math.pow(2, attempt)) + (Math.random() * 500); // Backoff esponenziale con jitter
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  continue;
+                }
+                break; // Passa al modello successivo
+              }
+              break; // Errore non transitorio
+            }
 
-          if (/^marca[:\s]/i.test(line) && !parsed.marca) {
-            parsed.marca = line.replace(/^marca[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-          } else if (/^modello[:\s]/i.test(line) && !parsed.modello) {
-            parsed.modello = line.replace(/^modello[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-          } else if (/^categoria[:\s]/i.test(line) && !parsed.categoria) {
-            const catVal = line.replace(/^categoria[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-            const allowedCats = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
-            const match = allowedCats.find(c => c.toLowerCase() === catVal.toLowerCase());
-            if (match) parsed.categoria = match;
-          } else if (/^(colori|colore|colorazione)[:\s]/i.test(line) && !parsed.colori) {
-            parsed.colori = line.replace(/^(colori|colore|colorazione)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-          } else if (/^(note|tecnologia|dettagli)[:\s]/i.test(line) && !parsed.note) {
-            parsed.note = line.replace(/^(note|tecnologia|dettagli)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!rawText) {
+              lastErrorMsg = "L'AI non ha rilevato informazioni. Prova con una foto più nitida.";
+              break;
+            }
+
+            // Parsing del testo
+            let parsed = { marca: "", modello: "", categoria: "Sport / Running", colori: "", note: "" };
+            const lines = rawText.split('\n');
+            for (let rawLine of lines) {
+              const line = rawLine.replace(/^[*#-]\s*/, '').trim();
+              if (/^marca[:\s]/i.test(line) && !parsed.marca) parsed.marca = line.replace(/^marca[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+              else if (/^modello[:\s]/i.test(line) && !parsed.modello) parsed.modello = line.replace(/^modello[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+              else if (/^categoria[:\s]/i.test(line) && !parsed.categoria) {
+                const catVal = line.replace(/^categoria[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+                const allowedCats = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
+                const match = allowedCats.find(c => c.toLowerCase() === catVal.toLowerCase());
+                if (match) parsed.categoria = match;
+              }
+              else if (/^(colori|colore|colorazione)[:\s]/i.test(line) && !parsed.colori) parsed.colori = line.replace(/^(colori|colore|colorazione)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+              else if (/^(note|tecnologia|dettagli)[:\s]/i.test(line) && !parsed.note) parsed.note = line.replace(/^(note|tecnologia|dettagli)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+            }
+
+            applyAIData(parsed, targetMode);
+            return; // Successo, interrompe il ciclo
+
+          } catch (err) {
+            lastErrorMsg = err.name === 'AbortError' ? "Timeout della richiesta." : err.message;
+            if (attempt === 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Breve attesa prima del secondo tentativo
+            }
           }
         }
-
-        applyAIData(parsed, targetMode);
-
-      } catch (err) {
-        console.error("Errore analisi:", err);
-        document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
-        if (err.name === 'AbortError') {
-          alert("Operazione interrotta per connessione troppo lenta.");
-        } else {
-          alert("Errore durante l'analisi: " + err.message);
-        }
       }
+
+      // Se tutti i tentativi falliscono, mostra l'overlay di errore
+      if (errorTextEl) {
+        errorTextEl.textContent = lastErrorMsg.includes('high demand') 
+          ? "I server AI di Google sono momentaneamente sovraccarichi. Attendi qualche secondo e riprova." 
+          : `Errore: ${lastErrorMsg.substring(0, 80)}...`;
+      }
+      document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
     }
 
     function applyAIData(data, targetMode) {
