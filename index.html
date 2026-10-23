@@ -68,37 +68,50 @@
           <i class="fa-solid fa-box-open"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-300">Nessuna scarpa trovata</h3>
-        <p class="text-xs text-slate-500 max-w-xs mx-auto">Scatta una foto a una scarpa o alla sua etichetta per aggiungerla.</p>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto">Carica o scatta una foto per catalogare la tua prima scarpa.</p>
         <button onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
           <i class="fa-solid fa-plus"></i> Aggiungi ora
         </button>
       </div>
     </section>
 
-    <!-- VIEW 2: AGGIUNTA SCARPA -->
+    <!-- VIEW 2: AGGIUNTA SCARPA (CON SCELTA FOTOCAMERA O GALLERIA) -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
-          <p class="text-xs text-slate-400 mt-1">Fotografa la scarpa oppure l'etichetta della scatola per la massima precisione.</p>
+          <p class="text-xs text-slate-400 mt-1">Scatta una foto oppure caricala dalla galleria (scarpa o etichetta scatola).</p>
         </div>
 
+        <!-- Box Anteprima -->
         <div id="addDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="addPlaceholder" class="p-6 text-center space-y-2">
-            <i class="fa-solid fa-camera text-4xl text-slate-500"></i>
-            <p class="text-xs font-medium text-slate-400">Scatta foto alla scarpa o etichetta</p>
-            <span class="text-[10px] text-slate-500 block">L'AI leggerà testo, codici e colori</span>
+            <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-500"></i>
+            <p class="text-xs font-medium text-slate-300">Nessuna immagine selezionata</p>
+            <span class="text-[10px] text-slate-500 block">Usa uno dei due pulsanti sottostanti</span>
           </div>
 
           <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
             <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
             <i class="fa-solid fa-microchip text-amber-400 text-3xl animate-pulse mb-2"></i>
-            <span id="scanStatusText" class="text-xs font-semibold text-amber-300">Analisi visiva in corso con Gemini...</span>
+            <span class="text-xs font-semibold text-amber-300">Riconoscimento AI con Gemini...</span>
           </div>
+        </div>
 
-          <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleImageSelected(this, 'add')">
+        <!-- Input File Nascosti -->
+        <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
+        <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
+
+        <!-- Pulsanti di Selezione: Scatta vs Galleria -->
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
+          </button>
         </div>
 
         <form id="addShoeForm" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
@@ -128,7 +141,7 @@
           </div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note / Finiture</label>
-            <input type="text" id="addNotes" placeholder="es. Suola FF Turbo, etichetta box" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <input type="text" id="addNotes" placeholder="es. Suola FF Turbo, logo linguetta" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
 
           <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2 mt-2">
@@ -146,16 +159,16 @@
             Radar Acquisti
           </span>
           <h2 class="text-base font-bold text-slate-100">Vuoi comprare una nuova scarpa?</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Inquadra la scarpa o la scatola per verificare se ne hai già una simile.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto o carica un'immagine (anche uno screenshot da web o negozio).</p>
         </div>
 
         <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="checkPlaceholder" class="p-6 text-center space-y-2">
-            <i class="fa-solid fa-qrcode text-4xl text-indigo-400"></i>
-            <p class="text-xs font-semibold text-slate-300">Inquadra la scarpa nuova</p>
-            <span class="text-[10px] text-slate-500 block">Tocca per scattare la foto</span>
+            <i class="fa-solid fa-shoe-prints text-4xl text-indigo-400"></i>
+            <p class="text-xs font-semibold text-slate-300">Scegli la scarpa da valutare</p>
+            <span class="text-[10px] text-slate-500 block">Fotocamera o galleria</span>
           </div>
 
           <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
@@ -163,18 +176,24 @@
             <i class="fa-solid fa-radar text-indigo-400 text-3xl animate-spin mb-2"></i>
             <span class="text-xs font-semibold text-indigo-300">Confronto con le tue scarpe...</span>
           </div>
-
-          <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleImageSelected(this, 'check')">
         </div>
 
-        <div class="flex gap-2">
-          <button type="button" onclick="openGoogleLensHelp()" class="flex-1 py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 font-medium flex items-center justify-center gap-1.5 active:scale-95 transition">
-            <i class="fa-brands fa-google text-emerald-400"></i> Apri Lens
+        <!-- Input File Nascosti Check -->
+        <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
+        <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
+
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-camera"></i> Scatta Foto
           </button>
-          <button type="button" onclick="triggerManualCheckPrompt()" class="py-2 px-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 font-medium active:scale-95 transition">
-            <i class="fa-solid fa-keyboard text-amber-400"></i> Inserisci a mano
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
           </button>
         </div>
+
+        <button type="button" onclick="triggerManualCheckPrompt()" class="w-full py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-keyboard text-amber-400"></i> Oppure inserisci marca e modello a mano
+        </button>
       </div>
 
       <div id="checkResultContainer" class="hidden space-y-4"></div>
@@ -190,17 +209,16 @@
           <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
             <i class="fa-brands fa-google text-lg"></i>
           </div>
-          <h3 class="font-bold text-sm text-slate-100">Verifica con Google Lens</h3>
+          <h3 class="font-bold text-sm text-slate-100">Google Lens (Opzionale)</h3>
         </div>
         <button onclick="closeLensModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
 
       <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
-        <p>Google Lens è l'ideale se vuoi confrontare direttamente l'etichetta o la scarpa con il catalogo Google:</p>
+        <p>L'app ora analizza direttamente qualsiasi foto scattata o caricata dalla galleria. Google Lens rimane disponibile solo come verifica manuale esterna:</p>
         <ol class="list-decimal list-inside space-y-1 text-slate-400">
-          <li>Apri <strong>Google Lens</strong> sul telefono.</li>
-          <li>Inquadra la scarpa o l'etichetta della scatola.</li>
-          <li>Copia modello e colore esatto e incollali nel form.</li>
+          <li>Apri <strong>Google Lens</strong> dal telefono.</li>
+          <li>Inquadra la scarpa o la scatola per trovare il codice prodotto ufficiale.</li>
         </ol>
       </div>
 
@@ -221,7 +239,7 @@
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <p class="text-xs text-slate-400 leading-relaxed">
-        Inserisci la chiave gratuita presa da <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
+        Inserisci la tua chiave gratuita presa da <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
       </p>
       <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
       <div class="flex gap-2">
@@ -275,7 +293,7 @@
       }
     ];
 
-    let savedData = localStorage.getItem('kicks_archive_v4');
+    let savedData = localStorage.getItem('kicks_archive_v5');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
     let currentCategory = 'all';
@@ -287,7 +305,7 @@
     });
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive_v4', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_v5', JSON.stringify(shoes));
       renderArchive();
     }
 
@@ -385,7 +403,7 @@
       }
     }
 
-    // Ridimensiona immagine lato client prima di mandarla all'API per evitare timeout
+    // Ridimensiona immagine lato client per evitare timeout e payload pesanti
     function resizeImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -434,6 +452,8 @@
           document.getElementById('checkScanningAnim').classList.add('hidden');
         }
       });
+      // Reset input per permettere di ricaricare lo stesso file
+      input.value = '';
     }
 
     async function analyzeShoeWithAI(base64Data, targetMode) {
@@ -447,22 +467,22 @@
       }
 
       const promptText = `
-Sei un sistema esperto di riconoscimento scarpe ed etichette di scatole calzature.
-Analizza con estrema attenzione questa foto:
+Sei un sistema esperto di riconoscimento visivo di scarpe ed etichette di scatole (box label).
+Analizza con cura l'immagine fornita (può essere una foto scattata o un'immagine dalla galleria):
 
-SE È UN'ETICHETTA DELLA SCATOLA (BOX LABEL):
-1. Leggi il modello esatto stampato a caratteri grandi (es. "NOVABLAST 6", "GEL-KAYANO", "AIR MAX 90").
-2. Leggi il brand (se non scritto esplicitamente, deducilo dal layout e dal modello, es. NOVABLAST è di ASICS).
-3. Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE", traducila o riportala fedelmente).
-4. Categoria: Sport / Running.
+CASO A - ETICHETTA DELLA SCATOLA (BOX LABEL):
+1. Leggi il modello esatto stampato in evidenza (es. "NOVABLAST 6", "GEL-KAYANO", "AIR FORCE 1").
+2. Identifica la marca (es. ASICS, Nike, Adidas, Puma, New Balance, Hoka, Brooks).
+3. Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE", traducila in italiano, es. "Nero, Azzurro").
+4. Categoria: "Sport / Running" o appropriata.
 
-SE È LA FOTO DELLA SCARPA:
-1. Leggi loghi o scritte su linguetta, intersuola o tomaia (es. "asics", "FF Turbo", "Nike").
+CASO B - FOTO DELLA SCARPA:
+1. Leggi testi o loghi visibili su linguetta, lati, intersuola o tallone (es. "asics", "FF Turbo", swoosh).
 2. Rileva marca e modello esatti.
-3. Elenca TUTTI i colori visibili (almeno 2 o più: es. Nero, Azzurro Artico, Bianco).
+3. Elenca TUTTI i colori visibili (almeno 2 o più per bicolore/multicolore: es. Nero, Azzurro Artico, Bianco).
 4. Categoria: scegli tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual".
 
-Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura esatta:
+Rispondi ESCLUSIVAMENTE con un JSON valido in questo formato:
 {
   "marca": "string",
   "modello": "string",
@@ -498,7 +518,7 @@ Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura esatta:
 
         const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!textResult) {
-          alert("Nessun testo generato dal modello. Riprova con un'altra foto.");
+          alert("Nessun dato ricavato dall'immagine. Prova con una foto più ravvicinata.");
           return;
         }
 
@@ -713,4 +733,3 @@ Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura esatta:
   </script>
 </body>
 </html>
-
