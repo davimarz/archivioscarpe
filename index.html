@@ -483,24 +483,18 @@
         return;
       }
 
-      const promptInstructions = `
-Analizza attentamente l'immagine fornita (è una scarpa sportiva o l'etichetta della sua scatola).
-Identifica e restituisci con precisione i seguenti campi:
-
-MARCA: [Nome del brand, es. ASICS, Nike, Adidas, New Balance]
-MODELLO: [Nome esatto della silhouette, es. NOVABLAST 6, Gel-Kayano, Pegasus]
-CATEGORIA: [Scegli UNA sola tra queste opzioni esatte: "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"]
-COLORI: [Descrivi tutti i colori principali e gli accenti, es. Nero, Azzurro Ciano, Bianco]
-NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecnologia suola]
-`;
-
+      const promptInstructions = `Sei un esperto di scarpe e di etichette di scatole. Leggi PRIMA tutte le scritte visibili sull'etichetta, incluse le diciture in inglese, i codici prodotto, i codici colore e il nome della colorway. Poi considera l'aspetto della scarpa, se visibile. Non inventare informazioni non leggibili. Rispondi SOLO con un oggetto JSON con queste chiavi:
+"marca": marca riportata sulla scatola (stringa, vuota se sconosciuta);
+"modello": nome commerciale esatto e versione, se leggibile (stringa);
+"categoria": una tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro";
+"colori": elenco dei colori della variante, separati da virgola, traducendo i nomi in italiano se possibile (stringa);
+"note": altri dettagli, codice SKU, testo dell'etichetta utile (stringa).
+Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice colore è alfanumerico, non confonderlo con il colore visivo. Se un dato è incerto, lascialo vuoto.`;
       const requestBody = {
         contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
-        generationConfig: { temperature: 0.1 }
+        generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
       };
-
-      // Fallback a cascata: se un modello è sovraccarico, prova il successivo
-      const modelsToTry = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-1.5-flash'];
+      const modelsToTry = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
       let lastErrorMsg = "";
 
       for (let i = 0; i < modelsToTry.length; i++) {
@@ -539,29 +533,33 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
               break; // Errore non transitorio
             }
 
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const rawText = (data.candidates?.[0]?.content?.parts || []).map(part => part.text || '').join('');
             if (!rawText) {
               lastErrorMsg = "L'AI non ha rilevato informazioni. Prova con una foto più nitida.";
               break;
             }
 
-            // Parsing del testo
-            let parsed = { marca: "", modello: "", categoria: "", colori: "", note: "" };
-            const lines = rawText.split('\n');
-            for (let rawLine of lines) {
-              const line = rawLine.replace(/^[*#-]\s*/, '').trim();
-              if (/^marca[:\s]/i.test(line) && !parsed.marca) parsed.marca = line.replace(/^marca[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-              else if (/^modello[:\s]/i.test(line) && !parsed.modello) parsed.modello = line.replace(/^modello[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-              else if (/^categoria[:\s]/i.test(line) && !parsed.categoria) {
-                const catVal = line.replace(/^categoria[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-                const allowedCats = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
-                const match = allowedCats.find(c => c.toLowerCase() === catVal.toLowerCase());
-                if (match) parsed.categoria = match;
-              }
-              else if (/^(colori|colore|colorazione)[:\s]/i.test(line) && !parsed.colori) parsed.colori = line.replace(/^(colori|colore|colorazione)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
-              else if (/^(note|tecnologia|dettagli)[:\s]/i.test(line) && !parsed.note) parsed.note = line.replace(/^(note|tecnologia|dettagli)[:\s]+/i, '').replace(/\[|\]/g, '').trim();
+            let parsed;
+            try {
+              const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+              const result = JSON.parse(cleaned);
+              const str = value => typeof value === 'string' ? value.trim() : Array.isArray(value) ? value.join(', ') : '';
+              const allowed = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
+              parsed = {
+                marca: str(result.marca || result.brand),
+                modello: str(result.modello || result.model),
+                categoria: allowed.find(cat => cat.toLowerCase() === str(result.categoria).toLowerCase()) || 'Casual / Altro',
+                colori: str(result.colori || result.colore || result.colors),
+                note: str(result.note)
+              };
+            } catch (parseError) {
+              lastErrorMsg = 'Risposta AI non interpretabile. Riprova con una foto più nitida.';
+              break;
             }
-
+            if (!parsed.marca && !parsed.modello && !parsed.colori) {
+              lastErrorMsg = 'Nessuna informazione leggibile sulla scatola. Fotografa da vicino l’etichetta.';
+              break;
+            }
             applyAIData(parsed, targetMode);
             return; // Successo, interrompe il ciclo
 
