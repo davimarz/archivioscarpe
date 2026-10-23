@@ -278,6 +278,7 @@
     let savedData = localStorage.getItem('kicks_archive_v17');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
+    const imagesByMode = { add: null, check: null };
     let currentCategory = 'all';
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -427,6 +428,7 @@
 
       resizeImage(file, 700, async (base64Url) => {
         selectedImageBase64 = base64Url;
+        imagesByMode[mode] = base64Url;
         document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
 
         if (mode === 'add') {
@@ -456,7 +458,7 @@
     }
 
     function retryAnalysis(mode) {
-      if (!selectedImageBase64) {
+      if (!imagesByMode[mode]) {
         alert("Nessuna immagine da riprovare. Carica nuovamente la foto.");
         return;
       }
@@ -464,7 +466,7 @@
       document.getElementById(`${mode}ScanningAnim`).classList.remove('hidden');
       if (mode === 'check') document.getElementById('checkResultContainer').classList.add('hidden');
 
-      analyzeShoeWithGemini(selectedImageBase64, mode).finally(() => {
+      analyzeShoeWithGemini(imagesByMode[mode], mode).finally(() => {
         document.getElementById(`${mode}ScanningAnim`).classList.add('hidden');
       });
     }
@@ -544,7 +546,7 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
             }
 
             // Parsing del testo
-            let parsed = { marca: "", modello: "", categoria: "Sport / Running", colori: "", note: "" };
+            let parsed = { marca: "", modello: "", categoria: "", colori: "", note: "" };
             const lines = rawText.split('\n');
             for (let rawLine of lines) {
               const line = rawLine.replace(/^[*#-]\s*/, '').trim();
@@ -600,7 +602,7 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
           model: model,
           category: category,
           colors: colorsStr.split(',').map(c => c.trim()),
-          image: selectedImageBase64
+          image: imagesByMode.check
         });
       }
     }
@@ -619,7 +621,7 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
         category: document.getElementById('addCategory').value,
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
-        image: selectedImageBase64 || createShoeSvgBase64(brand, model, '#1e293b'),
+        image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         dateAdded: new Date().toISOString().split('T')[0]
       };
 
@@ -631,6 +633,7 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
       document.getElementById('addPlaceholder').classList.remove('hidden');
       document.getElementById('addErrorOverlay').classList.add('hidden');
       selectedImageBase64 = null;
+      imagesByMode.add = null;
       switchTab('archive');
     }
 
@@ -646,25 +649,26 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
       let highSimilarity = [];
       let mediumSimilarity = [];
 
+      const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+      const normalizeColors = values => (Array.isArray(values) ? values : String(values || '').split(','))
+        .map(normalize).filter(Boolean).sort();
+      const sameColors = (a, b) => a.length > 0 && b.length > 0 &&
+        a.length === b.length && a.every((color, index) => color === b[index]);
+      const candidateColors = normalizeColors(candidate.colors);
+      const candidateBrand = normalize(candidate.brand);
+      const candidateModel = normalize(candidate.model);
       shoes.forEach(myShoe => {
-        const myBrand = myShoe.brand.toLowerCase().trim();
-        const myModel = myShoe.model.toLowerCase().trim();
-        const myColors = (Array.isArray(myShoe.colors) ? myShoe.colors : [myShoe.colors]).map(c => c.toLowerCase().trim());
-
-        const isExactBrand = myBrand && candBrand && (myBrand.includes(candBrand) || candBrand.includes(myBrand));
-        const isExactModel = myModel && candModel && (myModel.includes(candModel) || candModel.includes(myModel));
-
-        const commonColors = candColors.filter(c => myColors.some(mc => mc.includes(c) || c.includes(mc)));
-        const colorOverlapScore = candColors.length > 0 ? (commonColors.length / Math.max(candColors.length, myColors.length)) : 0;
-
-        if (isExactBrand && isExactModel) {
-          exactMatches.push({ shoe: myShoe, reason: `Hai già esattamente ${myShoe.brand} ${myShoe.model}!` });
-        } else if (isExactBrand && colorOverlapScore >= 0.5) {
-          highSimilarity.push({ shoe: myShoe, reason: `Stessa marca e colori quasi identici (${commonColors.join(', ')})` });
-        } else if (myShoe.category === candidate.category && colorOverlapScore >= 0.5) {
-          highSimilarity.push({ shoe: myShoe, reason: `Stessa categoria e colori simili: ${commonColors.join(', ')}` });
-        } else if (colorOverlapScore > 0 && myShoe.category === candidate.category) {
-          mediumSimilarity.push({ shoe: myShoe, reason: `Colori in comune: ${commonColors.join(', ')}` });
+        const brandEqual = candidateBrand && normalize(myShoe.brand) === candidateBrand;
+        const modelEqual = candidateModel && normalize(myShoe.model) === candidateModel;
+        const ownedColors = normalizeColors(myShoe.colors);
+        const colorsEqual = sameColors(candidateColors, ownedColors);
+        const shared = candidateColors.filter(color => ownedColors.includes(color));
+        if (brandEqual && modelEqual && colorsEqual) {
+          exactMatches.push({ shoe: myShoe, reason: 'Stessa marca, modello e colorazione' });
+        } else if (brandEqual && modelEqual) {
+          highSimilarity.push({ shoe: myShoe, reason: 'Stesso modello, colorazione differente' });
+        } else if (brandEqual && shared.length && myShoe.category === candidate.category) {
+          mediumSimilarity.push({ shoe: myShoe, reason: 'Stessa marca e alcuni colori in comune' });
         }
       });
 
@@ -678,7 +682,9 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
         desc: 'Nessun doppione rilevato per marca, modello o combinazione di colori.'
       };
 
-      if (exactMatches.length > 0) {
+      if (!candidateBrand || !candidateModel || candidateColors.length === 0) {
+        status = { border: 'border-amber-500/40', text: 'text-amber-400', bg: 'bg-amber-500/20', icon: 'fa-circle-exclamation', badge: 'VERIFICA NECESSARIA', title: 'Identificazione incompleta', desc: 'Conferma marca, modello e colori prima di decidere.' };
+      } else if (exactMatches.length > 0) {
         status = {
           border: 'border-red-500/40',
           text: 'text-red-400',
