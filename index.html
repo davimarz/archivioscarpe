@@ -443,7 +443,6 @@
         return;
       }
 
-      // FIX: Aggiunta la CATEGORIA al prompt
       const promptInstructions = `
 Analizza attentamente l'immagine fornita (è una scarpa sportiva o l'etichetta della sua scatola).
 Identifica e restituisci con precisione i seguenti campi:
@@ -471,8 +470,8 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 90000);
 
-        // FIX: Cambiato il modello da gemini-3.8-flash a gemini-1.5-flash
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        // FIX: Utilizzo del modello gemini-flash-latest per evitare il 404
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
@@ -506,7 +505,6 @@ NOTE: [Dettagli visibili come diciture su intersuola es. FF Turbo², mesh, tecno
           } else if (/^categoria[:\s]/i.test(line) && !parsed.categoria) {
             const catVal = line.replace(/^categoria[:\s]+/i, '').replace(/\[|\]/g, '').trim();
             const allowedCats = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
-            // Cerca di far combaciare la categoria restituita con quelle del menu select
             const match = allowedCats.find(c => c.toLowerCase() === catVal.toLowerCase());
             if (match) parsed.categoria = match;
           } else if (/^(colori|colore|colorazione)[:\s]/i.test(line) && !parsed.colori) {
