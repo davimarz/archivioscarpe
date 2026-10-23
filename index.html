@@ -68,43 +68,41 @@
           <i class="fa-solid fa-box-open"></i>
         </div>
         <h3 class="text-base font-semibold text-slate-300">Nessuna scarpa trovata</h3>
-        <p class="text-xs text-slate-500 max-w-xs mx-auto">Carica o scatta una foto per catalogare la tua prima scarpa.</p>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto">Scatta una foto o caricala dalla galleria per iniziare.</p>
         <button onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
           <i class="fa-solid fa-plus"></i> Aggiungi ora
         </button>
       </div>
     </section>
 
-    <!-- VIEW 2: AGGIUNTA SCARPA (CON SCELTA FOTOCAMERA O GALLERIA) -->
+    <!-- VIEW 2: AGGIUNTA SCARPA -->
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
-          <p class="text-xs text-slate-400 mt-1">Scatta una foto oppure caricala dalla galleria (scarpa o etichetta scatola).</p>
+          <p class="text-xs text-slate-400 mt-1">Carica una foto della scarpa o dell'etichetta della scatola.</p>
         </div>
 
-        <!-- Box Anteprima -->
         <div id="addDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="addPlaceholder" class="p-6 text-center space-y-2">
             <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-500"></i>
             <p class="text-xs font-medium text-slate-300">Nessuna immagine selezionata</p>
-            <span class="text-[10px] text-slate-500 block">Usa uno dei due pulsanti sottostanti</span>
+            <span class="text-[10px] text-slate-500 block">Scegli tra Scatta Foto o Dalla Galleria</span>
           </div>
 
           <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
             <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
             <i class="fa-solid fa-microchip text-amber-400 text-3xl animate-pulse mb-2"></i>
-            <span class="text-xs font-semibold text-amber-300">Riconoscimento AI con Gemini...</span>
+            <span class="text-xs font-semibold text-amber-300">Riconoscimento con Gemini 3.8 Flash...</span>
           </div>
         </div>
 
-        <!-- Input File Nascosti -->
+        <!-- Input File Separati -->
         <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
         <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
 
-        <!-- Pulsanti di Selezione: Scatta vs Galleria -->
         <div class="grid grid-cols-2 gap-2">
           <button type="button" onclick="document.getElementById('addCameraInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
             <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
@@ -121,7 +119,7 @@
           </div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Modello</label>
-            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Nimbus..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Kayano..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -135,13 +133,13 @@
               </select>
             </div>
             <div>
-              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Colori (2 o più)</label>
+              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Colori (separati da virgola)</label>
               <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note / Finiture</label>
-            <input type="text" id="addNotes" placeholder="es. Suola FF Turbo, logo linguetta" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo, logo arancione" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
 
           <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2 mt-2">
@@ -159,7 +157,7 @@
             Radar Acquisti
           </span>
           <h2 class="text-base font-bold text-slate-100">Vuoi comprare una nuova scarpa?</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto o carica un'immagine (anche uno screenshot da web o negozio).</p>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto o carica un'immagine dalla galleria per verificare somiglianze.</p>
         </div>
 
         <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
@@ -174,11 +172,10 @@
           <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center">
             <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
             <i class="fa-solid fa-radar text-indigo-400 text-3xl animate-spin mb-2"></i>
-            <span class="text-xs font-semibold text-indigo-300">Confronto con le tue scarpe...</span>
+            <span class="text-xs font-semibold text-indigo-300">Confronto con il tuo guardaroba...</span>
           </div>
         </div>
 
-        <!-- Input File Nascosti Check -->
         <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
         <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
 
@@ -192,7 +189,7 @@
         </div>
 
         <button type="button" onclick="triggerManualCheckPrompt()" class="w-full py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-keyboard text-amber-400"></i> Oppure inserisci marca e modello a mano
+          <i class="fa-solid fa-keyboard text-amber-400"></i> Oppure inserisci a mano marca e modello
         </button>
       </div>
 
@@ -215,10 +212,10 @@
       </div>
 
       <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
-        <p>L'app ora analizza direttamente qualsiasi foto scattata o caricata dalla galleria. Google Lens rimane disponibile solo come verifica manuale esterna:</p>
+        <p>L'app ora riconosce direttamente qualsiasi foto scattata o caricata dalla galleria. Google Lens rimane a disposizione per controlli visivi esterni sul catalogo Google:</p>
         <ol class="list-decimal list-inside space-y-1 text-slate-400">
-          <li>Apri <strong>Google Lens</strong> dal telefono.</li>
-          <li>Inquadra la scarpa o la scatola per trovare il codice prodotto ufficiale.</li>
+          <li>Apri <strong>Google Lens</strong> sul telefono.</li>
+          <li>Inquadra la scarpa o l'etichetta per verificare l'anno o il codice esatto.</li>
         </ol>
       </div>
 
@@ -293,7 +290,7 @@
       }
     ];
 
-    let savedData = localStorage.getItem('kicks_archive_v5');
+    let savedData = localStorage.getItem('kicks_archive_v6');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
     let currentCategory = 'all';
@@ -305,7 +302,7 @@
     });
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive_v5', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_v6', JSON.stringify(shoes));
       renderArchive();
     }
 
@@ -403,7 +400,6 @@
       }
     }
 
-    // Ridimensiona immagine lato client per evitare timeout e payload pesanti
     function resizeImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -452,8 +448,27 @@
           document.getElementById('checkScanningAnim').classList.add('hidden');
         }
       });
-      // Reset input per permettere di ricaricare lo stesso file
       input.value = '';
+    }
+
+    // Chiamata API robusta su gemini-3.8-flash (con fallback se necessario)
+    async function callGeminiApi(modelName, apiKey, promptText, cleanBase64) {
+      return await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: promptText },
+              { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json"
+          }
+        })
+      });
     }
 
     async function analyzeShoeWithAI(base64Data, targetMode) {
@@ -461,28 +476,28 @@
       const cleanBase64 = base64Data.split(',')[1];
 
       if (!apiKey) {
-        alert("Inserisci prima la tua Google Gemini API Key toccando 'API Key' in alto.");
+        alert("Inserisci la tua Google Gemini API Key toccando 'API Key' in alto a destra.");
         openApiKeyModal();
         return;
       }
 
       const promptText = `
-Sei un sistema esperto di riconoscimento visivo di scarpe ed etichette di scatole (box label).
-Analizza con cura l'immagine fornita (può essere una foto scattata o un'immagine dalla galleria):
+Sei un analista esperto di scarpe e scatole di calzature.
+Analizza con cura l'immagine fornita (scarpa o etichetta della scatola):
 
-CASO A - ETICHETTA DELLA SCATOLA (BOX LABEL):
-1. Leggi il modello esatto stampato in evidenza (es. "NOVABLAST 6", "GEL-KAYANO", "AIR FORCE 1").
-2. Identifica la marca (es. ASICS, Nike, Adidas, Puma, New Balance, Hoka, Brooks).
-3. Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE", traducila in italiano, es. "Nero, Azzurro").
-4. Categoria: "Sport / Running" o appropriata.
+SE È L'ETICHETTA DELLA SCATOLA (BOX LABEL):
+1. MODELLO: Leggi il nome esatto stampato in grande (es. "NOVABLAST 6", "GEL-NIMBUS", "AIR FORCE 1").
+2. MARCA: Identifica il brand (es. ASICS, Nike, Adidas, Puma, New Balance, Hoka, Brooks).
+3. COLORI: Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE", traducila fedelmente in italiano, es. ["Nero", "Azzurro Artico"]).
+4. CATEGORIA: "Sport / Running" o appropriata.
 
-CASO B - FOTO DELLA SCARPA:
-1. Leggi testi o loghi visibili su linguetta, lati, intersuola o tallone (es. "asics", "FF Turbo", swoosh).
-2. Rileva marca e modello esatti.
-3. Elenca TUTTI i colori visibili (almeno 2 o più per bicolore/multicolore: es. Nero, Azzurro Artico, Bianco).
-4. Categoria: scegli tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual".
+SE È LA FOTO DELLA SCARPA:
+1. MARCA: Cerca testi e loghi su linguetta, intersuola o tomaia (es. "asics", "FF Turbo", "Nike").
+2. MODELLO: Rileva il modello esatto o la serie.
+3. COLORI: Elenca TUTTI i colori significativi presenti (almeno 2 o più per bicolore/multicolore, es. ["Nero", "Azzurro Artico", "Bianco"]).
+4. CATEGORIA: "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual".
 
-Rispondi ESCLUSIVAMENTE con un JSON valido in questo formato:
+Rispondi ESCLUSIVAMENTE con un JSON valido con questa struttura:
 {
   "marca": "string",
   "modello": "string",
@@ -492,25 +507,16 @@ Rispondi ESCLUSIVAMENTE con un JSON valido in questo formato:
 }`;
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: promptText },
-                { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json"
-            }
-          })
-        });
+        // Tentativo primario: gemini-3.8-flash (richiesto da Google)
+        let response = await callGeminiApi('gemini-3.8-flash', apiKey, promptText, cleanBase64);
+        let data = await response.json();
 
-        const data = await response.json();
-        
+        // Se gemini-3.8-flash risponde con errore di modello, tenta fallback su gemini-2.5-flash
+        if (data.error && data.error.message && data.error.message.includes('not found')) {
+          response = await callGeminiApi('gemini-2.5-flash', apiKey, promptText, cleanBase64);
+          data = await response.json();
+        }
+
         if (data.error) {
           alert("Errore API Google: " + data.error.message);
           return;
@@ -518,7 +524,7 @@ Rispondi ESCLUSIVAMENTE con un JSON valido in questo formato:
 
         const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!textResult) {
-          alert("Nessun dato ricavato dall'immagine. Prova con una foto più ravvicinata.");
+          alert("Nessun testo generato dal modello. Prova con una foto più ravvicinata.");
           return;
         }
 
