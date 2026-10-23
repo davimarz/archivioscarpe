@@ -4,157 +4,128 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>KicksArchive - Il tuo Guardaroba Scarpe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: #0b0f19; color: #f1f5f9; min-height: 100vh; padding-bottom: 90px; }
-    
-    header { background-color: #111827; border-bottom: 1px solid #1f2937; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40; }
-    .logo-box { display: flex; align-items: center; gap: 10px; }
-    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 18px; }
-    .header-btns { display: flex; gap: 8px; }
-    .btn-key { background-color: #1f2937; border: 1px solid #374151; color: #f59e0b; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    .btn-key.active { color: #10b981; border-color: rgba(16, 185, 129, 0.4); }
-
-    main { max-width: 480px; margin: 0 auto; padding: 16px; }
-
-    /* Barra Ricerca & Filtri */
-    .search-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-    .search-input { flex: 1; background-color: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; }
-    .count-badge { background-color: #1f2937; border: 1px solid #374151; color: #f59e0b; font-size: 12px; font-weight: 700; padding: 10px 12px; border-radius: 12px; white-space: nowrap; }
-
-    .category-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; }
-    .category-pills::-webkit-scrollbar { display: none; }
-    .cat-btn { background-color: #1f2937; color: #94a3b8; border: 1px solid #374151; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-    .cat-btn.active { background-color: #f59e0b; color: #0b0f19; border-color: #f59e0b; }
-
-    /* Griglia Scarpe */
-    .shoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .shoe-card { background-color: #111827; border: 1px solid #1f2937; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
-    .shoe-img-box { width: 100%; aspect-ratio: 1/1; background-color: #030712; position: relative; overflow: hidden; }
-    .shoe-img-box img { width: 100%; height: 100%; object-fit: cover; }
-    .shoe-cat-tag { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px; color: #e2e8f0; }
-    .btn-del { position: absolute; top: 8px; right: 8px; background: rgba(185, 28, 28, 0.8); border: none; color: #fff; width: 26px; height: 26px; border-radius: 50%; font-size: 12px; cursor: pointer; }
-    .shoe-info { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
-    .shoe-brand { font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; }
-    .shoe-model { font-size: 13px; font-weight: 700; color: #f1f5f9; line-height: 1.2; }
-    .colors-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-    .color-chip { background-color: #1f2937; border: 1px solid #374151; font-size: 9px; padding: 2px 6px; border-radius: 4px; color: #cbd5e1; }
-
-    /* Sezione Aggiungi e Check */
-    .card-panel { background-color: #111827; border: 1px solid #1f2937; border-radius: 20px; padding: 16px; text-align: center; }
-    .preview-box { width: 100%; aspect-ratio: 1/1; max-height: 260px; background-color: #030712; border: 2px dashed #374151; border-radius: 16px; margin: 14px 0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-    .preview-box img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .scanner-line { position: absolute; left: 0; right: 0; height: 2px; background-color: #f59e0b; box-shadow: 0 0 12px #f59e0b; animation: scan 1.8s linear infinite alternate; }
-    .scanner-overlay { position: absolute; inset: 0; background: rgba(11, 15, 25, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; z-index: 10; font-size: 12px; font-weight: 700; color: #f59e0b; }
-
-    .action-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .btn-act { padding: 12px; border-radius: 12px; font-size: 13px; font-weight: 700; border: 1px solid #374151; background-color: #1f2937; color: #f1f5f9; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .btn-act.cam { color: #f59e0b; }
-    .btn-act.gal { color: #818cf8; }
-
-    .form-group { text-align: left; margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 4px; }
-    .form-group input, .form-group select { width: 100%; background-color: #030712; border: 1px solid #1f2937; border-radius: 10px; padding: 10px; font-size: 13px; color: #fff; outline: none; }
-    .form-group input:focus, .form-group select:focus { border-color: #f59e0b; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .btn-submit { width: 100%; padding: 14px; background: #f59e0b; color: #0b0f19; font-size: 14px; font-weight: 800; border: none; border-radius: 12px; cursor: pointer; margin-top: 6px; }
-
-    /* Modale API */
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
-    .modal-box { background: #111827; border: 1px solid #1f2937; border-radius: 20px; padding: 20px; width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 12px; }
-
-    /* Bottom Navigation Bar */
-    nav.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background-color: #111827; border-top: 1px solid #1f2937; height: 65px; display: flex; justify-content: space-around; align-items: center; z-index: 50; max-width: 480px; margin: 0 auto; }
-    .nav-item { background: none; border: none; color: #64748b; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
-    .nav-item.active { color: #f59e0b; }
-    .nav-fab { width: 44px; height: 44px; border-radius: 50%; background-color: #f59e0b; color: #0b0f19; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: -18px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); }
-
-    .hidden { display: none !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .scanner-line { animation: scan 1.6s linear infinite alternate; }
     @keyframes scan { 0% { top: 5%; } 100% { top: 95%; } }
   </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none pb-24">
 
-  <!-- Header -->
-  <header>
-    <div class="logo-box">
-      <div class="logo-icon">👟</div>
-      <div>
-        <h1 style="font-size: 16px; font-weight: 800; line-height: 1.1;">KicksArchive</h1>
-        <p style="font-size: 11px; color: #94a3b8;">Scarpiera & Assistente Acquisti</p>
+  <!-- Header Garantito: I pulsanti NON possono più sparire -->
+  <header class="bg-slate-900 border-b border-slate-800 px-3 py-2.5 flex items-center justify-between sticky top-0 z-40 w-full max-w-lg mx-auto">
+    <div class="flex items-center space-x-2 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-md">
+        <i class="fa-solid fa-shoe-prints text-white text-sm"></i>
+      </div>
+      <div class="truncate">
+        <h1 class="font-bold text-sm leading-tight tracking-tight truncate">KicksArchive</h1>
+        <p class="text-[10px] text-slate-400 truncate">Scarpiera & Assistente</p>
       </div>
     </div>
-    <div class="header-btns">
-      <button onclick="openApiKeyModal()" id="keyStatusBtn" class="btn-key">API Key</button>
+
+    <!-- Gruppo Pulsanti Protetti con shrink-0 -->
+    <div class="flex items-center gap-1.5 shrink-0">
+      <button onclick="openGoogleLensHelp()" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400 flex items-center gap-1 active:scale-95 transition">
+        <i class="fa-brands fa-google text-xs"></i>
+        <span>Lens</span>
+      </button>
+      <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1 active:scale-95 transition">
+        <i class="fa-solid fa-key text-xs"></i>
+        <span id="keyLabel">API Key</span>
+      </button>
     </div>
   </header>
 
-  <main>
-    <!-- VISTA 1: ARCHIVIO -->
-    <section id="view-archive">
-      <div class="search-row">
-        <input type="text" id="searchInput" oninput="filterArchive()" placeholder="Cerca marca, modello o colore..." class="search-input">
-        <span id="shoesCountBadge" class="count-badge">0 paia</span>
+  <main class="flex-1 max-w-lg w-full mx-auto p-4">
+
+    <!-- VIEW 1: ARCHIVIO SCARPE -->
+    <section id="view-archive" class="space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+          <input type="text" id="searchInput" oninput="filterArchive()" placeholder="Cerca marca, modello o colore..." 
+            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500/70 transition">
+        </div>
+        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700/80 text-xs px-2.5 py-2 rounded-xl font-semibold whitespace-nowrap">
+          0 paia
+        </span>
       </div>
 
-      <div class="category-pills">
-        <button onclick="setCategoryFilter('all')" class="cat-btn active" data-cat="all">Tutte</button>
-        <button onclick="setCategoryFilter('Sport / Running')" class="cat-btn" data-cat="Sport / Running">Running</button>
-        <button onclick="setCategoryFilter('Sneakers')" class="cat-btn" data-cat="Sneakers">Sneakers</button>
-        <button onclick="setCategoryFilter('Eleganti')" class="cat-btn" data-cat="Eleganti">Eleganti</button>
-        <button onclick="setCategoryFilter('Stivali')" class="cat-btn" data-cat="Stivali">Stivali</button>
+      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        <button onclick="setCategoryFilter('all')" class="cat-pill active px-3 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-slate-950 transition whitespace-nowrap" data-cat="all">Tutte</button>
+        <button onclick="setCategoryFilter('Sport / Running')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sport / Running">Running</button>
+        <button onclick="setCategoryFilter('Sneakers')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sneakers">Sneakers</button>
+        <button onclick="setCategoryFilter('Eleganti')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Eleganti">Eleganti</button>
+        <button onclick="setCategoryFilter('Stivali')" class="cat-pill px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Stivali">Stivali</button>
       </div>
 
-      <div id="shoesGrid" class="shoes-grid"></div>
+      <div id="shoesGrid" class="grid grid-cols-2 gap-3.5"></div>
 
-      <div id="emptyArchiveMsg" class="hidden" style="text-align: center; padding: 40px 10px;">
-        <p style="font-size: 14px; font-weight: 700; color: #cbd5e1;">Nessuna scarpa archiviata</p>
-        <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Scatta una foto o caricala per iniziare.</p>
+      <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
+        <div class="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h3 class="text-base font-semibold text-slate-300">Nessuna scarpa archiviata</h3>
+        <p class="text-xs text-slate-500 max-w-xs mx-auto">Scatta una foto o sceglila dalla galleria per iniziare.</p>
+        <button onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
+          <i class="fa-solid fa-plus"></i> Aggiungi ora
+        </button>
       </div>
     </section>
 
-    <!-- VISTA 2: AGGIUNGI SCARPA -->
-    <section id="view-add" class="hidden">
-      <div class="card-panel">
-        <h2 style="font-size: 15px; font-weight: 800;">Archivia una nuova scarpa</h2>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Carica la foto della scarpa o l'etichetta della scatola.</p>
+    <!-- VIEW 2: AGGIUNTA SCARPA -->
+    <section id="view-add" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
+          <p class="text-xs text-slate-400 mt-1">Carica la foto della scarpa o l'etichetta della scatola.</p>
+        </div>
 
-        <div class="preview-box">
-          <img id="addPreviewImg" class="hidden" />
-          <div id="addPlaceholder" style="color: #64748b; font-size: 12px;">
-            <div style="font-size: 32px; margin-bottom: 4px;">📷</div>
-            Seleziona Scatta Foto o Galleria
+        <div id="addDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+          <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
+          
+          <div id="addPlaceholder" class="p-6 text-center space-y-2">
+            <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-500"></i>
+            <p class="text-xs font-medium text-slate-300">Nessuna immagine selezionata</p>
+            <span class="text-[10px] text-slate-500 block">Tocca "Scatta Foto" o "Dalla Galleria"</span>
           </div>
 
-          <div id="addScanningAnim" class="scanner-overlay hidden">
-            <div class="scanner-line"></div>
-            <span>Riconoscimento in corso con Gemini...</span>
+          <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
+            <i class="fa-solid fa-microchip text-amber-400 text-3xl animate-pulse mb-2"></i>
+            <span class="text-xs font-semibold text-amber-300">Riconoscimento con Gemini 3.8 Flash...</span>
           </div>
         </div>
 
         <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
         <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
 
-        <div class="action-btn-row">
-          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="btn-act cam">📷 Scatta Foto</button>
-          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="btn-act gal">🖼️ Galleria</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
+          </button>
         </div>
 
-        <form id="addShoeForm" onsubmit="saveShoe(event)">
-          <div class="form-group">
-            <label>Marca</label>
-            <input type="text" id="addBrand" required placeholder="es. Asics, Nike, Adidas...">
+        <form id="addShoeForm" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1">Marca</label>
+            <input type="text" id="addBrand" required placeholder="es. Asics, Nike, Adidas..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
-          <div class="form-group">
-            <label>Modello</label>
-            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Kayano...">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1">Modello</label>
+            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Kayano..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
-          <div class="grid-2">
-            <div class="form-group">
-              <label>Categoria</label>
-              <select id="addCategory">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Categoria</label>
+              <select id="addCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
                 <option value="Sport / Running">Sport / Running</option>
                 <option value="Sneakers">Sneakers</option>
                 <option value="Eleganti">Eleganti</option>
@@ -162,84 +133,135 @@
                 <option value="Casual">Casual / Altro</option>
               </select>
             </div>
-            <div class="form-group">
-              <label>Colori (separati da virgola)</label>
-              <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico">
+            <div>
+              <label class="text-[11px] font-semibold text-slate-400 block mb-1">Colori (anche 2 o più)</label>
+              <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
-          <div class="form-group">
-            <label>Note / Finiture</label>
-            <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo, logo linguetta">
+          <div>
+            <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note / Finiture</label>
+            <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo, logo arancione" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
 
-          <button type="submit" class="btn-submit">💾 Salva nell'Archivio</button>
+          <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-98 transition flex items-center justify-center gap-2 mt-2">
+            <i class="fa-solid fa-floppy-disk"></i> Salva nell'Archivio
+          </button>
         </form>
       </div>
     </section>
 
-    <!-- VISTA 3: COMPRO? -->
-    <section id="view-check" class="hidden">
-      <div class="card-panel">
-        <h2 style="font-size: 15px; font-weight: 800;">Radar Acquisti</h2>
-        <p style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Inquadra la scarpa nuova per verificare se ne possiedi già una simile.</p>
+    <!-- VIEW 3: CONTROLLO PRE-ACQUISTO -->
+    <section id="view-check" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
+            Radar Acquisti
+          </span>
+          <h2 class="text-base font-bold text-slate-100">Vuoi comprare una nuova scarpa?</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto o carica un'immagine dalla galleria per verificare somiglianze.</p>
+        </div>
 
-        <div class="preview-box">
-          <img id="checkPreviewImg" class="hidden" />
-          <div id="checkPlaceholder" style="color: #64748b; font-size: 12px;">
-            <div style="font-size: 32px; margin-bottom: 4px;">🔍</div>
-            Inquadra o carica la scarpa da valutare
+        <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+          <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
+          
+          <div id="checkPlaceholder" class="p-6 text-center space-y-2">
+            <i class="fa-solid fa-shoe-prints text-4xl text-indigo-400"></i>
+            <p class="text-xs font-semibold text-slate-300">Scegli la scarpa da valutare</p>
+            <span class="text-[10px] text-slate-500 block">Fotocamera o galleria</span>
           </div>
 
-          <div id="checkScanningAnim" class="scanner-overlay hidden">
-            <div class="scanner-line"></div>
-            <span>Confronto con le tue scarpe...</span>
+          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
+            <i class="fa-solid fa-radar text-indigo-400 text-3xl animate-spin mb-2"></i>
+            <span class="text-xs font-semibold text-indigo-300">Confronto in corso...</span>
           </div>
         </div>
 
         <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
         <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
 
-        <div class="action-btn-row">
-          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="btn-act cam">📷 Scatta Foto</button>
-          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="btn-act gal">🖼️ Galleria</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-indigo-300 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-camera"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
+          </button>
         </div>
+
+        <button type="button" onclick="triggerManualCheckPrompt()" class="w-full py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-400 hover:text-slate-200 active:scale-95 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-keyboard text-amber-400"></i> Oppure inserisci marca e modello a mano
+        </button>
       </div>
 
-      <div id="checkResultContainer" class="hidden" style="margin-top: 16px;"></div>
+      <div id="checkResultContainer" class="hidden space-y-4"></div>
     </section>
+
   </main>
 
-  <!-- Modale API Key -->
-  <div id="apiKeyModal" class="modal-backdrop hidden">
-    <div class="modal-box">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-size: 15px; font-weight: 800;">Chiave Gemini Vision API</h3>
-        <button onclick="closeApiKeyModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+  <!-- Modale Google Lens -->
+  <div id="lensModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i class="fa-brands fa-google text-lg"></i>
+          </div>
+          <h3 class="font-bold text-sm text-slate-100">Google Lens</h3>
+        </div>
+        <button onclick="closeLensModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <p style="font-size: 12px; color: #94a3b8; line-height: 1.4;">
-        Incolla qui la chiave gratuita presa da <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #f59e0b;">Google AI Studio</a>.
+
+      <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
+        <p>Google Lens è a tua disposizione se vuoi controllare direttamente il catalogo Google per modelli particolari:</p>
+        <ol class="list-decimal list-inside space-y-1 text-slate-400">
+          <li>Apri <strong>Google Lens</strong> dal widget Google sul tuo telefono.</li>
+          <li>Inquadra l'etichetta per verificare codici o date di lancio.</li>
+        </ol>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <a href="https://lens.google.com" target="_blank" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Apri Lens nel Browser
+        </a>
+        <button onclick="closeLensModal()" class="w-full py-2 text-xs text-slate-400 hover:text-slate-200">Chiudi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale API Key -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm text-slate-100">Chiave Gemini Vision API</h3>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        Inserisci la tua chiave generata su <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
       </p>
-      <input type="password" id="apiKeyInput" placeholder="AIzaSy..." style="width: 100%; background: #030712; border: 1px solid #1f2937; border-radius: 10px; padding: 10px; color: #fff; font-size: 13px;">
-      <div style="display: flex; gap: 8px;">
-        <button onclick="saveApiKey()" style="flex: 1; padding: 10px; background: #f59e0b; border: none; border-radius: 10px; font-weight: 800; cursor: pointer;">Salva</button>
-        <button onclick="clearApiKey()" style="padding: 10px 14px; background: #1f2937; border: 1px solid #374151; color: #ef4444; border-radius: 10px; cursor: pointer;">Rimuovi</button>
+      <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+      <div class="flex gap-2">
+        <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva Chiave</button>
+        <button onclick="clearApiKey()" class="py-2 px-3 bg-slate-800 text-slate-400 text-xs rounded-xl hover:text-red-400">Rimuovi</button>
       </div>
     </div>
   </div>
 
   <!-- Bottom Navigation Bar -->
-  <nav class="bottom-nav">
-    <button onclick="switchTab('archive')" id="tab-archive" class="nav-item active">
-      <span style="font-size: 18px;">🗄️</span>
-      <span>Armadio</span>
+  <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-6 py-2 z-40 max-w-lg mx-auto flex justify-around items-center">
+    <button onclick="switchTab('archive')" id="tab-archive" class="flex flex-col items-center gap-1 text-amber-400 transition">
+      <i class="fa-solid fa-boxes-stacked text-lg"></i>
+      <span class="text-[10px] font-semibold">Armadio</span>
     </button>
-    <button onclick="switchTab('add')" id="tab-add" class="nav-item">
-      <div class="nav-fab">＋</div>
-      <span style="margin-top: 2px;">Aggiungi</span>
+    <button onclick="switchTab('add')" id="tab-add" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
+      <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center -mt-5 shadow-lg shadow-amber-500/30">
+        <i class="fa-solid fa-plus text-base font-bold"></i>
+      </div>
+      <span class="text-[10px] font-semibold">Aggiungi</span>
     </button>
-    <button onclick="switchTab('check')" id="tab-check" class="nav-item">
-      <span style="font-size: 18px;">Radar</span>
-      <span>Compro?</span>
+    <button onclick="switchTab('check')" id="tab-check" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
+      <i class="fa-solid fa-radar text-lg"></i>
+      <span class="text-[10px] font-semibold">Compro?</span>
     </button>
   </nav>
 
@@ -288,10 +310,15 @@
     function switchTab(tabId) {
       ['archive', 'add', 'check'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
-        document.getElementById(`tab-${t}`).classList.remove('active');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove('text-amber-400');
+        btn.classList.add('text-slate-400');
       });
+
       document.getElementById(`view-${tabId}`).classList.remove('hidden');
-      document.getElementById(`tab-${tabId}`).classList.add('active');
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      activeBtn.classList.add('text-amber-400');
+      activeBtn.classList.remove('text-slate-400');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -323,17 +350,27 @@
       grid.innerHTML = filtered.map(shoe => {
         const colorsList = Array.isArray(shoe.colors) ? shoe.colors : [shoe.colors || 'N/D'];
         return `
-          <div class="shoe-card">
-            <div class="shoe-img-box">
-              <img src="${shoe.image}">
-              <span class="shoe-cat-tag">${shoe.category}</span>
-              <button onclick="deleteShoe('${shoe.id}')" class="btn-del">✕</button>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
+            <div class="relative aspect-square bg-slate-950 overflow-hidden">
+              <img src="${shoe.image}" alt="${shoe.brand} ${shoe.model}" class="w-full h-full object-cover">
+              <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
+                ${shoe.category}
+              </span>
+              <button onclick="deleteShoe('${shoe.id}')" class="absolute top-2 right-2 w-7 h-7 bg-red-950/80 text-red-400 rounded-full flex items-center justify-center opacity-80 hover:opacity-100 transition">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
             </div>
-            <div class="shoe-info">
-              <div class="shoe-brand">${shoe.brand}</div>
-              <div class="shoe-model">${shoe.model}</div>
-              <div class="colors-wrap">
-                ${colorsList.map(c => `<span class="color-chip">${c.trim()}</span>`).join('')}
+            <div class="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
+              <div>
+                <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">${shoe.brand}</p>
+                <h3 class="text-xs font-semibold text-slate-100 line-clamp-1">${shoe.model}</h3>
+              </div>
+              <div class="flex flex-wrap gap-1 mt-1">
+                ${colorsList.map(c => `
+                  <span class="text-[9px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded-md font-medium">
+                    ${c.trim()}
+                  </span>
+                `).join('')}
               </div>
             </div>
           </div>
@@ -343,11 +380,13 @@
 
     function setCategoryFilter(cat) {
       currentCategory = cat;
-      document.querySelectorAll('.cat-btn').forEach(btn => {
+      document.querySelectorAll('.cat-pill').forEach(btn => {
         if (btn.getAttribute('data-cat') === cat) {
-          btn.classList.add('active');
+          btn.classList.add('bg-amber-500', 'text-slate-950');
+          btn.classList.remove('bg-slate-800', 'text-slate-300');
         } else {
-          btn.classList.remove('active');
+          btn.classList.remove('bg-amber-500', 'text-slate-950');
+          btn.classList.add('bg-slate-800', 'text-slate-300');
         }
       });
       renderArchive();
@@ -362,6 +401,7 @@
       }
     }
 
+    // Compressione ultra-leggera a 800px per risposte API istantanee
     function resizeImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -378,7 +418,7 @@
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          callback(canvas.toDataURL('image/jpeg', 0.85));
+          callback(canvas.toDataURL('image/jpeg', 0.80));
         };
         img.src = e.target.result;
       };
@@ -389,7 +429,7 @@
       const file = input.files[0];
       if (!file) return;
 
-      resizeImage(file, 900, async (base64Url) => {
+      resizeImage(file, 800, async (base64Url) => {
         selectedImageBase64 = base64Url;
 
         if (mode === 'add') {
@@ -419,63 +459,33 @@
       input.value = '';
     }
 
-    async function callGeminiApiWithTimeout(modelName, apiKey, promptText, cleanBase64, timeoutMs = 15000) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: promptText },
-                { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
-              ]
-            }],
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json"
-            }
-          })
-        });
-        clearTimeout(timeoutId);
-        return response;
-      } catch (e) {
-        clearTimeout(timeoutId);
-        throw e;
-      }
-    }
-
     async function analyzeShoeWithAI(base64Data, targetMode) {
       const apiKey = localStorage.getItem('gemini_api_key');
       const cleanBase64 = base64Data.split(',')[1];
 
       if (!apiKey) {
-        alert("Inserisci la chiave Gemini toccando 'API Key' in alto.");
+        alert("Inserisci la tua API Key toccando 'API Key' in alto a destra.");
         openApiKeyModal();
         return;
       }
 
       const promptText = `
-Sei un analista esperto di calzature e di etichette per scatole di scarpe.
+Sei un analista perito di scarpe ed etichette di scatole calzature.
 Analizza con estrema precisione l'immagine allegata:
 
-SE L'IMMAGINE È UN'ETICHETTA DELLA SCATOLA (BOX LABEL):
-1. MODELLO: Leggi il testo del modello esatto (es. "NOVABLAST 6", "GEL-KAYANO", "PEGASUS 40").
-2. MARCA: Identifica il brand (es. ASICS, Nike, Adidas, Puma, New Balance, Hoka, Brooks).
-3. COLORI: Riporta la descrizione colore stampata in italiano (es. "BLACK/ARCTIC BLUE" -> ["Nero", "Azzurro Artico"]).
-4. CATEGORIA: "Sport / Running".
+SE È UN'ETICHETTA DELLA SCATOLA (BOX LABEL):
+1. Leggi il modello esatto stampato in evidenza (es. "NOVABLAST 6", "GEL-KAYANO", "PEGASUS").
+2. Identifica la marca (es. ASICS, Nike, Adidas, Puma, New Balance, Hoka, Brooks).
+3. Leggi la descrizione colori stampata (es. "BLACK/ARCTIC BLUE" -> ["Nero", "Azzurro Artico"]).
+4. Categoria: "Sport / Running".
 
-SE L'IMMAGINE È LA FOTO DELLA SCARPA:
-1. MARCA: Cerca testi o loghi visibili.
-2. MODELLO: Estrai modello o serie.
-3. COLORI: Estrai TUTTI i colori significativi presenti.
+SE È LA FOTO DELLA SCARPA:
+1. MARCA: Cerca testi e loghi su linguetta, intersuola o tomaia (es. "asics", "FF Turbo", "Nike").
+2. MODELLO: Estrai il modello esatto o la serie.
+3. COLORI: Estrai TUTTI i colori significativi presenti (almeno 2 o più).
 4. CATEGORIA: "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual".
 
-Restituisci ESCLUSIVAMENTE un JSON valido:
+Restituisci ESCLUSIVAMENTE un JSON valido in questo formato:
 {
   "marca": "string",
   "modello": "string",
@@ -484,48 +494,60 @@ Restituisci ESCLUSIVAMENTE un JSON valido:
   "note": "string"
 }`;
 
-      try {
-        let response = null;
-        let data = null;
+      // Chiamata su gemini-3.8-flash (con fallback su gemini-flash-latest)
+      const modelsToTry = ['gemini-3.8-flash', 'gemini-flash-latest'];
+      let lastError = null;
+      let parsed = null;
 
+      for (const model of modelsToTry) {
         try {
-          response = await callGeminiApiWithTimeout('gemini-3.8-flash', apiKey, promptText, cleanBase64, 15000);
-          data = await response.json();
-        } catch (netErr) {
-          console.warn("Tentativo primario non riuscito:", netErr);
-        }
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-        if (!data || (data.error && data.error.message && data.error.message.includes('not found'))) {
-          response = await callGeminiApiWithTimeout('gemini-flash-latest', apiKey, promptText, cleanBase64, 15000);
-          data = await response.json();
-        }
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: promptText },
+                  { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.1,
+                responseMimeType: "application/json"
+              }
+            })
+          });
 
-        if (data.error) {
-          alert("Avviso API Google: " + data.error.message);
-          return;
-        }
+          clearTimeout(timeoutId);
+          const data = await response.json();
 
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!rawText) {
-          alert("Nessun dato generato. Riprova con una foto più nitida.");
-          return;
-        }
+          if (data.error) {
+            lastError = data.error.message;
+            continue; // Prova modello alternativo
+          }
 
-        let cleanJson = rawText.trim();
-        if (cleanJson.startsWith('```')) {
-          cleanJson = cleanJson.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            let clean = rawText.trim();
+            if (clean.startsWith('```')) {
+              clean = clean.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+            }
+            parsed = JSON.parse(clean);
+            break; // Riuscito
+          }
+        } catch (e) {
+          lastError = e.message;
         }
+      }
 
-        const parsed = JSON.parse(cleanJson);
+      if (parsed) {
         applyAIData(parsed, targetMode);
-
-      } catch (err) {
-        console.error("Errore:", err);
-        if (err.name === 'AbortError') {
-          alert("Tempo scaduto: connessione lenta. Riprova.");
-        } else {
-          alert("Impossibile analizzare: " + err.message);
-        }
+      } else {
+        alert("Avviso API: " + (lastError || "Riconoscimento non riuscito. Controlla la tua chiave API o riprova con un'altra foto."));
       }
     }
 
@@ -563,7 +585,7 @@ Restituisci ESCLUSIVAMENTE un JSON valido:
         category: document.getElementById('addCategory').value,
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
-        image: selectedImageBase64 || createShoeSvgBase64(brand, model, '#0f172a'),
+        image: selectedImageBase64 || createShoeSvgBase64(brand, model, '#1e293b'),
         dateAdded: new Date().toISOString().split('T')[0]
       };
 
@@ -587,8 +609,147 @@ Restituisci ESCLUSIVAMENTE un JSON valido:
 
       let exactMatches = [];
       let highSimilarity = [];
+      let mediumSimilarity = [];
 
       shoes.forEach(myShoe => {
         const myBrand = myShoe.brand.toLowerCase().trim();
         const myModel = myShoe.model.toLowerCase().trim();
-        const
+        const myColors = (Array.isArray(myShoe.colors) ? myShoe.colors : [myShoe.colors]).map(c => c.toLowerCase().trim());
+
+        const isExactBrand = myBrand && candBrand && (myBrand.includes(candBrand) || candBrand.includes(myBrand));
+        const isExactModel = myModel && candModel && (myModel.includes(candModel) || candModel.includes(myModel));
+
+        const commonColors = candColors.filter(c => myColors.some(mc => mc.includes(c) || c.includes(mc)));
+        const colorOverlapScore = candColors.length > 0 ? (commonColors.length / Math.max(candColors.length, myColors.length)) : 0;
+
+        if (isExactBrand && isExactModel) {
+          exactMatches.push({ shoe: myShoe, reason: `Hai già esattamente ${myShoe.brand} ${myShoe.model}!` });
+        } else if (isExactBrand && colorOverlapScore >= 0.5) {
+          highSimilarity.push({ shoe: myShoe, reason: `Stessa marca e colori quasi identici (${commonColors.join(', ')})` });
+        } else if (myShoe.category === candidate.category && colorOverlapScore >= 0.5) {
+          highSimilarity.push({ shoe: myShoe, reason: `Stessa categoria e colori simili: ${commonColors.join(', ')}` });
+        } else if (colorOverlapScore > 0 && myShoe.category === candidate.category) {
+          mediumSimilarity.push({ shoe: myShoe, reason: `Colori in comune: ${commonColors.join(', ')}` });
+        }
+      });
+
+      let status = {
+        border: 'border-emerald-500/40',
+        text: 'text-emerald-400',
+        bg: 'bg-emerald-500/20',
+        icon: 'fa-circle-check',
+        badge: 'VIA LIBERA ALL\'ACQUISTO',
+        title: 'Scarpa Inedita per il tuo Guardaroba!',
+        desc: 'Nessun doppione rilevato per marca, modello o combinazione di colori.'
+      };
+
+      if (exactMatches.length > 0) {
+        status = {
+          border: 'border-red-500/40',
+          text: 'text-red-400',
+          bg: 'bg-red-500/20',
+          icon: 'fa-triangle-exclamation',
+          badge: 'DOPPIONE IDENTICO',
+          title: 'Ce l\'hai già nel tuo armadio!',
+          desc: 'Possiedi già esattamente questa marca e questo modello.'
+        };
+      } else if (highSimilarity.length > 0) {
+        status = {
+          border: 'border-amber-500/40',
+          text: 'text-amber-400',
+          bg: 'bg-amber-500/20',
+          icon: 'fa-circle-exclamation',
+          badge: 'LOOK MOLTO SIMILE',
+          title: 'Attenzione alla somiglianza',
+          desc: 'Hai scarpe della stessa categoria con palette cromatica quasi identica.'
+        };
+      }
+
+      const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
+
+      container.innerHTML = `
+        <div class="bg-slate-900 border ${status.border} rounded-2xl p-4 shadow-xl">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl ${status.bg} ${status.text} flex items-center justify-center text-xl shrink-0">
+              <i class="fa-solid ${status.icon}"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider ${status.text}">${status.badge}</span>
+              <h3 class="text-sm font-bold text-slate-100">${status.title}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">${status.desc}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800">
+            <p class="text-[10px] text-slate-500 uppercase font-semibold">Scarpa valutata</p>
+            <p class="text-xs font-bold text-slate-200">${candidate.brand || 'Marca n.d.'} - ${candidate.model || 'Modello n.d.'}</p>
+            <p class="text-[11px] text-amber-400">Colori: ${candColors.join(', ')}</p>
+          </div>
+
+          ${allMatches.length > 0 ? `
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
+              <p class="text-xs font-semibold text-slate-300">Confronto con le tue scarpe:</p>
+              ${allMatches.map(m => `
+                <div class="flex items-center gap-3 p-2 bg-slate-950/70 border border-slate-800 rounded-xl">
+                  <img src="${m.shoe.image}" class="w-12 h-12 object-cover rounded-lg border border-slate-800 shrink-0">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-200 truncate">${m.shoe.brand} ${m.shoe.model}</p>
+                    <p class="text-[11px] text-amber-300/90 truncate">${m.reason}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function triggerManualCheckPrompt() {
+      const brand = prompt("Marca della scarpa:", "Asics");
+      if (!brand) return;
+      const model = prompt("Modello della scarpa:", "Novablast 6");
+      const colors = (prompt("Colori (separati da virgola):", "Nero, Azzurro") || "").split(',').map(c => c.trim());
+      evaluatePurchase({ brand, model, category: 'Sport / Running', colors });
+    }
+
+    function openGoogleLensHelp() { document.getElementById('lensModal').classList.remove('hidden'); }
+    function closeLensModal() { document.getElementById('lensModal').classList.add('hidden'); }
+
+    function openApiKeyModal() {
+      document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+    function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) {
+        alert("Inserisci una chiave valida.");
+        return;
+      }
+      localStorage.setItem('gemini_api_key', key);
+      updateKeyUI();
+      closeApiKeyModal();
+    }
+    function clearApiKey() {
+      localStorage.removeItem('gemini_api_key');
+      document.getElementById('apiKeyInput').value = '';
+      updateKeyUI();
+      closeApiKeyModal();
+    }
+    function updateKeyUI() {
+      const key = localStorage.getItem('gemini_api_key');
+      const label = document.getElementById('keyLabel');
+      const btn = document.getElementById('keyStatusBtn');
+      if (key) {
+        label.textContent = 'AI Attiva';
+        btn.classList.add('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.remove('text-amber-400');
+      } else {
+        label.textContent = 'API Key';
+        btn.classList.remove('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.add('text-amber-400');
+      }
+    }
+  </script>
+</body>
+</html>
