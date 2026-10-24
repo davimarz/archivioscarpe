@@ -858,8 +858,46 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       switchTab('archive');
     }
 
+    let lastCheckedCandidate = null;
+
+    function saveCheckedShoe() {
+      const candidate = lastCheckedCandidate;
+      if (!candidate) return;
+      const brand = String(candidate.brand || '').trim();
+      const model = String(candidate.model || '').trim();
+      const colors = (Array.isArray(candidate.colors) ? candidate.colors : String(candidate.colors || '').split(','))
+        .map(color => String(color || '').trim()).filter(Boolean);
+      if (!brand || !model || !colors.length) {
+        alert('Per salvare la scarpa servono marca, modello e almeno un colore.');
+        return;
+      }
+      const normalize = value => String(value || '').toLocaleLowerCase('it').trim().replace(/\\s+/g, ' ');
+      const sameColors = (a, b) => a.map(normalize).sort().join('|') === b.map(normalize).sort().join('|');
+      const alreadyOwned = shoes.some(shoe => normalize(shoe.brand) === normalize(brand) &&
+        normalize(shoe.model) === normalize(model) &&
+        sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors));
+      if (alreadyOwned) {
+        alert('Questa scarpa è già presente nell’archivio.');
+        return;
+      }
+      const newShoe = {
+        id: Date.now().toString(),
+        brand, model,
+        category: candidate.category || 'Casual / Altro',
+        colors,
+        notes: candidate.notes || '',
+        image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
+        dateAdded: new Date().toISOString().split('T')[0]
+      };
+      shoes.unshift(newShoe);
+      saveToStorage();
+      lastCheckedCandidate = null;
+      switchTab('archive');
+    }
+
     function evaluatePurchase(candidate) {
       const container = document.getElementById('checkResultContainer');
+      lastCheckedCandidate = null;
       container.classList.remove('hidden');
 
       const candColors = (candidate.colors || []).map(c => c.toLowerCase().trim());
@@ -928,6 +966,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
 
       const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
+      const canSave = Boolean(candidateBrand && candidateModel && candidateColors.length && exactMatches.length === 0);
+      if (canSave) lastCheckedCandidate = { ...candidate, image: candidate.image || imagesByMode.check };
 
       container.innerHTML = `
         <div class="bg-slate-900 border ${status.border} rounded-2xl p-4 shadow-xl">
@@ -947,6 +987,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             <p class="text-xs font-bold text-slate-200">${candidate.brand || 'Marca n.d.'} - ${candidate.model || 'Modello n.d.'}</p>
             <p class="text-[11px] text-amber-400">Colori: ${candColors.join(', ') || 'n.d.'}</p>
           </div>
+
+          ${canSave ? `
+            <button type="button" onclick="saveCheckedShoe()" class="mt-4 w-full min-h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-plus"></i> Salva questa scarpa nell'archivio
+            </button>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">Salva marca, modello, colori e fotografia riconosciuti.</p>
+          ` : ''}
 
           ${allMatches.length > 0 ? `
             <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
