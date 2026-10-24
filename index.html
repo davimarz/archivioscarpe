@@ -80,6 +80,25 @@
         </span>
       </div>
 
+      <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
+        <div>
+          <label for="brandFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Marca</label>
+          <select id="brandFilter" onchange="filterArchive()" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+            <option value="">Tutte le marche</option>
+          </select>
+        </div>
+        <div>
+          <label for="colorFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Colore</label>
+          <select id="colorFilter" onchange="filterArchive()" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+            <option value="">Tutti i colori</option>
+          </select>
+        </div>
+        <div class="col-span-2 flex items-center justify-between gap-2">
+          <span id="archiveResultCount" class="text-xs text-slate-400" aria-live="polite">Tutte le scarpe</span>
+          <button type="button" onclick="resetArchiveFilters()" class="text-xs font-semibold text-amber-400 px-3 py-2 rounded-lg border border-slate-700">Azzera filtri</button>
+        </div>
+      </div>
+
       <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
         <button onclick="setCategoryFilter('all')" class="cat-pill active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-slate-950 transition whitespace-nowrap" data-cat="all">Tutte</button>
         <button onclick="setCategoryFilter('Sport / Running')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sport / Running">Running</button>
@@ -360,11 +379,45 @@
       })[char]);
     }
 
+    function updateArchiveFilterOptions() {
+      const brandSelect = document.getElementById('brandFilter');
+      const colorSelect = document.getElementById('colorFilter');
+      if (!brandSelect || !colorSelect) return;
+      const normalize = value => String(value || '').trim().toLocaleLowerCase('it');
+      const brands = new Map();
+      const colors = new Map();
+      shoes.forEach(shoe => {
+        const brand = String(shoe.brand || '').trim();
+        if (brand && !brands.has(normalize(brand))) brands.set(normalize(brand), brand);
+        const parts = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
+        parts.forEach(part => {
+          const color = String(part || '').trim();
+          if (color && !colors.has(normalize(color))) colors.set(normalize(color), color);
+        });
+      });
+      [[brandSelect, brands, 'Tutte le marche'], [colorSelect, colors, 'Tutti i colori']].forEach(([select, values, allLabel]) => {
+        const selected = select.value;
+        select.replaceChildren(new Option(allLabel, ''));
+        [...values.entries()].sort((a,b) => a[1].localeCompare(b[1], 'it')).forEach(([key, label]) => select.add(new Option(label, key)));
+        select.value = values.has(selected) ? selected : '';
+      });
+    }
+
+    function resetArchiveFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('brandFilter').value = '';
+      document.getElementById('colorFilter').value = '';
+      setCategoryFilter('all');
+    }
+
     function renderArchive() {
       const grid = document.getElementById('shoesGrid');
       const emptyMsg = document.getElementById('emptyArchiveMsg');
       const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
       const badge = document.getElementById('shoesCountBadge');
+      updateArchiveFilterOptions();
+      const brandFilter = document.getElementById('brandFilter').value;
+      const colorFilter = document.getElementById('colorFilter').value;
 
       const filtered = shoes.filter(shoe => {
         const matchesCat = currentCategory === 'all' || shoe.category === currentCategory;
@@ -373,10 +426,14 @@
           shoe.brand.toLowerCase().includes(searchVal) ||
           shoe.model.toLowerCase().includes(searchVal) ||
           colorString.toLowerCase().includes(searchVal);
-        return matchesCat && matchesSearch;
+        const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
+        const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
+        const matchesColor = !colorFilter || colors.some(c => String(c || '').trim().toLocaleLowerCase('it') === colorFilter);
+        return matchesCat && matchesSearch && matchesBrand && matchesColor;
       });
 
       badge.textContent = `${shoes.length} paia`;
+      document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} paia visualizzate`;
 
       if (filtered.length === 0) {
         grid.innerHTML = '';
