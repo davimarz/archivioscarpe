@@ -500,7 +500,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       let modelsToTry = [];
       let lastErrorMsg = "";
-      const cacheKey = 'kicks_gemini_models_v3';
+      const cacheKey = 'kicks_gemini_models_v4';
       try {
         const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
         if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 3600000) {
@@ -513,13 +513,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           const supported = (catalog.models || []).filter(model =>
             (model.supportedGenerationMethods || []).includes('generateContent') &&
             /gemini/i.test(model.name || '') &&
-            !/embedding|tts|audio|image-generation|robotics|live|preview/i.test(model.name || '')
+            !/embedding|tts|audio|image-generation|robotics|live|preview|image|transcribe|computer-use|nano-banana|omni/i.test(model.name || '')
           );
           const preference = name => {
             if (/gemini-2\.0-flash$/.test(name)) return 4;
-            if (/gemini-2\.5-flash-lite$/.test(name)) return 0;
-            if (/gemini-2\.5-flash$/.test(name)) return 1;
-            if (/flash/i.test(name)) return 3;
+            if (/gemini-2\.5-flash-lite$/.test(name)) return 2;
+            if (/gemini-2\.5-flash$/.test(name)) return 0;
+            if (/flash/i.test(name)) return 1;
             return 4;
           };
           modelsToTry = supported.sort((a,b) => preference(a.name)-preference(b.name))
@@ -529,7 +529,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
         const best = sessionStorage.getItem('kicks_gemini_last_success');
         if (best && modelsToTry.includes(best)) modelsToTry = [best, ...modelsToTry.filter(m => m !== best)];
-        modelsToTry = modelsToTry.slice(0, 2);
+        modelsToTry = modelsToTry.slice(0, 5);
       } catch (listingError) {
         lastErrorMsg = listingError.message;
         if (errorTextEl) errorTextEl.textContent = 'Errore: ' + lastErrorMsg;
@@ -561,7 +561,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
               const code = data.error.code;
               lastErrorMsg = data.error.message;
               if (/no longer available|not found|not supported/i.test(lastErrorMsg)) {
-                lastErrorMsg = 'Il modello AI non è disponibile per questa chiave. Controlla i modelli abilitati in Google AI Studio.';
+                lastErrorMsg = currentModel + ': ' + data.error.message;
               } else if (code === 429) {
                 lastErrorMsg = 'Limite di richieste Gemini raggiunto. Attendi il ripristino della quota o verifica il piano in Google AI Studio.';
               } else if (code === 403 || code === 401) {
@@ -821,26 +821,26 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const models = (data.models || []).filter(m =>
           (m.supportedGenerationMethods || []).includes('generateContent') &&
           /gemini/i.test(m.name || '') &&
-          !/embedding|tts|audio|image-generation|robotics/i.test(m.name || '')
+          !/embedding|tts|audio|image-generation|robotics|live|preview|image|transcribe|computer-use|nano-banana|omni/i.test(m.name || '')
         );
         if (!models.length) { output.textContent = 'Chiave accettata, ma nessun modello Gemini compatibile con generateContent.'; return; }
-        output.textContent = 'Chiave accettata. Modelli candidati:\\n' + models.map(m => '• ' + m.name.replace('models/', '')).join('\\n') + '\\n\\nVerifica generazione e comprensione immagini...';
+        output.textContent = 'Chiave accettata. Modelli candidati:\n' + models.map(m => '• ' + m.name.replace('models/', '')).join('\n') + '\n\nVerifica generazione e comprensione immagini...';
         // Pixel PNG 1x1 di prova: controlla la capacità di elaborare un input immagine.
         const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/mXcAAAAASUVORK5CYII=';
         let errors = [];
         let working = '';
-        for (const m of models.slice(0, 8)) {
+        for (const m of models.slice(0, 6)) {
           const test = await fetch('https://generativelanguage.googleapis.com/v1beta/' + m.name + ':generateContent?key=' + encodeURIComponent(key), {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: 'Descrivi brevemente questa immagine.' }, { inlineData: { mimeType: 'image/png', data: tinyPng } }] }], generationConfig: { maxOutputTokens: 60 } })
           });
           const result = await test.json();
-          if (test.ok && result.candidates?.length) { working = m.name.replace('models/', ''); break; }
+          if (test.ok && (result.candidates || []).some(c => (c.content?.parts || []).some(p => typeof p.text === 'string' && p.text.trim()))) { working = m.name.replace('models/', ''); sessionStorage.setItem('kicks_gemini_last_success', working); break; }
           errors.push(m.name.replace('models/', '') + ': ' + (result.error?.message || 'Risposta senza contenuto').slice(0, 130));
         }
         output.textContent = working
-          ? 'Connessione e analisi immagini riuscite.\\nModello funzionante: ' + working + '\\n\\nPuoi riprovare a fotografare la scatola.'
-          : 'Chiave riconosciuta, ma nessun modello ha superato il test immagini.\\n' + errors.join('\\n');
+          ? 'Connessione e analisi immagini riuscite.\nModello funzionante: ' + working + '\n\nPuoi riprovare a fotografare la scatola.'
+          : 'Chiave riconosciuta, ma nessun modello ha superato il test immagini.\n' + errors.join('\n');
       } catch (error) {
         output.textContent = 'Test non riuscito: ' + error.message;
       } finally { button.disabled = false; }
