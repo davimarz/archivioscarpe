@@ -260,6 +260,26 @@
 
   </main>
 
+  <!-- Modifica scarpa archiviata -->
+  <div id="editShoeModal" role="dialog" aria-modal="true" aria-labelledby="editShoeTitle" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between gap-3">
+        <h3 id="editShoeTitle" class="font-bold text-lg text-white"><i class="fa-solid fa-pen text-amber-400 mr-2"></i>Modifica scarpa</h3>
+        <button type="button" onclick="closeEditShoeModal()" aria-label="Chiudi modifica" class="w-10 h-10 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="editShoeForm" onsubmit="saveEditedShoe(event)" class="space-y-3">
+        <input type="hidden" id="editShoeId">
+        <div><label for="editShoeBrand" class="block text-sm text-slate-300 mb-1">Marca</label><input id="editShoeBrand" required maxlength="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
+        <div><label for="editShoeModel" class="block text-sm text-slate-300 mb-1">Modello</label><input id="editShoeModel" required maxlength="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
+        <div><label for="editShoeColors" class="block text-sm text-slate-300 mb-1">Colore o colori</label><input id="editShoeColors" required maxlength="200" placeholder="Es. Nero, Bianco" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><p class="text-xs text-slate-400 mt-1">Separa più colori con una virgola.</p></div>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button type="button" onclick="closeEditShoeModal()" class="rounded-xl bg-slate-800 text-white py-3 font-semibold">Annulla</button>
+          <button type="submit" class="rounded-xl bg-amber-500 text-slate-950 py-3 font-bold"><i class="fa-solid fa-check mr-1"></i>Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modale API Key -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
@@ -474,9 +494,10 @@
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
               </span>
-              <button onclick="deleteShoe('${shoe.id}')" aria-label="Elimina scarpa" title="Elimina scarpa" class="absolute top-2 right-2 w-10 h-10 bg-red-950/80 text-red-400 rounded-full flex items-center justify-center opacity-80 hover:opacity-100 transition">
-                <i class="fa-solid fa-trash text-xs"></i>
-              </button>
+              <div class="absolute top-2 right-2 flex gap-1.5">
+                <button type="button" data-edit-shoe="${escapeHtml(shoe.id)}" aria-label="Modifica scarpa" title="Modifica scarpa" class="w-10 h-10 bg-slate-950/90 border border-slate-600 text-amber-400 rounded-full flex items-center justify-center hover:bg-slate-800 transition"><i class="fa-solid fa-pen text-sm"></i></button>
+                <button type="button" data-delete-shoe="${escapeHtml(shoe.id)}" aria-label="Elimina scarpa" title="Elimina scarpa" class="w-10 h-10 bg-red-950/90 border border-red-900 text-red-400 rounded-full flex items-center justify-center hover:bg-red-900 transition"><i class="fa-solid fa-trash text-sm"></i></button>
+              </div>
             </div>
             <div class="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
               <div>
@@ -511,6 +532,44 @@
     }
 
     function filterArchive() { renderArchive(); }
+
+    function openEditShoeModal(id) {
+      const shoe = shoes.find(item => String(item.id) === String(id));
+      if (!shoe) return;
+      document.getElementById('editShoeId').value = String(shoe.id);
+      document.getElementById('editShoeBrand').value = shoe.brand || '';
+      document.getElementById('editShoeModel').value = shoe.model || '';
+      document.getElementById('editShoeColors').value = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || '');
+      document.getElementById('editShoeModal').classList.remove('hidden');
+      document.getElementById('editShoeBrand').focus();
+    }
+
+    function closeEditShoeModal() {
+      document.getElementById('editShoeModal').classList.add('hidden');
+    }
+
+    function saveEditedShoe(event) {
+      event.preventDefault();
+      const id = document.getElementById('editShoeId').value;
+      const shoe = shoes.find(item => String(item.id) === id);
+      if (!shoe) { closeEditShoeModal(); return; }
+      const brand = document.getElementById('editShoeBrand').value.trim();
+      const model = document.getElementById('editShoeModel').value.trim();
+      const colors = document.getElementById('editShoeColors').value.split(',').map(c => c.trim()).filter(Boolean);
+      if (!brand || !model || !colors.length) return;
+      shoe.brand = brand;
+      shoe.model = model;
+      shoe.colors = colors;
+      saveToStorage();
+      closeEditShoeModal();
+    }
+
+    document.addEventListener('click', event => {
+      const editButton = event.target.closest('[data-edit-shoe]');
+      if (editButton) { openEditShoeModal(editButton.dataset.editShoe); return; }
+      const deleteButton = event.target.closest('[data-delete-shoe]');
+      if (deleteButton) deleteShoe(deleteButton.dataset.deleteShoe);
+    });
 
     function deleteShoe(id) {
       if (confirm('Vuoi rimuovere questa scarpa dal tuo archivio?')) {
