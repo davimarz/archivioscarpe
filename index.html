@@ -379,6 +379,28 @@
       })[char]);
     }
 
+    // Raggruppa varianti cromatiche senza modificare i colori originali archiviati.
+    function normalizeColorGroup(value) {
+      const text = String(value || '').toLocaleLowerCase('it').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+      const groups = [
+        ['Nero', /\b(nero|nera|neri|nere|black|noir)\b/],
+        ['Bianco', /\b(bianco|bianca|bianchi|bianche|white|avorio|ivory|panna|crema)\b/],
+        ['Grigio', /\b(grigio|grigia|grigi|grigie|grey|gray|antracite|silver|argento)\b/],
+        ['Giallo', /\b(giallo|gialla|gialli|gialle|yellow|ocra|senape|mustard|oro|gold)\b/],
+        ['Rosso', /\b(rosso|rossa|rossi|rosse|red|bordeaux|burgundy|vinaccia|amaranto)\b/],
+        ['Blu', /\b(blu|blue|navy|azzurro|azzurra|azzurri|azzurre|celeste|cobalto)\b/],
+        ['Verde', /\b(verde|verdi|green|oliva|olive|smeraldo|menta|militare|khaki)\b/],
+        ['Rosa', /\b(rosa|pink|fucsia|fuchsia|magenta)\b/],
+        ['Viola', /\b(viola|purple|lilla|lavanda|violet)\b/],
+        ['Arancione', /\b(arancione|arancio|orange|corallo|coral)\b/],
+        ['Marrone', /\b(marrone|marroni|brown|cuoio|testa di moro|caffe|cioccolato|tan)\b/],
+        ['Beige', /\b(beige|sabbia|sand|nude|tortora|taupe|ecru)\b/]
+      ];
+      const found = groups.find(([, pattern]) => pattern.test(text));
+      return found ? found[0] : (text ? text.charAt(0).toLocaleUpperCase('it') + text.slice(1) : '');
+    }
+
     function updateArchiveFilterOptions() {
       const brandSelect = document.getElementById('brandFilter');
       const colorSelect = document.getElementById('colorFilter');
@@ -391,7 +413,7 @@
         if (brand && !brands.has(normalize(brand))) brands.set(normalize(brand), brand);
         const parts = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         parts.forEach(part => {
-          const color = String(part || '').trim();
+          const color = normalizeColorGroup(part);
           if (color && !colors.has(normalize(color))) colors.set(normalize(color), color);
         });
       });
@@ -428,10 +450,11 @@
           colorString.toLowerCase().includes(searchVal);
         const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
-        const matchesColor = !colorFilter || colors.some(c => String(c || '').trim().toLocaleLowerCase('it') === colorFilter);
+        const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
         return matchesCat && matchesSearch && matchesBrand && matchesColor;
       });
 
+      filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
       badge.textContent = `${shoes.length} paia`;
       document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} paia visualizzate`;
 
