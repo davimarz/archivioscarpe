@@ -165,6 +165,12 @@
           </button>
         </div>
 
+        <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2 text-left">
+          <p class="text-xs font-bold text-slate-200">Foto aggiuntive (massimo 4)</p>
+          <p class="text-[11px] text-slate-400">La prima foto rimane quella analizzata da Gemini. Puoi aggiungere altre inquadrature senza ripetere l'analisi.</p>
+          <input type="file" id="addExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'add')">
+          <div id="addExtraPhotosPreview" class="flex flex-wrap gap-2"></div>
+        </div>
         <form id="addShoeForm" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Marca</label>
@@ -299,6 +305,11 @@
         <div><label for="editShoeModel" class="block text-sm text-slate-300 mb-1">Modello</label><input id="editShoeModel" required maxlength="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
         <div><label for="editShoeColors" class="block text-sm text-slate-300 mb-1">Colore o colori</label><input id="editShoeColors" required maxlength="200" placeholder="Es. Nero, Bianco" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><p class="text-xs text-slate-400 mt-1">Separa più colori con una virgola.</p></div>
 <div><label for="editShoeSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="editShoeSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2">
+          <p class="text-xs font-semibold text-slate-300">Fotografie della scarpa (massimo 5)</p>
+          <div id="editShoePhotosPreview" class="flex flex-wrap gap-2"></div>
+          <input type="file" id="editExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'edit')">
+        </div>
         <div class="grid grid-cols-2 gap-2 pt-2">
           <button type="button" onclick="closeEditShoeModal()" class="rounded-xl bg-slate-800 text-white py-3 font-semibold">Annulla</button>
           <button type="submit" class="rounded-xl bg-amber-500 text-slate-950 py-3 font-bold"><i class="fa-solid fa-check mr-1"></i>Salva</button>
@@ -307,6 +318,15 @@
     </div>
   </div>
 
+  <div id="shoeGalleryModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-[60] bg-black/90 p-4 overflow-y-auto">
+    <div class="max-w-lg mx-auto space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h3 id="shoeGalleryTitle" class="text-sm font-bold text-white"></h3>
+        <button type="button" onclick="document.getElementById('shoeGalleryModal').classList.add('hidden')" class="w-11 h-11 rounded-xl bg-slate-800 text-white" aria-label="Chiudi galleria"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="shoeGalleryPhotos" class="space-y-3"></div>
+    </div>
+  </div>
   <!-- Modale API Key -->
   <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
@@ -383,6 +403,8 @@
     let savedData = localStorage.getItem('kicks_archive_v17');
     let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
     let selectedImageBase64 = null;
+    let addExtraImages = [];
+    let editingImages = [];
     const imagesByMode = { add: null, check: null };
     let currentCategory = 'all';
 
@@ -640,6 +662,7 @@
           <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
             <div class="relative aspect-square bg-slate-950 overflow-hidden">
               <img src="${shoe.image}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+              <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-2 left-2 rounded-lg bg-slate-950/90 border border-slate-600 px-2 py-1 text-[10px] text-white" aria-label="Apri foto scarpa"><i class="fa-solid fa-images mr-1"></i>${shoePhotos(shoe).length} foto</button>
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
               </span>
@@ -691,6 +714,8 @@
       document.getElementById('editShoeModel').value = shoe.model || '';
       document.getElementById('editShoeColors').value = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || '');
       document.getElementById('editShoeSku').value = shoe.sku || '';
+      editingImages = shoePhotos(shoe).slice();
+      renderPhotoThumbnails('edit');
       document.getElementById('editShoeModal').classList.remove('hidden');
       document.getElementById('editShoeBrand').focus();
     }
@@ -712,11 +737,15 @@
       shoe.model = model;
       shoe.colors = colors;
       shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
+      shoe.image = editingImages[0] || shoe.image;
+      shoe.images = editingImages.slice();
       saveToStorage();
       closeEditShoeModal();
     }
 
     document.addEventListener('click', event => {
+      const photoButton = event.target.closest('[data-view-shoe-photos]');
+      if (photoButton) { openShoeGallery(photoButton.dataset.viewShoePhotos); return; }
       const editButton = event.target.closest('[data-edit-shoe]');
       if (editButton) { openEditShoeModal(editButton.dataset.editShoe); return; }
       const deleteButton = event.target.closest('[data-delete-shoe]');
@@ -728,6 +757,93 @@
         shoes = shoes.filter(s => s.id !== id);
         saveToStorage();
       }
+    }
+
+    function shoePhotos(shoe) {
+      const photos = Array.isArray(shoe.images) ? shoe.images.filter(p => typeof p === 'string' && p) : [];
+      if (shoe.image && !photos.includes(shoe.image)) photos.unshift(shoe.image);
+      return photos.length ? photos : (shoe.image ? [shoe.image] : []);
+    }
+
+    function renderPhotoThumbnails(mode) {
+      const images = mode === 'edit' ? editingImages : addExtraImages;
+      const target = document.getElementById(mode === 'edit' ? 'editShoePhotosPreview' : 'addExtraPhotosPreview');
+      target.replaceChildren();
+      images.forEach((src, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-600';
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Foto ' + (index + 1);
+        img.className = 'w-full h-full object-cover';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'absolute top-0 right-0 bg-red-900 text-white rounded-bl-md w-7 h-7 text-xs';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Rimuovi foto ' + (index + 1));
+        remove.onclick = () => {
+          if (mode === 'edit' && images.length <= 1) { alert('Conserva almeno una fotografia.'); return; }
+          images.splice(index, 1);
+          renderPhotoThumbnails(mode);
+        };
+        wrapper.append(img, remove);
+        target.appendChild(wrapper);
+      });
+    }
+
+    function resizePhotoAsync(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Lettura foto non riuscita'));
+        reader.onload = event => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Immagine non valida'));
+          img.onload = () => {
+            const ratio = Math.min(1, 700 / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * ratio));
+            canvas.height = Math.max(1, Math.round(img.height * ratio));
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.68));
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function addExtraPhotos(input, mode) {
+      const target = mode === 'edit' ? editingImages : addExtraImages;
+      const max = mode === 'edit' ? 5 : 4;
+      const files = Array.from(input.files || []);
+      input.value = '';
+      if (!files.length) return;
+      if (target.length + files.length > max) {
+        alert('Massimo ' + max + ' foto ' + (mode === 'edit' ? 'totali' : 'aggiuntive') + ' per scarpa.');
+        return;
+      }
+      try {
+        for (const file of files) target.push(await resizePhotoAsync(file));
+        renderPhotoThumbnails(mode);
+      } catch (error) { alert('Impossibile caricare le foto: ' + error.message); }
+    }
+
+    function openShoeGallery(id) {
+      const shoe = shoes.find(item => String(item.id) === String(id));
+      if (!shoe) return;
+      const photos = shoePhotos(shoe);
+      const container = document.getElementById('shoeGalleryPhotos');
+      container.replaceChildren();
+      photos.forEach((src, index) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Foto ' + (index + 1) + ' di ' + shoe.brand + ' ' + shoe.model;
+        img.className = 'w-full rounded-xl object-contain max-h-[65vh] bg-slate-950';
+        img.loading = 'lazy';
+        container.appendChild(img);
+      });
+      document.getElementById('shoeGalleryTitle').textContent = shoe.brand + ' ' + shoe.model + ' — ' + photos.length + ' foto';
+      document.getElementById('shoeGalleryModal').classList.remove('hidden');
     }
 
     function resizeImage(file, maxWidth, callback) {
@@ -1002,6 +1118,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         notes: document.getElementById('addNotes').value.trim(),
         sku: normalizeSku(document.getElementById('addSku').value),
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
+        images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
         dateAdded: new Date().toISOString().split('T')[0]
       };
 
@@ -1014,6 +1131,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       document.getElementById('addErrorOverlay').classList.add('hidden');
       selectedImageBase64 = null;
       imagesByMode.add = null;
+      addExtraImages = [];
+      document.getElementById('addExtraPhotosInput').value = '';
+      renderPhotoThumbnails('add');
       switchTab('archive');
     }
 
@@ -1067,6 +1187,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         notes: candidate.notes || '',
         sku: normalizeSku(candidate.sku),
         image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
+        images: [candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b')],
         dateAdded: new Date().toISOString().split('T')[0]
       };
       shoes.unshift(newShoe);
