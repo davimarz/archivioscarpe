@@ -570,7 +570,7 @@
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
               </span>
-              <div class="absolute top-2 right-2 flex gap-1.5">
+              <div class="absolute bottom-2 right-2 flex flex-col gap-1.5">
                 <button type="button" data-edit-shoe="${escapeHtml(shoe.id)}" aria-label="Modifica scarpa" title="Modifica scarpa" class="w-10 h-10 bg-slate-950/90 border border-slate-600 text-amber-400 rounded-full flex items-center justify-center hover:bg-slate-800 transition"><i class="fa-solid fa-pen text-sm"></i></button>
                 <button type="button" data-delete-shoe="${escapeHtml(shoe.id)}" aria-label="Elimina scarpa" title="Elimina scarpa" class="w-10 h-10 bg-red-950/90 border border-red-900 text-red-400 rounded-full flex items-center justify-center hover:bg-red-900 transition"><i class="fa-solid fa-trash text-sm"></i></button>
               </div>
