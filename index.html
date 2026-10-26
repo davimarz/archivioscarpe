@@ -290,6 +290,13 @@
         </div>
       </div>
 
+      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
+        <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Trova scarpe simili dalla foto</h3>
+        <p class="text-xs text-slate-400">Confronto visivo locale ispirato alle funzioni di ricerca fotografica di Immich. Non richiede Gemini né invia fotografie a server. Funziona meglio con immagini simili per inquadratura e sfondo; non riconosce semanticamente modelli diversi.</p>
+        <button type="button" onclick="findVisuallySimilarShoes()" id="visualSearchButton" class="w-full py-3 rounded-xl bg-indigo-600 text-white text-xs font-bold">Confronta con il mio archivio</button>
+        <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+        <div id="visualSearchResults" class="space-y-2"></div>
+      </div>
       <div id="checkResultContainer" class="hidden space-y-4"></div>
     </section>
 
@@ -1163,6 +1170,111 @@
       reader.readAsDataURL(file);
     }
 
+    // dHash: firma percettiva compatta, calcolata solo in memoria.
+    // Confronta l'aspetto complessivo delle foto, non l'identità del modello.
+    function visualHashFromPixels(pixels, width = 9, height = 8) {
+      const gray = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          const offset = (y * width + x) * 4;
+          row.push(pixels[offset] * 0.299 + pixels[offset + 1] * 0.587 + pixels[offset + 2] * 0.114);
+        }
+        gray.push(row);
+      }
+      let hash = '';
+      for (let y = 0; y < height; y++) for (let x = 0; x < width - 1; x++) hash += gray[y][x] > gray[y][x + 1] ? '1' : '0';
+      return hash;
+    }
+
+    function visualHashDistance(a, b) {
+      if (typeof a !== 'string' || typeof b !== 'string' || a.length !== 64 || b.length !== 64) return 64;
+      let distance = 0;
+      for (let i = 0; i < 64; i++) if (a[i] !== b[i]) distance++;
+      return distance;
+    }
+
+    function imageVisualHash(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 9;
+            canvas.height = 8;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(image, 0, 0, 9, 8);
+            resolve(visualHashFromPixels(ctx.getImageData(0, 0, 9, 8).data));
+          } catch (error) { reject(error); }
+        };
+        image.onerror = () => reject(new Error('Impossibile leggere una fotografia.'));
+        image.src = src;
+      });
+    }
+
+    async function findVisuallySimilarShoes() {
+      const status = document.getElementById('visualSearchStatus');
+      const output = document.getElementById('visualSearchResults');
+      const button = document.getElementById('visualSearchButton');
+      const src = imagesByMode.check;
+      output.replaceChildren();
+      if (!src) { status.textContent = 'Prima scatta o carica una fotografia nella sezione Ricerche.'; return; }
+      if (!shoes.length) { status.textContent = 'L’archivio è vuoto.'; return; }
+      button.disabled = true;
+      status.textContent = 'Confronto visivo in corso...';
+      try {
+        const queryHash = await imageVisualHash(src);
+        const found = [];
+        let skipped = 0;
+        // Yield periodicamente per mantenere reattiva l'interfaccia mobile.
+        for (let index = 0; index < shoes.length; index++) {
+          const shoe = shoes[index];
+          let best = 64;
+          for (const photo of shoePhotos(shoe)) {
+            try {
+              const distance = visualHashDistance(queryHash, await imageVisualHash(photo));
+              best = Math.min(best, distance);
+            } catch { skipped++; }
+          }
+          if (best <= 18) found.push({ shoe, distance: best });
+          if (index % 8 === 7) {
+            status.textContent = 'Confrontate ' + (index + 1) + ' di ' + shoes.length + ' scarpe...';
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+        found.sort((a, b) => a.distance - b.distance);
+        const matches = found.slice(0, 8);
+        status.textContent = matches.length
+          ? matches.length + ' possibili somiglianze visive (ordinate per vicinanza).' + (skipped ? ' Alcune foto non sono state lette.' : '')
+          : 'Nessuna fotografia sufficientemente simile trovata.' + (skipped ? ' Alcune foto non sono state lette.' : '');
+        for (const { shoe, distance } of matches) {
+          const row = document.createElement('div');
+          row.className = 'flex gap-3 items-center rounded-xl bg-slate-950 border border-slate-700 p-2';
+          const img = document.createElement('img');
+          img.src = shoe.image || shoePhotos(shoe)[0];
+          img.alt = 'Foto scarpa';
+          img.className = 'w-16 h-16 rounded-lg object-cover';
+          const details = document.createElement('div');
+          details.className = 'flex-1 min-w-0';
+          const name = document.createElement('p');
+          name.className = 'text-xs font-bold text-white break-words';
+          name.textContent = [shoe.brand, shoe.model].filter(Boolean).join(' ') || 'Scarpa senza nome';
+          const desc = document.createElement('p');
+          desc.className = 'text-[11px] text-slate-400';
+          desc.textContent = distance <= 5 ? 'Foto molto simile' : distance <= 11 ? 'Foto simile' : 'Somiglianza possibile';
+          details.append(name, desc);
+          const view = document.createElement('button');
+          view.type = 'button';
+          view.className = 'px-3 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white';
+          view.textContent = 'Dettagli';
+          view.onclick = () => openShoeDetail(shoe.id);
+          row.append(img, details, view);
+          output.appendChild(row);
+        }
+      } catch (error) { status.textContent = 'Confronto non riuscito: ' + error.message; }
+      finally { button.disabled = false; }
+    }
+
     function handleImageSelected(input, mode) {
       const file = input.files[0];
       if (!file) return;
@@ -1170,6 +1282,7 @@
       resizeImage(file, 700, async (base64Url) => {
         selectedImageBase64 = base64Url;
         imagesByMode[mode] = base64Url;
+        if (mode === 'check') { document.getElementById('visualSearchResults').replaceChildren(); document.getElementById('visualSearchStatus').textContent = ''; }
         document.getElementById(mode + 'OcrText').classList.add('hidden');
         document.getElementById(mode + 'OcrSkuPanel').classList.add('hidden');
         document.getElementById(mode + 'OcrStatus').textContent = '';
