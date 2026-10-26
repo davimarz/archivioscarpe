@@ -158,6 +158,18 @@
           </div>
         </div>
 
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+          <div class="flex justify-between items-center gap-2">
+            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
+            <button type="button" id="addOcrButton" onclick="runShoeOCR('add')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
+          </div>
+          <p id="addOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+          <textarea id="addOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+          <div id="addOcrSkuPanel" class="hidden flex gap-2 items-center">
+            <input id="addOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
+            <button type="button" onclick="applyOcrSku('add')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
+          </div>
+        </div>
         <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
         <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
 
@@ -251,6 +263,18 @@
           </div>
         </div>
 
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+          <div class="flex justify-between items-center gap-2">
+            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
+            <button type="button" id="checkOcrButton" onclick="runShoeOCR('check')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
+          </div>
+          <p id="checkOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+          <textarea id="checkOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+          <div id="checkOcrSkuPanel" class="hidden flex gap-2 items-center">
+            <input id="checkOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
+            <button type="button" onclick="applyOcrSku('check')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
+          </div>
+        </div>
         <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
         <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
 
@@ -992,6 +1016,84 @@
       document.getElementById('shoeGalleryModal').classList.remove('hidden');
     }
 
+    // OCR locale nel browser: Tesseract è caricato solo su richiesta, senza chiavi API.
+    let shoeOcrLoader = null;
+    function loadShoeOcr() {
+      if (window.Tesseract) return Promise.resolve(window.Tesseract);
+      if (shoeOcrLoader) return shoeOcrLoader;
+      shoeOcrLoader = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        script.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Libreria OCR non disponibile'));
+        script.onerror = () => reject(new Error('Impossibile scaricare OCR: verifica la connessione'));
+        document.head.appendChild(script);
+      }).catch(error => { shoeOcrLoader = null; throw error; });
+      return shoeOcrLoader;
+    }
+
+    function suggestSkuFromOcr(text) {
+      const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      // Solo candidati alfanumerici, mai codici a barre numerici o numeri seriali.
+      const candidates = [];
+      for (const line of lines) {
+        const labeled = line.match(/(?:SKU|STYLE(?:\s*(?:NO|CODE|#))?|ARTICLE|ART(?:ICOLO)?\.?|ITEM(?:\s*(?:NO|#))?|COD(?:ICE)?\.?\s*ART(?:ICOLO)?\.?)[\s:=-]*([A-Z0-9][A-Z0-9-]{4,22})/i);
+        if (labeled) candidates.push(labeled[1]);
+      }
+      for (const candidate of candidates) {
+        const sku = normalizeSku(candidate);
+        if (/[A-Z]/.test(sku) && /\d/.test(sku) && !/^\d{8,14}$/.test(sku)) return sku;
+      }
+      return '';
+    }
+
+    async function runShoeOCR(mode) {
+      const src = imagesByMode[mode];
+      const status = document.getElementById(mode + 'OcrStatus');
+      const button = document.getElementById(mode + 'OcrButton');
+      const output = document.getElementById(mode + 'OcrText');
+      const skuPanel = document.getElementById(mode + 'OcrSkuPanel');
+      if (!src) { status.textContent = 'Carica prima una fotografia dell’etichetta.'; return; }
+      button.disabled = true;
+      output.classList.add('hidden');
+      skuPanel.classList.add('hidden');
+      try {
+        status.textContent = 'Caricamento motore OCR...';
+        const engine = await loadShoeOcr();
+        status.textContent = 'Lettura del testo in corso...';
+        const worker = await engine.createWorker('eng');
+        let result;
+        try { result = await worker.recognize(src); }
+        finally { await worker.terminate(); }
+        const text = (result.data?.text || '').trim();
+        output.value = text;
+        output.classList.remove('hidden');
+        const sku = suggestSkuFromOcr(text);
+        if (sku) {
+          document.getElementById(mode + 'OcrSku').value = sku;
+          skuPanel.classList.remove('hidden');
+        }
+        status.textContent = text ? (sku ? 'Testo letto. Controlla il codice suggerito prima di applicarlo.' : 'Testo letto. Nessuno SKU sicuro individuato; verifica il testo manualmente.') : 'Nessun testo riconosciuto: riprova con una foto più nitida.';
+      } catch (error) {
+        status.textContent = 'OCR non disponibile: ' + error.message + '. Gemini continua a funzionare normalmente.';
+      } finally { button.disabled = false; }
+    }
+
+    function applyOcrSku(mode) {
+      const sku = normalizeSku(document.getElementById(mode + 'OcrSku').value);
+      if (!sku || !/[A-Z]/.test(sku) || !/\d/.test(sku)) { alert('Verifica il codice articolo prima di utilizzarlo.'); return; }
+      if (mode === 'add') {
+        const input = document.getElementById('addSku');
+        if (input.value && normalizeSku(input.value) !== sku && !confirm('Sostituire lo SKU già individuato da Gemini?')) return;
+        input.value = sku;
+      } else {
+        if (!lastCheckedCandidate) { alert('Completa prima il riconoscimento della scarpa con Gemini, poi applica lo SKU OCR.'); return; }
+        if (lastCheckedCandidate.sku && normalizeSku(lastCheckedCandidate.sku) !== sku && !confirm('Sostituire lo SKU rilevato da Gemini?')) return;
+        const candidate = { ...lastCheckedCandidate, sku };
+        evaluatePurchase(candidate);
+      }
+      document.getElementById(mode + 'OcrStatus').textContent = 'SKU applicato. Verifica che corrisponda all’etichetta originale.';
+    }
+
     function resizeImage(file, maxWidth, callback) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -1022,6 +1124,9 @@
       resizeImage(file, 700, async (base64Url) => {
         selectedImageBase64 = base64Url;
         imagesByMode[mode] = base64Url;
+        document.getElementById(mode + 'OcrText').classList.add('hidden');
+        document.getElementById(mode + 'OcrSkuPanel').classList.add('hidden');
+        document.getElementById(mode + 'OcrStatus').textContent = '';
         document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
 
         if (mode === 'add') {
