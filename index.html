@@ -280,7 +280,7 @@
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
         <div id="backupSharePrompt" class="hidden rounded-xl border border-amber-500/40 bg-slate-950 p-3 space-y-3" role="group" aria-label="Condivisione backup">
           <p class="text-sm font-semibold text-slate-100">Vuoi condividere anche questo backup?</p>
-          <p class="text-xs text-slate-400">Puoi inviarlo con WhatsApp, Gmail, Google Drive o altre app disponibili sul dispositivo.</p>
+          <p class="text-xs text-slate-400">Puoi inviarlo con WhatsApp, Gmail, Google Drive o altre app disponibili sul dispositivo. Se Android blocca la condivisione diretta, apri File &gt; Download e condividi il backup già scaricato.</p>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" onclick="shareExportedBackup()" class="min-h-11 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-share-nodes mr-1"></i>Condividi file</button>
             <button type="button" onclick="dismissBackupShare()" class="min-h-11 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold">Non ora</button>
@@ -405,7 +405,7 @@
       }
       if (typeof navigator.share !== 'function' ||
           (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [lastExportedBackupFile] }))) {
-        feedback.textContent = 'La condivisione diretta dei file non è supportata da questo browser. Apri il file scaricato e usa Condividi dal telefono.';
+        feedback.textContent = 'Android non consente la condivisione diretta del file JSON. Apri File > Download, seleziona il backup e premi Condividi per inviarlo con WhatsApp, Gmail o Drive.';
         return;
       }
       try {
@@ -414,7 +414,7 @@
         feedback.textContent = 'Condivisione del backup completata.';
       } catch (error) {
         if (error.name !== 'AbortError') {
-          feedback.textContent = 'Impossibile condividere il file: ' + error.message;
+          feedback.textContent = 'Condivisione diretta non autorizzata da Android. Il backup scaricato non viene modificato. Apri File > Download, tieni premuto sul file "archivio scarpe" e scegli Condividi (WhatsApp, Gmail o Drive).';
         }
       }
     }
