@@ -941,10 +941,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const alreadyOwned = shoes.some(shoe => normalize(shoe.brand) === normalize(brand) &&
         normalize(shoe.model) === normalize(model) &&
         sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors));
-      if (alreadyOwned) {
-        alert('Questa scarpa è già presente nell’archivio.');
-        return;
-      }
+      if (alreadyOwned && !confirm('Questa scarpa è già presente nell’archivio. Vuoi aggiungere comunque un altro paio identico?')) return;
       const newShoe = {
         id: Date.now().toString(),
         brand, model,
@@ -1031,7 +1028,18 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
 
       const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
-      const canSave = Boolean(candidateBrand && candidateModel && candidateColors.length && exactMatches.length === 0);
+      const canSave = Boolean(candidateBrand && candidateModel && candidateColors.length);
+      const saveLevel = exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
+      const saveButtonClass = saveLevel === 'identical'
+        ? 'bg-red-600 hover:bg-red-500 text-white'
+        : saveLevel === 'similar'
+          ? 'bg-orange-500 hover:bg-orange-400 text-slate-950'
+          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950';
+      const saveButtonText = saveLevel === 'identical'
+        ? 'Aggiungi comunque (scarpa identica)'
+        : saveLevel === 'similar'
+          ? 'Aggiungi all’archivio (scarpe simili)'
+          : 'Aggiungi all’archivio (scarpa nuova)';
       if (canSave) lastCheckedCandidate = { ...candidate, image: candidate.image || imagesByMode.check };
 
       container.innerHTML = `
@@ -1054,10 +1062,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           </div>
 
           ${canSave ? `
-            <button type="button" onclick="saveCheckedShoe()" class="mt-4 w-full min-h-12 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition">
-              <i class="fa-solid fa-plus"></i> Salva questa scarpa nell'archivio
+            <button type="button" onclick="saveCheckedShoe()" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-plus"></i> ${saveButtonText}
             </button>
-            <p class="mt-2 text-[11px] text-slate-400 text-center">Salva marca, modello, colori e fotografia riconosciuti.</p>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">${saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa corrispondente: salva marca, modello, colori e foto.'}</p>
           ` : ''}
 
           ${allMatches.length > 0 ? `
