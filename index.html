@@ -595,7 +595,7 @@
       if (rawText.includes(raw) || searchText.includes(normalizedQuery) ||
           brand.includes(brandQuery) || (modelQuery && model.includes(modelQuery))) return true;
       // Ogni termine deve essere presente: "NB 9060 grey" trova "New Balance 9060 grigio".
-      const queryWords = normalizedQuery.replace(/\bnew balance\b/g, 'newbalance').split(' ').filter(Boolean);
+      const queryWords = normalizedQuery.replace(/\bnew balance\b|\bnb\b/g, 'newbalance').split(' ').filter(Boolean);
       const searchable = searchText.replace(/\bnew balance\b/g, 'newbalance');
       return queryWords.every(word => searchable.split(' ').some(token => token.startsWith(word)));
     }
