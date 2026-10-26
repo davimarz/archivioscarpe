@@ -1015,9 +1015,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         text: 'text-emerald-400',
         bg: 'bg-emerald-500/20',
         icon: 'fa-circle-check',
-        badge: 'VIA LIBERA ALL\'ACQUISTO',
-        title: 'Scarpa Inedita per il tuo Guardaroba!',
-        desc: 'Nessun doppione rilevato per marca, modello o combinazione di colori.'
+        badge: 'NESSUNA SCARPA UGUALE O SIMILE',
+        title: 'Non hai questa scarpa nell’archivio',
+        desc: 'Non risultano scarpe identiche né simili nell’archivio. Puoi aggiungerla con il pulsante verde.'
       };
 
       if (!candidateBrand || !candidateModel || candidateColors.length === 0) {
@@ -1030,17 +1030,17 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           icon: 'fa-triangle-exclamation',
           badge: 'DOPPIONE IDENTICO',
           title: 'Ce l\'hai già nel tuo armadio!',
-          desc: 'Possiedi già esattamente questa marca e questo modello.'
+          desc: 'È già presente una scarpa con la stessa marca, lo stesso modello e gli stessi colori. Puoi aggiungerne un altro paio confermando.'
         };
-      } else if (highSimilarity.length > 0) {
+      } else if (highSimilarity.length > 0 || mediumSimilarity.length > 0) {
         status = {
           border: 'border-amber-500/40',
           text: 'text-amber-400',
           bg: 'bg-amber-500/20',
           icon: 'fa-circle-exclamation',
-          badge: 'LOOK MOLTO SIMILE',
-          title: 'Attenzione alla somiglianza',
-          desc: 'Hai scarpe della stessa categoria con palette cromatica quasi identica.'
+          badge: 'SCARPE SIMILI PRESENTI',
+          title: 'Hai già scarpe simili nell’archivio',
+          desc: 'Sono state trovate scarpe simili per modello, marca o colori. Puoi comunque aggiungere questa scarpa.'
         };
       }
 
@@ -1057,7 +1057,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         ? 'Aggiungi comunque (scarpa identica)'
         : saveLevel === 'similar'
           ? 'Aggiungi all’archivio (scarpe simili)'
-          : 'Aggiungi all’archivio (scarpa nuova)';
+          : 'Aggiungi all’archivio — nessun doppione';
       if (canSave) lastCheckedCandidate = { ...candidate, image: candidate.image || imagesByMode.check };
 
       container.innerHTML = `
@@ -1083,7 +1083,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             <button type="button" onclick="${incomplete ? 'completeCheckedShoe()' : 'saveCheckedShoe()'}" class="mt-4 w-full min-h-12 rounded-xl ${incomplete ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
               <i class="fa-solid fa-plus"></i> ${incomplete ? 'Completa i dati e aggiungi all’archivio' : saveButtonText}
             </button>
-            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Modello non riconosciuto: verifica i dati. Il confronto con l’archivio non è ancora conclusivo.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa corrispondente: salva marca, modello, colori e foto.'}</p>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Modello non riconosciuto: verifica i dati. Il confronto con l’archivio non è ancora conclusivo.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa identica o simile trovata. Salva marca, modello, colori e foto.'}</p>
           ` : ''}
 
           ${allMatches.length > 0 ? `
