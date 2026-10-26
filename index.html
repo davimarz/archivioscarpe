@@ -1049,11 +1049,15 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         alert('Completa marca, modello e colori prima di salvare.');
         return;
       }
-      const normalize = value => String(value || '').toLocaleLowerCase('it').trim().replace(/\\s+/g, ' ');
-      const sameColors = (a, b) => a.map(normalize).sort().join('|') === b.map(normalize).sort().join('|');
-      const alreadyOwned = shoes.some(shoe => normalize(shoe.brand) === normalize(brand) &&
-        normalize(shoe.model) === normalize(model) &&
-        sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors));
+      const candidateSku = normalizeSku(candidate.sku);
+      const sameColors = (a, b) => a.map(canonicalShoeColor).sort().join('|') === b.map(canonicalShoeColor).sort().join('|');
+      const alreadyOwned = shoes.some(shoe => {
+        if (canonicalShoeBrand(shoe.brand) !== canonicalShoeBrand(brand)) return false;
+        const ownedSku = normalizeSku(shoe.sku);
+        if (candidateSku && ownedSku) return candidateSku === ownedSku;
+        return canonicalShoeModel(shoe.model) === canonicalShoeModel(model) &&
+          sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors);
+      });
       if (alreadyOwned && !confirm('Questa scarpa è già presente nell’archivio. Vuoi aggiungere comunque un altro paio identico?')) return;
       const newShoe = {
         id: Date.now().toString(),
