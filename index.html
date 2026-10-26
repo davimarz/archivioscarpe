@@ -1020,6 +1020,8 @@
       const output = document.getElementById(mode + 'OcrText');
       const skuPanel = document.getElementById(mode + 'OcrSkuPanel');
       if (!src) { status.textContent = 'Carica prima una fotografia dell’etichetta.'; return; }
+      if (button.disabled) return;
+      const sourceAtStart = src;
       button.disabled = true;
       output.classList.add('hidden');
       skuPanel.classList.add('hidden');
@@ -1031,6 +1033,7 @@
         let result;
         try { result = await worker.recognize(src); }
         finally { await worker.terminate(); }
+        if (imagesByMode[mode] !== sourceAtStart) return;
         const text = (result.data?.text || '').trim();
         output.value = text;
         output.classList.remove('hidden');
@@ -1175,7 +1178,7 @@
         latestVisualMatches = found.slice(0, 8);
         const matches = latestVisualMatches;
         status.textContent = matches.length
-          ? matches.length + ' possibili somiglianze visive (ordinate per vicinanza).' + (skipped ? ' Alcune foto non sono state lette.' : '')
+          ? matches.length + ' possibili somiglianze visive, da verificare.' + (skipped ? ' Alcune foto non sono state lette.' : '')
           : 'Nessuna fotografia sufficientemente simile trovata.' + (skipped ? ' Alcune foto non sono state lette.' : '');
         if (lastCheckedCandidate && imagesByMode.check === src && runId === activeVisualRun) evaluatePurchase(lastCheckedCandidate);
         if (runId !== activeVisualRun) return;
@@ -1446,6 +1449,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         document.getElementById('addColors').value = colorsStr;
         document.getElementById('addNotes').value = notes;
         document.getElementById('addSku').value = sku;
+        if (!sku && imagesByMode.add && !document.getElementById('addOcrText').value) {
+          document.getElementById('addOcrStatus').textContent = 'SKU non rilevato: controllo OCR complementare in corso...';
+          void runShoeOCR('add', true);
+        }
       } else if (targetMode === 'check') {
         evaluatePurchase({
           brand: brand,
@@ -1653,6 +1660,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           ? 'Aggiungi all’archivio (scarpe simili)'
           : 'Aggiungi all’archivio — nessun doppione';
       if (canSave) lastCheckedCandidate = { ...candidate, image: candidate.image || imagesByMode.check };
+      else lastCheckedCandidate = null;
 
       container.innerHTML = `
         <div class="bg-slate-900 border ${status.border} rounded-2xl p-4 shadow-xl">
