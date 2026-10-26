@@ -1177,7 +1177,8 @@
         status.textContent = matches.length
           ? matches.length + ' possibili somiglianze visive (ordinate per vicinanza).' + (skipped ? ' Alcune foto non sono state lette.' : '')
           : 'Nessuna fotografia sufficientemente simile trovata.' + (skipped ? ' Alcune foto non sono state lette.' : '');
-        if (lastCheckedCandidate && imagesByMode.check === src) evaluatePurchase(lastCheckedCandidate);
+        if (lastCheckedCandidate && imagesByMode.check === src && runId === activeVisualRun) evaluatePurchase(lastCheckedCandidate);
+        if (runId !== activeVisualRun) return;
         for (const { shoe, distance } of matches) {
           const row = document.createElement('div');
           row.className = 'flex gap-3 items-center rounded-xl bg-slate-950 border border-slate-700 p-2';
@@ -1213,6 +1214,7 @@
         selectedImageBase64 = base64Url;
         imagesByMode[mode] = base64Url;
         if (mode === 'check') { activeVisualRun++; latestVisualMatches = []; lastCheckedCandidate = null; document.getElementById('visualSearchResults').replaceChildren(); document.getElementById('visualSearchStatus').textContent = ''; void findVisuallySimilarShoes(); }
+        document.getElementById(mode + 'OcrText').value = '';
         document.getElementById(mode + 'OcrText').classList.add('hidden');
         document.getElementById(mode + 'OcrSkuPanel').classList.add('hidden');
         document.getElementById(mode + 'OcrStatus').textContent = '';
@@ -1562,7 +1564,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       lastCheckedCandidate = null;
       container.classList.remove('hidden');
 
-      const candColors = (candidate.colors || []).map(c => c.toLowerCase().trim());
+      const candColors = (Array.isArray(candidate.colors) ? candidate.colors : String(candidate.colors || '').split(',')).map(c => String(c).toLowerCase().trim()).filter(Boolean);
       const candBrand = (candidate.brand || '').toLowerCase().trim();
       const candModel = (candidate.model || '').toLowerCase().trim();
 
@@ -1590,7 +1592,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         if (brandEqual && skuEqual) {
           exactMatches.push({ shoe: myShoe, reason: 'Stesso codice articolo / SKU' });
         } else if (brandEqual && modelEqual && colorsEqual && !skuDifferent) {
-          exactMatches.push({ shoe: myShoe, reason: 'Stessa marca, modello e colorazione' });
+          highSimilarity.push({ shoe: myShoe, reason: 'Stessa marca, modello e colori: SKU non verificato' });
         } else if (brandEqual && modelEqual) {
           highSimilarity.push({ shoe: myShoe, reason: skuDifferent ? 'Stesso modello, SKU differente' : 'Stesso modello, colorazione differente' });
         } else if (brandEqual && shared.length && myShoe.category === candidate.category) {
@@ -1598,14 +1600,18 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
       });
 
+      const matchedIds = new Set([...exactMatches, ...highSimilarity, ...mediumSimilarity].map(m => String(m.shoe.id)));
+      latestVisualMatches.forEach(v => {
+        if (!matchedIds.has(String(v.shoe.id))) mediumSimilarity.push({ shoe: v.shoe, reason: 'Foto visivamente simile (non prova di doppione)' });
+      });
       let status = {
         border: 'border-emerald-500/40',
         text: 'text-emerald-400',
         bg: 'bg-emerald-500/20',
         icon: 'fa-circle-check',
-        badge: 'NESSUNA SCARPA UGUALE O SIMILE',
-        title: 'Non hai questa scarpa nell’archivio',
-        desc: 'Non risultano scarpe identiche né simili nell’archivio. Puoi aggiungerla con il pulsante verde.'
+        badge: 'NESSUNA CORRISPONDENZA RILEVATA',
+        title: 'Nessuna corrispondenza nei dati disponibili',
+        desc: 'Nessuna corrispondenza rilevata nei dati disponibili. Il confronto fotografico può essere ancora in corso e non esclude tutti i doppioni.'
       };
 
       if (!candidateBrand || !candidateModel || candidateColors.length === 0) {
@@ -1616,9 +1622,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           text: 'text-red-400',
           bg: 'bg-red-500/20',
           icon: 'fa-triangle-exclamation',
-          badge: 'DOPPIONE IDENTICO',
+          badge: 'DOPPIONE PROBABILE: SKU CORRISPONDENTE',
           title: 'Ce l\'hai già nel tuo armadio!',
-          desc: 'È già presente una scarpa con la stessa marca, lo stesso modello e gli stessi colori. Puoi aggiungerne un altro paio confermando.'
+          desc: 'Marca e codice articolo coincidono. Verifica la variante prima di aggiungere un altro paio.'
         };
       } else if (highSimilarity.length > 0 || mediumSimilarity.length > 0) {
         status = {
@@ -1626,9 +1632,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           text: 'text-amber-400',
           bg: 'bg-amber-500/20',
           icon: 'fa-circle-exclamation',
-          badge: 'SCARPE SIMILI PRESENTI',
+          badge: 'POSSIBILI CORRISPONDENZE',
           title: 'Hai già scarpe simili nell’archivio',
-          desc: 'Sono state trovate scarpe simili per modello, marca o colori. Puoi comunque aggiungere questa scarpa.'
+          desc: 'Sono presenti somiglianze nei dati o nelle fotografie. Controlla le corrispondenze prima di salvare.'
         };
       }
 
@@ -1642,7 +1648,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           ? 'bg-orange-500 hover:bg-orange-400 text-slate-950'
           : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950';
       const saveButtonText = saveLevel === 'identical'
-        ? 'Aggiungi comunque (scarpa identica)'
+        ? 'Aggiungi comunque (SKU corrispondente)'
         : saveLevel === 'similar'
           ? 'Aggiungi all’archivio (scarpe simili)'
           : 'Aggiungi all’archivio — nessun doppione';
@@ -1666,6 +1672,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             <p class="text-xs font-bold text-slate-200">${candidate.brand || 'Marca n.d.'} - ${candidate.model || 'Modello n.d.'}</p>
             <p class="text-[11px] text-amber-400">Colori: ${candColors.join(', ') || 'n.d.'}</p>
             <p class="text-[11px] text-slate-300">SKU: ${escapeHtml(candidateSku || 'non rilevato')}</p>
+            <p class="text-[11px] text-slate-400 mt-1">Verifica incrociata: SKU, marca, modello, colori e fotografie. La somiglianza visiva da sola non prova un doppione.</p>
           </div>
 
           ${canSave ? `
