@@ -317,7 +317,14 @@
       <p class="text-xs text-slate-400 leading-relaxed">
         Inserisci la tua chiave API gratuita generata su <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
       </p>
-      <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+      <label for="apiKeyInput" class="block text-xs font-semibold text-slate-300">Chiave API Gemini</label>
+      <div class="flex items-center gap-2">
+        <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="AIzaSy..." class="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+        <button type="button" id="toggleApiKeyBtn" onclick="toggleApiKeyVisibility()" aria-label="Mostra chiave API" aria-pressed="false" class="shrink-0 w-11 h-11 rounded-xl border border-slate-700 bg-slate-800 text-slate-200 flex items-center justify-center"><i id="apiKeyEyeIcon" class="fa-solid fa-eye"></i></button>
+      </div>
+      <label for="apiAccountEmail" class="block text-xs font-semibold text-slate-300">Email dell'account Google usato per Gemini</label>
+      <input type="email" id="apiAccountEmail" autocomplete="email" placeholder="nome@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+      <p class="text-[11px] text-slate-400">L'email è inserita manualmente: una chiave API Gemini non permette di conoscere automaticamente l'account Google proprietario.</p>
       <div class="flex gap-2">
         <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva e Attiva</button>
         <button onclick="clearApiKey()" class="py-2 px-3 bg-slate-800 text-slate-400 text-xs rounded-xl hover:text-red-400">Rimuovi</button>
@@ -1118,7 +1125,20 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
 
     function openApiKeyModal() {
       document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('apiAccountEmail').value = localStorage.getItem('gemini_account_email') || '';
+      document.getElementById('apiKeyInput').type = 'password';
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-pressed', 'false');
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-label', 'Mostra chiave API');
+      document.getElementById('apiKeyEyeIcon').className = 'fa-solid fa-eye';
       document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('apiKeyInput');
+      const visible = input.type === 'password';
+      input.type = visible ? 'text' : 'password';
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-pressed', String(visible));
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-label', visible ? 'Nascondi chiave API' : 'Mostra chiave API');
+      document.getElementById('apiKeyEyeIcon').className = visible ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
     }
     function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
     function saveApiKey() {
@@ -1127,6 +1147,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         alert("Inserisci una chiave valida.");
         return;
       }
+      const email = document.getElementById('apiAccountEmail').value.trim();
+      if (email && !document.getElementById('apiAccountEmail').checkValidity()) {
+        alert('Inserisci un indirizzo email valido.');
+        return;
+      }
+      localStorage.setItem('gemini_account_email', email);
       localStorage.setItem('gemini_api_key', key);
       updateKeyUI();
       closeApiKeyModal();
@@ -1172,6 +1198,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
     }
     function clearApiKey() {
       localStorage.removeItem('gemini_api_key');
+      localStorage.removeItem('gemini_account_email');
+      document.getElementById('apiAccountEmail').value = '';
       document.getElementById('apiKeyInput').value = '';
       updateKeyUI();
       closeApiKeyModal();
