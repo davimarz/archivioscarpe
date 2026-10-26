@@ -190,6 +190,7 @@
               <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
+<div><label for="addSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="addSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note & Dettagli particolari</label>
             <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
@@ -297,6 +298,7 @@
         <div><label for="editShoeBrand" class="block text-sm text-slate-300 mb-1">Marca</label><input id="editShoeBrand" required maxlength="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
         <div><label for="editShoeModel" class="block text-sm text-slate-300 mb-1">Modello</label><input id="editShoeModel" required maxlength="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
         <div><label for="editShoeColors" class="block text-sm text-slate-300 mb-1">Colore o colori</label><input id="editShoeColors" required maxlength="200" placeholder="Es. Nero, Bianco" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><p class="text-xs text-slate-400 mt-1">Separa più colori con una virgola.</p></div>
+<div><label for="editShoeSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="editShoeSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
         <div class="grid grid-cols-2 gap-2 pt-2">
           <button type="button" onclick="closeEditShoeModal()" class="rounded-xl bg-slate-800 text-white py-3 font-semibold">Annulla</button>
           <button type="submit" class="rounded-xl bg-amber-500 text-slate-950 py-3 font-bold"><i class="fa-solid fa-check mr-1"></i>Salva</button>
@@ -537,6 +539,8 @@
     }
 
     // Ricerca locale: sinonimi di marche, modelli e colori, senza chiamate API.
+    function normalizeSku(value) { return String(value || '').trim().toUpperCase().replace(/\s+/g, '').replace(/[‐‑–—]/g, '-'); }
+
     function normalizeShoeText(value) {
       return String(value || '').toLocaleLowerCase('it').normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
@@ -587,8 +591,8 @@
       const model = canonicalShoeModel(shoe.model);
       const colors = (Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','))
         .map(canonicalShoeColor);
-      const rawText = normalizeShoeText([shoe.brand, shoe.model, ...colors].join(' '));
-      const searchText = [brand, model, ...colors].join(' ');
+      const rawText = normalizeShoeText([shoe.brand, shoe.model, shoe.sku || '', ...colors].join(' '));
+      const searchText = [brand, model, normalizeShoeText(shoe.sku), ...colors].join(' ');
       const normalizedQuery = canonicalShoeColor(raw);
       const brandQuery = canonicalShoeBrand(raw);
       const modelQuery = canonicalShoeModel(raw);
@@ -650,6 +654,7 @@
                 <h3 class="text-xs font-semibold text-slate-100 line-clamp-1">${escapeHtml(shoe.model)}</h3>
               </div>
               <div class="flex flex-wrap gap-1 mt-1">
+                ${shoe.sku ? `<p class="text-[10px] text-slate-400">SKU: ${escapeHtml(shoe.sku)}</p>` : ''}
                 ${colorsList.map(c => `
                   <span class="text-[9px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded-md font-medium">
                     ${escapeHtml(String(c).trim())}
@@ -685,6 +690,7 @@
       document.getElementById('editShoeBrand').value = shoe.brand || '';
       document.getElementById('editShoeModel').value = shoe.model || '';
       document.getElementById('editShoeColors').value = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || '');
+      document.getElementById('editShoeSku').value = shoe.sku || '';
       document.getElementById('editShoeModal').classList.remove('hidden');
       document.getElementById('editShoeBrand').focus();
     }
@@ -705,6 +711,7 @@
       shoe.brand = brand;
       shoe.model = model;
       shoe.colors = colors;
+      shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
       saveToStorage();
       closeEditShoeModal();
     }
@@ -812,7 +819,8 @@
 "modello": nome commerciale esatto e versione, se leggibile (stringa);
 "categoria": una tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro";
 "colori": elenco dei colori della variante, separati da virgola, traducendo i nomi in italiano se possibile (stringa);
-"note": altri dettagli, codice SKU, testo dell'etichetta utile (stringa).
+"sku": codice articolo del produttore (style code), NON EAN, UPC o seriale; vuoto se non leggibile (stringa);
+"note": altri dettagli dell'etichetta (stringa).
 Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice colore è alfanumerico, non confonderlo con il colore visivo. Se un dato è incerto, lascialo vuoto.`;
       const requestBody = {
         contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
@@ -917,7 +925,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
                 modello: str(result.modello || result.model),
                 categoria: allowed.find(cat => cat.toLowerCase() === str(result.categoria).toLowerCase()) || 'Casual / Altro',
                 colori: str(result.colori || result.colore || result.colors),
-                note: str(result.note)
+                note: str(result.note),
+                sku: str(result.sku || result.codice_articolo || result.style_code)
               };
             } catch (parseError) {
               lastErrorMsg = 'Risposta AI non interpretabile. Riprova con una foto più nitida.';
@@ -954,6 +963,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const model = data.modello || '';
       const category = data.categoria || 'Sport / Running';
       const notes = data.note || '';
+      const sku = normalizeSku(data.sku);
       const colorsStr = data.colori || '';
 
       if (targetMode === 'add') {
@@ -962,13 +972,16 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         document.getElementById('addCategory').value = category;
         document.getElementById('addColors').value = colorsStr;
         document.getElementById('addNotes').value = notes;
+        document.getElementById('addSku').value = sku;
       } else if (targetMode === 'check') {
         evaluatePurchase({
           brand: brand,
           model: model,
           category: category,
           colors: colorsStr.split(',').map(c => c.trim()),
-          image: imagesByMode.check
+          image: imagesByMode.check,
+          sku,
+          notes
         });
       }
     }
@@ -987,6 +1000,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         category: document.getElementById('addCategory').value,
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
+        sku: normalizeSku(document.getElementById('addSku').value),
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         dateAdded: new Date().toISOString().split('T')[0]
       };
@@ -1013,7 +1027,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       if (model === null) return;
       const colors = prompt('Colori, separati da virgola:', Array.isArray(lastCheckedCandidate.colors) ? lastCheckedCandidate.colors.join(', ') : (lastCheckedCandidate.colors || ''));
       if (colors === null) return;
-      const updated = { ...lastCheckedCandidate, brand: brand.trim(), model: model.trim(), colors: colors.split(',').map(c => c.trim()).filter(Boolean) };
+      const sku = prompt('Codice articolo / SKU (facoltativo):', lastCheckedCandidate.sku || '');
+      if (sku === null) return;
+      const updated = { ...lastCheckedCandidate, brand: brand.trim(), model: model.trim(), sku: normalizeSku(sku), colors: colors.split(',').map(c => c.trim()).filter(Boolean) };
       if (!updated.brand || !updated.model || !updated.colors.length) {
         alert('Compila tutti i campi prima di salvare.');
         return;
@@ -1045,6 +1061,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         category: candidate.category || 'Casual / Altro',
         colors,
         notes: candidate.notes || '',
+        sku: normalizeSku(candidate.sku),
         image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
         dateAdded: new Date().toISOString().split('T')[0]
       };
@@ -1074,16 +1091,22 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const candidateColors = normalizeColors(candidate.colors);
       const candidateBrand = canonicalShoeBrand(candidate.brand);
       const candidateModel = canonicalShoeModel(candidate.model);
+      const candidateSku = normalizeSku(candidate.sku);
       shoes.forEach(myShoe => {
         const brandEqual = candidateBrand && canonicalShoeBrand(myShoe.brand) === candidateBrand;
+        const ownedSku = normalizeSku(myShoe.sku);
+        const skuEqual = Boolean(candidateSku && ownedSku && candidateSku === ownedSku);
+        const skuDifferent = Boolean(candidateSku && ownedSku && candidateSku !== ownedSku);
         const modelEqual = candidateModel && canonicalShoeModel(myShoe.model) === candidateModel;
         const ownedColors = normalizeColors(myShoe.colors);
         const colorsEqual = sameColors(candidateColors, ownedColors);
         const shared = candidateColors.filter(color => ownedColors.includes(color));
-        if (brandEqual && modelEqual && colorsEqual) {
+        if (brandEqual && skuEqual) {
+          exactMatches.push({ shoe: myShoe, reason: 'Stesso codice articolo / SKU' });
+        } else if (brandEqual && modelEqual && colorsEqual && !skuDifferent) {
           exactMatches.push({ shoe: myShoe, reason: 'Stessa marca, modello e colorazione' });
         } else if (brandEqual && modelEqual) {
-          highSimilarity.push({ shoe: myShoe, reason: 'Stesso modello, colorazione differente' });
+          highSimilarity.push({ shoe: myShoe, reason: skuDifferent ? 'Stesso modello, SKU differente' : 'Stesso modello, colorazione differente' });
         } else if (brandEqual && shared.length && myShoe.category === candidate.category) {
           mediumSimilarity.push({ shoe: myShoe, reason: 'Stessa marca e alcuni colori in comune' });
         }
@@ -1156,6 +1179,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             <p class="text-[10px] text-slate-500 uppercase font-semibold">Scarpa valutata</p>
             <p class="text-xs font-bold text-slate-200">${candidate.brand || 'Marca n.d.'} - ${candidate.model || 'Modello n.d.'}</p>
             <p class="text-[11px] text-amber-400">Colori: ${candColors.join(', ') || 'n.d.'}</p>
+            <p class="text-[11px] text-slate-300">SKU: ${escapeHtml(candidateSku || 'non rilevato')}</p>
           </div>
 
           ${canSave ? `
