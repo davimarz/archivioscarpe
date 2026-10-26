@@ -925,6 +925,23 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
 
     let lastCheckedCandidate = null;
 
+    function completeCheckedShoe() {
+      if (!lastCheckedCandidate) return;
+      const brand = prompt('Marca della scarpa:', lastCheckedCandidate.brand || '');
+      if (brand === null) return;
+      const model = prompt('Modello della scarpa (puoi indicare "Modello sconosciuto"):', lastCheckedCandidate.model || '');
+      if (model === null) return;
+      const colors = prompt('Colori, separati da virgola:', Array.isArray(lastCheckedCandidate.colors) ? lastCheckedCandidate.colors.join(', ') : (lastCheckedCandidate.colors || ''));
+      if (colors === null) return;
+      const updated = { ...lastCheckedCandidate, brand: brand.trim(), model: model.trim(), colors: colors.split(',').map(c => c.trim()).filter(Boolean) };
+      if (!updated.brand || !updated.model || !updated.colors.length) {
+        alert('Compila tutti i campi prima di salvare.');
+        return;
+      }
+      evaluatePurchase(updated);
+      saveCheckedShoe();
+    }
+
     function saveCheckedShoe() {
       const candidate = lastCheckedCandidate;
       if (!candidate) return;
@@ -933,7 +950,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const colors = (Array.isArray(candidate.colors) ? candidate.colors : String(candidate.colors || '').split(','))
         .map(color => String(color || '').trim()).filter(Boolean);
       if (!brand || !model || !colors.length) {
-        alert('Per salvare la scarpa servono marca, modello e almeno un colore.');
+        alert('Completa marca, modello e colori prima di salvare.');
         return;
       }
       const normalize = value => String(value || '').toLocaleLowerCase('it').trim().replace(/\\s+/g, ' ');
@@ -1028,7 +1045,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
 
       const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
-      const canSave = Boolean(candidateBrand && candidateModel && candidateColors.length);
+      const incomplete = !candidateBrand || !candidateModel || candidateColors.length === 0;
+      const canSave = Boolean(candidateBrand || candidateModel || candidateColors.length);
       const saveLevel = exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
       const saveButtonClass = saveLevel === 'identical'
         ? 'bg-red-600 hover:bg-red-500 text-white'
@@ -1062,10 +1080,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           </div>
 
           ${canSave ? `
-            <button type="button" onclick="saveCheckedShoe()" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
-              <i class="fa-solid fa-plus"></i> ${saveButtonText}
+            <button type="button" onclick="${incomplete ? 'completeCheckedShoe()' : 'saveCheckedShoe()'}" class="mt-4 w-full min-h-12 rounded-xl ${incomplete ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-plus"></i> ${incomplete ? 'Completa i dati e aggiungi all’archivio' : saveButtonText}
             </button>
-            <p class="mt-2 text-[11px] text-slate-400 text-center">${saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa corrispondente: salva marca, modello, colori e foto.'}</p>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Modello non riconosciuto: verifica i dati. Il confronto con l’archivio non è ancora conclusivo.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa corrispondente: salva marca, modello, colori e foto.'}</p>
           ` : ''}
 
           ${allMatches.length > 0 ? `
