@@ -90,6 +90,11 @@
             <option value="">Tutti i colori</option>
           </select>
         </div>
+        <div class="col-span-2 grid grid-cols-2 gap-2">
+          <label class="text-xs text-slate-300 flex items-center gap-2"><input id="favoritesOnlyFilter" type="checkbox" onchange="filterArchive()" class="accent-amber-500 w-4 h-4"> Solo preferiti</label>
+          <select id="collectionFilter" onchange="filterArchive()" aria-label="Filtra raccolta" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-slate-100"><option value="">Tutte le raccolte</option></select>
+          <button type="button" onclick="createCollection()" class="col-span-2 rounded-xl bg-slate-800 border border-slate-700 py-2 text-xs text-amber-400 font-semibold"><i class="fa-solid fa-folder-plus mr-1"></i>Nuova raccolta</button>
+        </div>
         <div class="col-span-2 flex items-center justify-between gap-2">
           <span id="archiveResultCount" class="text-xs text-slate-400" aria-live="polite">Tutte le scarpe</span>
           <button type="button" onclick="resetArchiveFilters()" class="text-xs font-semibold text-amber-400 px-3 py-2 rounded-lg border border-slate-700">Azzera filtri</button>
@@ -308,6 +313,11 @@
         <div><label for="editShoeCategory" class="block text-xs text-slate-300 mb-1">Categoria</label><select id="editShoeCategory" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><option>Sport / Running</option><option>Sneakers</option><option>Eleganti</option><option>Stivali</option><option>Casual / Altro</option></select></div>
         <div><label for="editShoeNotes" class="block text-xs text-slate-300 mb-1">Note e dettagli</label><textarea id="editShoeNotes" rows="3" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea></div>
         <div class="rounded-xl border border-slate-700 p-3 space-y-2">
+          <label class="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" id="editShoeFavorite" class="w-4 h-4 accent-amber-500"> Aggiungi ai preferiti</label>
+          <label for="editShoeCollections" class="text-xs text-slate-300">Raccolte (separate da virgola)</label>
+          <input id="editShoeCollections" type="text" maxlength="300" placeholder="Es. Running, Da collezione" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100">
+        </div>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2">
           <p class="text-xs font-semibold text-slate-300">Fotografie della scarpa (massimo 5)</p>
           <div id="editShoePhotosPreview" class="flex flex-wrap gap-2"></div>
           <input type="file" id="editExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'edit')">
@@ -431,7 +441,7 @@
 
     function exportShoeBackup() {
       try {
-        const backup = { format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(), shoes };
+        const backup = { format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(), shoes, collections: collectionNames };
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const filename = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + ' N.' + shoes.length + '.json';
         const url = URL.createObjectURL(blob);
@@ -473,14 +483,59 @@
           return;
         }
         const serialized = JSON.stringify(parsed.shoes);
+        const restoredCollections = Array.isArray(parsed.collections) ? parsed.collections.filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean) : [...new Set(parsed.shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections.filter(v => typeof v === 'string') : []))];
         // Prima si scrive il nuovo archivio: se lo spazio è insufficiente, quello corrente rimane intatto.
         localStorage.setItem('kicks_archive_v17', serialized);
         shoes = parsed.shoes;
+        collectionNames = restoredCollections;
+        saveCollectionNames();
         resetArchiveFilters();
         feedback.textContent = 'Ripristino completato: ' + shoes.length + ' paia recuperate.';
       } catch (error) {
         feedback.textContent = 'Ripristino non eseguito: ' + error.message;
       }
+    }
+
+    let collectionNames = (() => {
+      try { const saved = JSON.parse(localStorage.getItem('kicks_archive_collections_v1') || '[]'); return Array.isArray(saved) ? saved.filter(v => typeof v === 'string') : []; }
+      catch { return []; }
+    })();
+
+    function parseCollectionNames(value) {
+      return [...new Set(String(value || '').split(',').map(v => v.trim().slice(0, 60)).filter(Boolean))].slice(0, 20);
+    }
+
+    function saveCollectionNames() {
+      localStorage.setItem('kicks_archive_collections_v1', JSON.stringify(collectionNames));
+    }
+
+    function updateCollectionOptions() {
+      const select = document.getElementById('collectionFilter');
+      const selected = select.value;
+      const names = [...new Set([...collectionNames, ...shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections : [])])].filter(v => typeof v === 'string' && v.trim()).sort((a,b) => a.localeCompare(b, 'it'));
+      select.replaceChildren(new Option('Tutte le raccolte', ''));
+      names.forEach(name => select.add(new Option(name, name)));
+      select.value = names.includes(selected) ? selected : '';
+    }
+
+    function createCollection() {
+      const value = prompt('Nome della nuova raccolta (es. Running, Preferite, Vintage):');
+      if (value === null) return;
+      const name = value.trim().slice(0, 60);
+      if (!name || name.includes(',')) { alert('Inserisci un nome valido, senza virgole.'); return; }
+      if (!collectionNames.includes(name)) {
+        collectionNames.push(name);
+        saveCollectionNames();
+      }
+      updateCollectionOptions();
+      alert('Raccolta pronta. Per assegnare una scarpa, apri la sua modifica e inserisci il nome nel campo Raccolte.');
+    }
+
+    function toggleFavorite(id) {
+      const shoe = shoes.find(item => String(item.id) === String(id));
+      if (!shoe) return;
+      shoe.favorite = !shoe.favorite;
+      saveToStorage();
     }
 
     function saveToStorage() {
@@ -569,6 +624,8 @@
     }
 
     function resetArchiveFilters() {
+      document.getElementById('favoritesOnlyFilter').checked = false;
+      document.getElementById('collectionFilter').value = '';
       document.getElementById('searchInput').value = '';
       document.getElementById('brandFilter').value = '';
       document.getElementById('colorFilter').value = '';
@@ -649,6 +706,9 @@
       updateArchiveFilterOptions();
       const brandFilter = document.getElementById('brandFilter').value;
       const colorFilter = document.getElementById('colorFilter').value;
+      const favoritesOnly = document.getElementById('favoritesOnlyFilter').checked;
+      const collectionFilter = document.getElementById('collectionFilter').value;
+      updateCollectionOptions();
 
       const filtered = shoes.filter(shoe => {
         const matchesCat = currentCategory === 'all' || shoe.category === currentCategory;
@@ -657,7 +717,9 @@
         const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
-        return matchesCat && matchesSearch && matchesBrand && matchesColor;
+        const matchesFavorite = !favoritesOnly || Boolean(shoe.favorite);
+        const matchesCollection = !collectionFilter || (Array.isArray(shoe.collections) && shoe.collections.includes(collectionFilter));
+        return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesFavorite && matchesCollection;
       });
 
       filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
@@ -678,6 +740,7 @@
             <div class="relative aspect-square bg-slate-950 overflow-hidden">
               <img src="${shoe.image}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
               <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-2 left-2 rounded-lg bg-slate-950/90 border border-slate-600 px-2 py-1 text-[10px] text-white" aria-label="Apri foto scarpa"><i class="fa-solid fa-images mr-1"></i>${shoePhotos(shoe).length} foto</button>
+              <button type="button" data-toggle-favorite="${escapeHtml(shoe.id)}" aria-label="${shoe.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" class="absolute top-12 right-2 rounded-full bg-slate-950/90 border border-slate-600 w-10 h-10 flex items-center justify-center ${shoe.favorite ? 'text-amber-400' : 'text-slate-300'}"><i class="fa-${shoe.favorite ? 'solid' : 'regular'} fa-star"></i></button>
               <button type="button" data-shoe-detail="${escapeHtml(shoe.id)}" aria-label="Apri scheda dettagliata" class="absolute top-2 right-2 rounded-lg bg-slate-950/90 border border-slate-600 px-2 py-1 text-[10px] text-white"><i class="fa-solid fa-circle-info mr-1"></i>Dettagli</button>
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
@@ -740,7 +803,9 @@
         ['Colori', colors],
         ['Codice articolo / SKU', shoe.sku],
         ['Data inserimento', shoe.dateAdded],
-        ['Note e dettagli', shoe.notes]
+        ['Note e dettagli', shoe.notes],
+        ['Preferito', shoe.favorite ? 'Sì' : 'No'],
+        ['Raccolte', Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '']
       ];
       const content = document.getElementById('shoeDetailContent');
       content.replaceChildren();
@@ -783,6 +848,8 @@
       document.getElementById('editShoeSku').value = shoe.sku || '';
       document.getElementById('editShoeCategory').value = shoe.category || 'Casual / Altro';
       document.getElementById('editShoeNotes').value = shoe.notes || '';
+      document.getElementById('editShoeFavorite').checked = Boolean(shoe.favorite);
+      document.getElementById('editShoeCollections').value = Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '';
       editingImages = shoePhotos(shoe).slice();
       renderPhotoThumbnails('edit');
       document.getElementById('editShoeModal').classList.remove('hidden');
@@ -808,6 +875,10 @@
       shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
       shoe.category = document.getElementById('editShoeCategory').value;
       shoe.notes = document.getElementById('editShoeNotes').value.trim();
+      shoe.favorite = document.getElementById('editShoeFavorite').checked;
+      shoe.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
+      shoe.collections.forEach(name => { if (!collectionNames.includes(name)) collectionNames.push(name); });
+      saveCollectionNames();
       shoe.image = editingImages[0] || shoe.image;
       shoe.images = editingImages.slice();
       saveToStorage();
@@ -815,6 +886,8 @@
     }
 
     document.addEventListener('click', event => {
+      const favoriteButton = event.target.closest('[data-toggle-favorite]');
+      if (favoriteButton) { toggleFavorite(favoriteButton.dataset.toggleFavorite); return; }
       const detailButton = event.target.closest('[data-shoe-detail]');
       if (detailButton) { openShoeDetail(detailButton.dataset.shoeDetail); return; }
       const photoButton = event.target.closest('[data-view-shoe-photos]');
@@ -1190,6 +1263,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
         sku: normalizeSku(document.getElementById('addSku').value),
+        favorite: false,
+        collections: [],
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
         dateAdded: new Date().toISOString().split('T')[0]
@@ -1259,6 +1334,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         colors,
         notes: candidate.notes || '',
         sku: normalizeSku(candidate.sku),
+        favorite: false,
+        collections: [],
         image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b')],
         dateAdded: new Date().toISOString().split('T')[0]
