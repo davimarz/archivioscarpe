@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archivio Scarpe - Il tuo Guardaroba Scarpe</title>
   <meta name="theme-color" content="#0b1220">
+  <meta name="application-name" content="Archivio Scarpe">
+  <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -293,6 +295,12 @@
 
     <!-- VIEW 4: SISTEMA E BACKUP -->
     <section id="view-settings" class="hidden space-y-4">
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-2">
+        <h2 class="text-sm font-bold text-slate-100"><i class="fa-solid fa-wifi text-amber-400 mr-2"></i>Disponibilità offline</h2>
+        <p id="offlineStatus" class="text-xs text-slate-300" aria-live="polite">Controllo disponibilità offline...</p>
+        <p class="text-[11px] text-slate-400">Dopo una visita online, puoi consultare l'archivio, cercare e modificare scarpe senza rete. Gemini richiede Internet. L'OCR offline è disponibile soltanto se i suoi componenti sono già stati scaricati e memorizzati.</p>
+        <button type="button" onclick="prepareOffline()" id="prepareOfflineButton" class="w-full rounded-xl bg-slate-800 border border-slate-700 text-xs text-amber-400 font-bold py-3">Prepara uso offline</button>
+      </div>
       <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between gap-3">
         <div><p class="font-semibold text-slate-100 text-sm">Intelligenza artificiale</p><p class="text-xs text-slate-400 mt-1">Stato e configurazione Gemini</p></div>
     <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
@@ -561,6 +569,44 @@
       shoe.favorite = !shoe.favorite;
       saveToStorage();
     }
+
+    function updateOfflineStatus(message) {
+      const el = document.getElementById('offlineStatus');
+      if (el) el.textContent = message || (navigator.onLine ? 'Online: archivio salvato sul dispositivo.' : 'Offline: consulta e modifica le scarpe già salvate.');
+    }
+
+    async function prepareOffline() {
+      const button = document.getElementById('prepareOfflineButton');
+      button.disabled = true;
+      updateOfflineStatus('Preparazione dei file offline...');
+      try {
+        if (!('serviceWorker' in navigator)) throw new Error('Il browser non supporta il salvataggio offline.');
+        const registration = await navigator.serviceWorker.ready;
+        const target = registration.active;
+        if (!target) throw new Error('Servizio offline non ancora attivo. Ricarica la pagina.');
+        const channel = new MessageChannel();
+        const response = new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('Preparazione scaduta: riprova.')), 20000);
+          channel.port1.onmessage = event => { clearTimeout(timer); resolve(event.data); };
+        });
+        target.postMessage({ type: 'PREPARE_OFFLINE' }, [channel.port2]);
+        const result = await response;
+        if (!result.ok) throw new Error(result.error || 'File non disponibili');
+        updateOfflineStatus('Pronto: pagine e risorse principali memorizzate. I dati restano nel browser di questo dispositivo.');
+      } catch (error) {
+        updateOfflineStatus('Preparazione incompleta: ' + error.message);
+      } finally { button.disabled = false; }
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .then(() => updateOfflineStatus())
+          .catch(() => updateOfflineStatus('Offline non disponibile su questo browser.'));
+      });
+    }
+    window.addEventListener('online', () => updateOfflineStatus());
+    window.addEventListener('offline', () => updateOfflineStatus());
 
     function saveToStorage() {
       localStorage.setItem('kicks_archive_v17', JSON.stringify(shoes));
