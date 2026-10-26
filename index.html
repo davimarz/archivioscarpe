@@ -107,6 +107,18 @@
         <button onclick="setCategoryFilter('Stivali')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Stivali">Stivali</button>
       </div>
 
+      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div><p class="text-sm font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>Backup scarpiera</p><p class="text-[11px] text-slate-400 mt-1">Esporta o ripristina scarpe, dati e fotografie.</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="exportShoeBackup()" class="min-h-11 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i>Esporta backup</button>
+          <button type="button" onclick="document.getElementById('shoeBackupInput').click()" class="min-h-11 px-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-upload mr-1"></i>Ripristina backup</button>
+        </div>
+        <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
+        <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
+      </div>
+
       <div id="shoesGrid" class="grid grid-cols-2 gap-3.5" aria-live="polite"></div>
 
       <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
@@ -359,6 +371,59 @@
       renderArchive();
       updateKeyUI();
     });
+
+    function exportShoeBackup() {
+      try {
+        const backup = { format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(), shoes };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'kicksarchive-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        document.getElementById('backupFeedback').textContent = 'Backup generato: conserva il file in un luogo sicuro.';
+      } catch (error) {
+        document.getElementById('backupFeedback').textContent = 'Impossibile esportare: ' + error.message;
+      }
+    }
+
+    async function importShoeBackup(input) {
+      const feedback = document.getElementById('backupFeedback');
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      try {
+        if (file.size > 100 * 1024 * 1024) throw new Error('File troppo grande (massimo 100 MB).');
+        const parsed = JSON.parse(await file.text());
+        if (!parsed || parsed.format !== 'kicksarchive-backup' || parsed.version !== 1 || !Array.isArray(parsed.shoes)) {
+          throw new Error('Il file non è un backup KicksArchive valido.');
+        }
+        if (parsed.shoes.length > 10000 || !parsed.shoes.every(item =>
+          item && typeof item === 'object' && !Array.isArray(item) &&
+          (typeof item.id === 'string' || typeof item.id === 'number') &&
+          typeof item.brand === 'string' && typeof item.model === 'string' &&
+          (Array.isArray(item.colors) ? item.colors.every(c => typeof c === 'string') : typeof item.colors === 'string') &&
+          (!item.image || typeof item.image === 'string')
+        )) throw new Error('Il backup contiene dati non validi.');
+        const ids = parsed.shoes.map(item => String(item.id));
+        if (new Set(ids).size !== ids.length) throw new Error('Il backup contiene identificativi duplicati.');
+        if (!confirm('Ripristinare ' + parsed.shoes.length + ' paia? Le ' + shoes.length + ' scarpe attualmente nell’archivio saranno sostituite. Esporta prima un backup se vuoi conservarle.')) {
+          feedback.textContent = 'Ripristino annullato.';
+          return;
+        }
+        const serialized = JSON.stringify(parsed.shoes);
+        // Prima si scrive il nuovo archivio: se lo spazio è insufficiente, quello corrente rimane intatto.
+        localStorage.setItem('kicks_archive_v17', serialized);
+        shoes = parsed.shoes;
+        resetArchiveFilters();
+        feedback.textContent = 'Ripristino completato: ' + shoes.length + ' paia recuperate.';
+      } catch (error) {
+        feedback.textContent = 'Ripristino non eseguito: ' + error.message;
+      }
+    }
 
     function saveToStorage() {
       localStorage.setItem('kicks_archive_v17', JSON.stringify(shoes));
