@@ -390,7 +390,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + '.json';
+        link.download = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + ' N.' + shoes.length + '.json';
         document.body.appendChild(link);
         link.click();
         link.remove();
