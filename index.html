@@ -536,6 +536,70 @@
       setCategoryFilter('all');
     }
 
+    // Ricerca locale: sinonimi di marche, modelli e colori, senza chiamate API.
+    function normalizeShoeText(value) {
+      return String(value || '').toLocaleLowerCase('it').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+    }
+
+    function canonicalShoeBrand(value) {
+      const text = normalizeShoeText(value);
+      if (/^(nb|new balance)$/.test(text)) return 'new balance';
+      if (/^(nike|nike inc)$/.test(text)) return 'nike';
+      if (/^(adidas|adi das)$/.test(text)) return 'adidas';
+      if (/^(asics|asics tiger)$/.test(text)) return 'asics';
+      if (/^(hoka|hoka one one)$/.test(text)) return 'hoka';
+      if (/^(converse|converse all star)$/.test(text)) return 'converse';
+      return text;
+    }
+
+    function canonicalShoeModel(value) {
+      return normalizeShoeText(value)
+        .replace(/\bnew balance\b|\bnb\b/g, ' ')
+        .replace(/\bhoka one one\b|\bhoka\b/g, ' ')
+        .replace(/\bnike\b|\badidas\b|\basics\b|\basics tiger\b|\bconverse\b/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+    }
+
+    function canonicalShoeColor(value) {
+      const text = normalizeShoeText(value);
+      const equivalents = [
+        [/\b(nero|nera|neri|nere|black|noir)\b/g, 'nero'],
+        [/\b(bianco|bianca|bianchi|bianche|white)\b/g, 'bianco'],
+        [/\b(grigio|grigia|grigi|grigie|grey|gray)\b/g, 'grigio'],
+        [/\b(blu|blue)\b/g, 'blu'],
+        [/\b(rosso|rossa|rossi|rosse|red)\b/g, 'rosso'],
+        [/\b(verde|verdi|green)\b/g, 'verde'],
+        [/\b(giallo|gialla|yellow)\b/g, 'giallo'],
+        [/\b(rosa|pink)\b/g, 'rosa'],
+        [/\b(marrone|brown)\b/g, 'marrone'],
+        [/\b(viola|purple)\b/g, 'viola'],
+        [/\b(arancione|arancio|orange)\b/g, 'arancione']
+      ];
+      return equivalents.reduce((result, [pattern, canonical]) => result.replace(pattern, canonical), text)
+        .replace(/\s+/g, ' ').trim();
+    }
+
+    function shoeMatchesSmartSearch(shoe, query) {
+      const raw = normalizeShoeText(query);
+      if (!raw) return true;
+      const brand = canonicalShoeBrand(shoe.brand);
+      const model = canonicalShoeModel(shoe.model);
+      const colors = (Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','))
+        .map(canonicalShoeColor);
+      const rawText = normalizeShoeText([shoe.brand, shoe.model, ...colors].join(' '));
+      const searchText = [brand, model, ...colors].join(' ');
+      const normalizedQuery = canonicalShoeColor(raw);
+      const brandQuery = canonicalShoeBrand(raw);
+      const modelQuery = canonicalShoeModel(raw);
+      if (rawText.includes(raw) || searchText.includes(normalizedQuery) ||
+          brand.includes(brandQuery) || (modelQuery && model.includes(modelQuery))) return true;
+      // Ogni termine deve essere presente: "NB 9060 grey" trova "New Balance 9060 grigio".
+      const queryWords = normalizedQuery.replace(/\bnew balance\b/g, 'newbalance').split(' ').filter(Boolean);
+      const searchable = searchText.replace(/\bnew balance\b/g, 'newbalance');
+      return queryWords.every(word => searchable.split(' ').some(token => token.startsWith(word)));
+    }
+
     function renderArchive() {
       const grid = document.getElementById('shoesGrid');
       const emptyMsg = document.getElementById('emptyArchiveMsg');
@@ -548,10 +612,7 @@
       const filtered = shoes.filter(shoe => {
         const matchesCat = currentCategory === 'all' || shoe.category === currentCategory;
         const colorString = Array.isArray(shoe.colors) ? shoe.colors.join(' ') : (shoe.colors || '');
-        const matchesSearch = !searchVal || 
-          shoe.brand.toLowerCase().includes(searchVal) ||
-          shoe.model.toLowerCase().includes(searchVal) ||
-          colorString.toLowerCase().includes(searchVal);
+        const matchesSearch = shoeMatchesSmartSearch(shoe, searchVal);
         const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
@@ -1006,17 +1067,16 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let highSimilarity = [];
       let mediumSimilarity = [];
 
-      const normalize = value => String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
       const normalizeColors = values => (Array.isArray(values) ? values : String(values || '').split(','))
-        .map(normalize).filter(Boolean).sort();
+        .map(canonicalShoeColor).filter(Boolean).sort();
       const sameColors = (a, b) => a.length > 0 && b.length > 0 &&
         a.length === b.length && a.every((color, index) => color === b[index]);
       const candidateColors = normalizeColors(candidate.colors);
-      const candidateBrand = normalize(candidate.brand);
-      const candidateModel = normalize(candidate.model);
+      const candidateBrand = canonicalShoeBrand(candidate.brand);
+      const candidateModel = canonicalShoeModel(candidate.model);
       shoes.forEach(myShoe => {
-        const brandEqual = candidateBrand && normalize(myShoe.brand) === candidateBrand;
-        const modelEqual = candidateModel && normalize(myShoe.model) === candidateModel;
+        const brandEqual = candidateBrand && canonicalShoeBrand(myShoe.brand) === candidateBrand;
+        const modelEqual = candidateModel && canonicalShoeModel(myShoe.model) === candidateModel;
         const ownedColors = normalizeColors(myShoe.colors);
         const colorsEqual = sameColors(candidateColors, ownedColors);
         const shared = candidateColors.filter(color => ownedColors.includes(color));
