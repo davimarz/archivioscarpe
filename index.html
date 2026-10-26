@@ -92,8 +92,7 @@
             <option value="">Tutti i colori</option>
           </select>
         </div>
-        <div class="col-span-2 grid grid-cols-2 gap-2">
-          <label class="text-xs text-slate-300 flex items-center gap-2"><input id="favoritesOnlyFilter" type="checkbox" onchange="filterArchive()" class="accent-amber-500 w-4 h-4"> Solo preferiti</label>
+        <div class="col-span-2">
           <select id="collectionFilter" onchange="filterArchive()" aria-label="Filtra raccolta" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-slate-100"><option value="">Tutte le raccolte</option></select>
           <button type="button" onclick="createCollection()" class="col-span-2 rounded-xl bg-slate-800 border border-slate-700 py-2 text-xs text-amber-400 font-semibold"><i class="fa-solid fa-folder-plus mr-1"></i>Nuova raccolta</button>
         </div>
@@ -352,7 +351,6 @@
         <div><label for="editShoeCategory" class="block text-xs text-slate-300 mb-1">Categoria</label><select id="editShoeCategory" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><option>Sport / Running</option><option>Sneakers</option><option>Eleganti</option><option>Stivali</option><option>Casual / Altro</option></select></div>
         <div><label for="editShoeNotes" class="block text-xs text-slate-300 mb-1">Note e dettagli</label><textarea id="editShoeNotes" rows="3" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea></div>
         <div class="rounded-xl border border-slate-700 p-3 space-y-2">
-          <label class="flex items-center gap-2 text-xs text-slate-200"><input type="checkbox" id="editShoeFavorite" class="w-4 h-4 accent-amber-500"> Aggiungi ai preferiti</label>
           <label for="editShoeCollections" class="text-xs text-slate-300">Raccolte (separate da virgola)</label>
           <input id="editShoeCollections" type="text" maxlength="300" placeholder="Es. Running, Da collezione" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100">
         </div>
@@ -369,19 +367,6 @@
     </div>
   </div>
 
-  <div id="shoeDetailModal" role="dialog" aria-modal="true" aria-labelledby="shoeDetailTitle" class="hidden fixed inset-0 z-[55] bg-black/85 backdrop-blur-sm overflow-y-auto p-4">
-    <div class="max-w-lg mx-auto bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-4 my-4">
-      <div class="flex justify-between items-start gap-3">
-        <div><p class="text-xs text-amber-400 font-bold">Scheda della scarpa</p><h3 id="shoeDetailTitle" class="text-lg font-bold text-white"></h3></div>
-        <button type="button" onclick="closeShoeDetail()" aria-label="Chiudi scheda" class="w-11 h-11 rounded-xl bg-slate-800 text-white shrink-0"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div id="shoeDetailContent" class="space-y-3"></div>
-      <div class="grid grid-cols-2 gap-2">
-        <button type="button" id="shoeDetailGalleryBtn" class="rounded-xl bg-slate-800 text-white font-semibold py-3 text-sm"><i class="fa-solid fa-images mr-1"></i> Foto</button>
-        <button type="button" id="shoeDetailEditBtn" class="rounded-xl bg-amber-500 text-slate-950 font-bold py-3 text-sm"><i class="fa-solid fa-pen mr-1"></i> Modifica</button>
-      </div>
-    </div>
-  </div>
   <div id="shoeGalleryModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-[60] bg-black/90 p-4 overflow-y-auto">
     <div class="max-w-lg mx-auto space-y-3">
       <div class="flex items-center justify-between gap-2">
@@ -570,13 +555,6 @@
       alert('Raccolta pronta. Per assegnare una scarpa, apri la sua modifica e inserisci il nome nel campo Raccolte.');
     }
 
-    function toggleFavorite(id) {
-      const shoe = shoes.find(item => String(item.id) === String(id));
-      if (!shoe) return;
-      shoe.favorite = !shoe.favorite;
-      saveToStorage();
-    }
-
     function updateOfflineStatus(message) {
       const el = document.getElementById('offlineStatus');
       if (el) el.textContent = message || (navigator.onLine ? 'Online: archivio salvato sul dispositivo.' : 'Offline: consulta e modifica le scarpe già salvate.');
@@ -701,7 +679,6 @@
     }
 
     function resetArchiveFilters() {
-      document.getElementById('favoritesOnlyFilter').checked = false;
       document.getElementById('collectionFilter').value = '';
       document.getElementById('searchInput').value = '';
       document.getElementById('brandFilter').value = '';
@@ -783,7 +760,6 @@
       updateArchiveFilterOptions();
       const brandFilter = document.getElementById('brandFilter').value;
       const colorFilter = document.getElementById('colorFilter').value;
-      const favoritesOnly = document.getElementById('favoritesOnlyFilter').checked;
       const collectionFilter = document.getElementById('collectionFilter').value;
       updateCollectionOptions();
 
@@ -794,9 +770,8 @@
         const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
-        const matchesFavorite = !favoritesOnly || Boolean(shoe.favorite);
         const matchesCollection = !collectionFilter || (Array.isArray(shoe.collections) && shoe.collections.includes(collectionFilter));
-        return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesFavorite && matchesCollection;
+        return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
       });
 
       filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
@@ -816,9 +791,7 @@
           <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
             <div class="relative aspect-square bg-slate-950 overflow-hidden">
               <img src="${shoe.image}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-              <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-2 left-2 rounded-lg bg-slate-950/90 border border-slate-600 px-2 py-1 text-[10px] text-white" aria-label="Apri foto scarpa"><i class="fa-solid fa-images mr-1"></i>${shoePhotos(shoe).length} foto</button>
-              <button type="button" data-toggle-favorite="${escapeHtml(shoe.id)}" aria-label="${shoe.favorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" class="absolute top-12 right-2 rounded-full bg-slate-950/90 border border-slate-600 w-10 h-10 flex items-center justify-center ${shoe.favorite ? 'text-amber-400' : 'text-slate-300'}"><i class="fa-${shoe.favorite ? 'solid' : 'regular'} fa-star"></i></button>
-              <button type="button" data-shoe-detail="${escapeHtml(shoe.id)}" aria-label="Apri scheda dettagliata" class="absolute top-2 right-2 rounded-lg bg-slate-950/90 border border-slate-600 px-2 py-1 text-[10px] text-white"><i class="fa-solid fa-circle-info mr-1"></i>Dettagli</button>
+              <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-1.5 left-1.5 rounded-md bg-slate-950/85 border border-slate-600 px-1.5 py-1 text-[10px] leading-none text-white inline-flex items-center gap-1" aria-label="Apri ${shoePhotos(shoe).length} fotografie"><i class="fa-solid fa-images"></i><span>${shoePhotos(shoe).length}</span></button>
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
               </span>
@@ -862,59 +835,6 @@
 
     function filterArchive() { renderArchive(); }
 
-    function closeShoeDetail() {
-      document.getElementById('shoeDetailModal').classList.add('hidden');
-    }
-
-    function openShoeDetail(id) {
-      const shoe = shoes.find(item => String(item.id) === String(id));
-      if (!shoe) return;
-      const colors = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || 'Non indicati');
-      const photos = shoePhotos(shoe);
-      const title = [shoe.brand, shoe.model].filter(Boolean).join(' ');
-      document.getElementById('shoeDetailTitle').textContent = title || 'Scarpa';
-      const fields = [
-        ['Marca', shoe.brand],
-        ['Modello', shoe.model],
-        ['Categoria', shoe.category],
-        ['Colori', colors],
-        ['Codice articolo / SKU', shoe.sku],
-        ['Data inserimento', shoe.dateAdded],
-        ['Note e dettagli', shoe.notes],
-        ['Preferito', shoe.favorite ? 'Sì' : 'No'],
-        ['Raccolte', Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '']
-      ];
-      const content = document.getElementById('shoeDetailContent');
-      content.replaceChildren();
-      if (photos.length) {
-        const cover = document.createElement('img');
-        cover.src = photos[0];
-        cover.alt = 'Foto principale di ' + title;
-        cover.className = 'w-full max-h-72 object-contain bg-slate-950 rounded-xl';
-        content.appendChild(cover);
-      }
-      const details = document.createElement('dl');
-      details.className = 'grid grid-cols-2 gap-2';
-      fields.forEach(([label, value]) => {
-        const cell = document.createElement('div');
-        cell.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3 min-w-0';
-        const dt = document.createElement('dt');
-        dt.className = 'text-[11px] text-slate-400';
-        dt.textContent = label;
-        const dd = document.createElement('dd');
-        dd.className = 'text-xs text-slate-100 font-semibold break-words whitespace-pre-wrap';
-        dd.textContent = value ? String(value) : 'Non indicato';
-        cell.append(dt, dd);
-        details.appendChild(cell);
-      });
-      content.appendChild(details);
-      const gallery = document.getElementById('shoeDetailGalleryBtn');
-      gallery.textContent = 'Foto (' + photos.length + ')';
-      gallery.onclick = () => { closeShoeDetail(); openShoeGallery(id); };
-      document.getElementById('shoeDetailEditBtn').onclick = () => { closeShoeDetail(); openEditShoeModal(id); };
-      document.getElementById('shoeDetailModal').classList.remove('hidden');
-    }
-
     function openEditShoeModal(id) {
       const shoe = shoes.find(item => String(item.id) === String(id));
       if (!shoe) return;
@@ -925,7 +845,6 @@
       document.getElementById('editShoeSku').value = shoe.sku || '';
       document.getElementById('editShoeCategory').value = shoe.category || 'Casual / Altro';
       document.getElementById('editShoeNotes').value = shoe.notes || '';
-      document.getElementById('editShoeFavorite').checked = Boolean(shoe.favorite);
       document.getElementById('editShoeCollections').value = Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '';
       editingImages = shoePhotos(shoe).slice();
       renderPhotoThumbnails('edit');
@@ -952,7 +871,6 @@
       shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
       shoe.category = document.getElementById('editShoeCategory').value;
       shoe.notes = document.getElementById('editShoeNotes').value.trim();
-      shoe.favorite = document.getElementById('editShoeFavorite').checked;
       shoe.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
       shoe.collections.forEach(name => { if (!collectionNames.includes(name)) collectionNames.push(name); });
       saveCollectionNames();
@@ -963,10 +881,6 @@
     }
 
     document.addEventListener('click', event => {
-      const favoriteButton = event.target.closest('[data-toggle-favorite]');
-      if (favoriteButton) { toggleFavorite(favoriteButton.dataset.toggleFavorite); return; }
-      const detailButton = event.target.closest('[data-shoe-detail]');
-      if (detailButton) { openShoeDetail(detailButton.dataset.shoeDetail); return; }
       const photoButton = event.target.closest('[data-view-shoe-photos]');
       if (photoButton) { openShoeGallery(photoButton.dataset.viewShoePhotos); return; }
       const editButton = event.target.closest('[data-edit-shoe]');
@@ -1266,8 +1180,8 @@
           const view = document.createElement('button');
           view.type = 'button';
           view.className = 'px-3 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white';
-          view.textContent = 'Dettagli';
-          view.onclick = () => openShoeDetail(shoe.id);
+          view.textContent = 'Modifica';
+          view.onclick = () => openEditShoeModal(shoe.id);
           row.append(img, details, view);
           output.appendChild(row);
         }
@@ -1527,7 +1441,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
         notes: document.getElementById('addNotes').value.trim(),
         sku: normalizeSku(document.getElementById('addSku').value),
-        favorite: false,
         collections: [],
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
@@ -1598,7 +1511,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         colors,
         notes: candidate.notes || '',
         sku: normalizeSku(candidate.sku),
-        favorite: false,
         collections: [],
         image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b')],
