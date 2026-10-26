@@ -59,10 +59,7 @@
       </div>
     </div>
 
-    <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
-      <i class="fa-solid fa-bolt text-xs"></i>
-      <span id="keyLabel">Imposta AI</span>
-    </button>
+
   </header>
 
   <main class="flex-1 max-w-lg w-full mx-auto p-4">
@@ -260,6 +257,13 @@
 
     <!-- VIEW 4: SISTEMA E BACKUP -->
     <section id="view-settings" class="hidden space-y-4">
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between gap-3">
+        <div><p class="font-semibold text-slate-100 text-sm">Intelligenza artificiale</p><p class="text-xs text-slate-400 mt-1">Stato e configurazione Gemini</p></div>
+    <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
+      <i class="fa-solid fa-bolt text-xs"></i>
+      <span id="keyLabel">Imposta AI</span>
+    </button>
+      </div>
       <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4">
         <h2 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-gear text-amber-400 mr-2"></i>Sistema</h2>
         <p class="text-sm text-slate-400 mt-1">Gestisci le copie di sicurezza della tua scarpiera.</p>
