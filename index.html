@@ -278,6 +278,14 @@
         </div>
         <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
+        <div id="backupSharePrompt" class="hidden rounded-xl border border-amber-500/40 bg-slate-950 p-3 space-y-3" role="group" aria-label="Condivisione backup">
+          <p class="text-sm font-semibold text-slate-100">Vuoi condividere anche questo backup?</p>
+          <p class="text-xs text-slate-400">Puoi inviarlo con WhatsApp, Gmail, Google Drive o altre app disponibili sul dispositivo.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="shareExportedBackup()" class="min-h-11 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-share-nodes mr-1"></i>Condividi file</button>
+            <button type="button" onclick="dismissBackupShare()" class="min-h-11 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold">Non ora</button>
+          </div>
+        </div>
       </div>
 
       <p class="text-xs text-slate-400 px-1">Il ripristino sostituisce le scarpe attualmente salvate su questo dispositivo. Prima di procedere, esporta una copia di sicurezza.</p>
@@ -383,19 +391,51 @@
       updateKeyUI();
     });
 
+    let lastExportedBackupFile = null;
+
+    function dismissBackupShare() {
+      document.getElementById('backupSharePrompt').classList.add('hidden');
+    }
+
+    async function shareExportedBackup() {
+      const feedback = document.getElementById('backupFeedback');
+      if (!lastExportedBackupFile) {
+        feedback.textContent = 'Esporta prima un backup da condividere.';
+        return;
+      }
+      if (typeof navigator.share !== 'function' ||
+          (typeof navigator.canShare === 'function' && !navigator.canShare({ files: [lastExportedBackupFile] }))) {
+        feedback.textContent = 'La condivisione diretta dei file non è supportata da questo browser. Apri il file scaricato e usa Condividi dal telefono.';
+        return;
+      }
+      try {
+        await navigator.share({ files: [lastExportedBackupFile], title: 'Archivio Scarpe - Backup' });
+        dismissBackupShare();
+        feedback.textContent = 'Condivisione del backup completata.';
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          feedback.textContent = 'Impossibile condividere il file: ' + error.message;
+        }
+      }
+    }
+
     function exportShoeBackup() {
       try {
+        dismissBackupShare();
         const backup = { format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(), shoes };
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const filename = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + ' N.' + shoes.length + '.json';
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + ' N.' + shoes.length + '.json';
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
-        document.getElementById('backupFeedback').textContent = 'Backup generato: conserva il file in un luogo sicuro.';
+        lastExportedBackupFile = new File([blob], filename, { type: 'application/json' });
+        document.getElementById('backupFeedback').textContent = 'Download del backup avviato. Puoi anche condividerlo.';
+        document.getElementById('backupSharePrompt').classList.remove('hidden');
       } catch (error) {
         document.getElementById('backupFeedback').textContent = 'Impossibile esportare: ' + error.message;
       }
