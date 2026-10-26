@@ -107,18 +107,6 @@
         <button onclick="setCategoryFilter('Stivali')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Stivali">Stivali</button>
       </div>
 
-      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
-        <div class="flex items-center justify-between gap-2">
-          <div><p class="text-sm font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>Backup scarpiera</p><p class="text-[11px] text-slate-400 mt-1">Esporta o ripristina scarpe, dati e fotografie.</p></div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="exportShoeBackup()" class="min-h-11 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i>Esporta backup</button>
-          <button type="button" onclick="document.getElementById('shoeBackupInput').click()" class="min-h-11 px-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-upload mr-1"></i>Ripristina backup</button>
-        </div>
-        <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
-        <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
-      </div>
-
       <div id="shoesGrid" class="grid grid-cols-2 gap-3.5" aria-live="polite"></div>
 
       <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
@@ -270,6 +258,27 @@
       <div id="checkResultContainer" class="hidden space-y-4"></div>
     </section>
 
+    <!-- VIEW 4: SISTEMA E BACKUP -->
+    <section id="view-settings" class="hidden space-y-4">
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4">
+        <h2 class="text-lg font-bold text-slate-100"><i class="fa-solid fa-gear text-amber-400 mr-2"></i>Sistema</h2>
+        <p class="text-sm text-slate-400 mt-1">Gestisci le copie di sicurezza della tua scarpiera.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div><p class="text-sm font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>Backup scarpiera</p><p class="text-[11px] text-slate-400 mt-1">Esporta o ripristina scarpe, dati e fotografie.</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="exportShoeBackup()" class="min-h-11 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i>Esporta backup</button>
+          <button type="button" onclick="document.getElementById('shoeBackupInput').click()" class="min-h-11 px-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-upload mr-1"></i>Ripristina backup</button>
+        </div>
+        <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
+        <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
+      </div>
+
+      <p class="text-xs text-slate-400 px-1">Il ripristino sostituisce le scarpe attualmente salvate su questo dispositivo. Prima di procedere, esporta una copia di sicurezza.</p>
+    </section>
+
   </main>
 
   <!-- Modifica scarpa archiviata -->
@@ -317,20 +326,18 @@
   </div>
 
   <!-- Bottom Navigation Bar -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-6 py-2 z-40 max-w-lg mx-auto flex justify-around items-center">
-    <button onclick="switchTab('archive')" id="tab-archive" class="flex flex-col items-center gap-1 text-amber-400 transition">
-      <i class="fa-solid fa-boxes-stacked text-lg"></i>
-      <span class="text-[10px] font-semibold">Armadio</span>
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-lg mx-auto grid grid-cols-4 gap-1 items-center">
+    <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
+      <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
     </button>
-    <button onclick="switchTab('add')" id="tab-add" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
-      <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center -mt-5 shadow-lg shadow-amber-500/30">
-        <i class="fa-solid fa-plus text-base font-bold"></i>
-      </div>
-      <span class="text-[10px] font-semibold">Aggiungi</span>
+    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Inserimento">
+      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Inserimento</span>
     </button>
-    <button onclick="switchTab('check')" id="tab-check" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition">
-      <i class="fa-solid fa-radar text-lg"></i>
-      <span class="text-[10px] font-semibold">Compro?</span>
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Ricerche">
+      <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[11px] font-semibold">Ricerche</span>
+    </button>
+    <button type="button" onclick="switchTab('settings')" id="tab-settings" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Sistema">
+      <i class="fa-solid fa-gear text-lg"></i><span class="text-[11px] font-semibold">Sistema</span>
     </button>
   </nav>
 
@@ -431,7 +438,7 @@
     }
 
     function switchTab(tabId) {
-      ['archive', 'add', 'check'].forEach(t => {
+      ['archive', 'add', 'check', 'settings'].forEach(t => {
         document.getElementById(`view-${t}`).classList.add('hidden');
         const btn = document.getElementById(`tab-${t}`);
         btn.classList.remove('text-amber-400');
