@@ -1287,7 +1287,7 @@
 Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice colore è alfanumerico, non confonderlo con il colore visivo. Se un dato è incerto, lascialo vuoto.`;
       const requestBody = {
         contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 900 }
+        generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 1600 }
       };
       let modelsToTry = [];
       let lastErrorMsg = "";
@@ -1377,7 +1377,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             let parsed;
             try {
               const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-              const result = JSON.parse(cleaned);
+              let result;
+              try { result = JSON.parse(cleaned); }
+              catch (e) { const start = cleaned.indexOf('{'); const end = cleaned.lastIndexOf('}'); if (start < 0 || end <= start) throw e; result = JSON.parse(cleaned.slice(start, end + 1)); }
+              if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('JSON non valido');
               const str = value => typeof value === 'string' ? value.trim() : Array.isArray(value) ? value.join(', ') : '';
               const allowed = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
               parsed = {
@@ -1389,8 +1392,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
                 sku: str(result.sku || result.codice_articolo || result.style_code)
               };
             } catch (parseError) {
-              lastErrorMsg = 'Risposta AI non interpretabile. Riprova con una foto più nitida.';
-              break;
+              lastErrorMsg = 'Risposta Gemini incompleta o non valida. Provo un altro modello.';
+              continue;
             }
             if (!parsed.marca && !parsed.modello && !parsed.colori) {
               lastErrorMsg = 'Nessuna informazione leggibile sulla scatola. Fotografa da vicino l’etichetta.';
