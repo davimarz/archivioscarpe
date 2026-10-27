@@ -1,5 +1,5 @@
 /* Archivio Scarpe - service worker v1 */
-const CACHE = 'archivio-scarpe-shell-v1';
+const CACHE = 'archivio-scarpe-shell-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 const EXTERNAL = [
   'https://cdn.tailwindcss.com',
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
       try {
-        const fresh = await fetch(request);
+        const fresh = await fetch(request, { cache: 'no-store' });
         if (fresh.ok) await cache.put('./index.html', fresh.clone());
         return fresh;
       } catch {
