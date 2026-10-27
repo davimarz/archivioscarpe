@@ -124,8 +124,81 @@
       </div>
     </section>
 
-    <!-- VIEW 2: AGGIUNTA SCARPA -->
-    <section id="view-add" class="hidden space-y-4">
+    <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
+    <section id="view-check" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
+            Shopping Radar
+          </span>
+          <h2 class="text-base font-bold text-slate-100">Cerca una scarpa o aggiungila</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta o carica una foto: riconosciamo marca, modello e colori, controlliamo i doppioni e puoi salvare la scarpa nello stesso percorso.</p>
+        </div>
+
+        <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+          <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
+          
+          <div id="checkPlaceholder" class="p-6 text-center space-y-2">
+            <i class="fa-solid fa-radar text-4xl text-indigo-400"></i>
+            <p class="text-xs font-semibold text-slate-300">Carica la scarpa da verificare</p>
+            <span class="text-[10px] text-slate-500 block">Fotocamera o galleria</span>
+          </div>
+
+          <!-- Animazione Scanner -->
+          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
+            <i class="fa-solid fa-compass text-indigo-400 text-3xl animate-spin mb-2"></i>
+            <span id="checkScanStatus" class="text-xs font-semibold text-indigo-300">Confronto con le scarpe già comprate...</span>
+          </div>
+
+          <!-- Overlay di Errore con Pulsante Riprova -->
+          <div id="checkErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
+            <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
+            <p id="checkErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
+            <button type="button" onclick="retryAnalysis('check')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+              <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+          <div class="flex justify-between items-center gap-2">
+            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
+            <button type="button" id="checkOcrButton" onclick="runShoeOCR('check')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
+          </div>
+          <p id="checkOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+          <textarea id="checkOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+          <div id="checkOcrSkuPanel" class="hidden flex gap-2 items-center">
+            <input id="checkOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
+            <button type="button" onclick="applyOcrSku('check')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
+          </div>
+        </div>
+        <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
+        <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+            <i class="fa-solid fa-camera"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
+          </button>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
+        <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Trova scarpe simili dalla foto</h3>
+        <p class="text-xs text-slate-400">Confronto visivo locale ispirato alle funzioni di ricerca fotografica di Immich. Non richiede Gemini né invia fotografie a server. Funziona meglio con immagini simili per inquadratura e sfondo; non riconosce semanticamente modelli diversi.</p>
+        <p class="text-xs text-indigo-300">Confronto visivo automatico al caricamento della fotografia.</p>
+        <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+        <div id="visualSearchResults" class="space-y-2"></div>
+      </div>
+      <div id="checkResultContainer" class="hidden space-y-4"></div>
+      <details id="manualInsertDetails" class="rounded-2xl border border-slate-700 bg-slate-900 mt-4">
+        <summary class="cursor-pointer p-4 text-sm font-bold text-amber-400"><i class="fa-solid fa-pen mr-2"></i>Inserimento manuale o modifica dei dati prima di salvare</summary>
+        <div class="p-2 pt-0">
+
+    <section id="view-add" class="space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
@@ -227,76 +300,9 @@
       </div>
     </section>
 
-    <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
-    <section id="view-check" class="hidden space-y-4">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
-        <div>
-          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
-            Shopping Radar
-          </span>
-          <h2 class="text-base font-bold text-slate-100">Stai per comprare una scarpa?</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Scatta o carica la foto: l'AI controllerà se possiedi già modelli uguali o con colori simili.</p>
+
         </div>
-
-        <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
-          <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
-          
-          <div id="checkPlaceholder" class="p-6 text-center space-y-2">
-            <i class="fa-solid fa-radar text-4xl text-indigo-400"></i>
-            <p class="text-xs font-semibold text-slate-300">Carica la scarpa da verificare</p>
-            <span class="text-[10px] text-slate-500 block">Fotocamera o galleria</span>
-          </div>
-
-          <!-- Animazione Scanner -->
-          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
-            <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
-            <i class="fa-solid fa-compass text-indigo-400 text-3xl animate-spin mb-2"></i>
-            <span id="checkScanStatus" class="text-xs font-semibold text-indigo-300">Confronto con le scarpe già comprate...</span>
-          </div>
-
-          <!-- Overlay di Errore con Pulsante Riprova -->
-          <div id="checkErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
-            <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
-            <p id="checkErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
-            <button type="button" onclick="retryAnalysis('check')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
-              <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
-            </button>
-          </div>
-        </div>
-
-        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
-          <div class="flex justify-between items-center gap-2">
-            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
-            <button type="button" id="checkOcrButton" onclick="runShoeOCR('check')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
-          </div>
-          <p id="checkOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
-          <textarea id="checkOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
-          <div id="checkOcrSkuPanel" class="hidden flex gap-2 items-center">
-            <input id="checkOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
-            <button type="button" onclick="applyOcrSku('check')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
-          </div>
-        </div>
-        <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
-        <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
-
-        <div class="grid grid-cols-2 gap-2.5">
-          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
-            <i class="fa-solid fa-camera"></i> Scatta Foto
-          </button>
-          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
-            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
-          </button>
-        </div>
-      </div>
-
-      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
-        <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Trova scarpe simili dalla foto</h3>
-        <p class="text-xs text-slate-400">Confronto visivo locale ispirato alle funzioni di ricerca fotografica di Immich. Non richiede Gemini né invia fotografie a server. Funziona meglio con immagini simili per inquadratura e sfondo; non riconosce semanticamente modelli diversi.</p>
-        <p class="text-xs text-indigo-300">Confronto visivo automatico al caricamento della fotografia.</p>
-        <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
-        <div id="visualSearchResults" class="space-y-2"></div>
-      </div>
-      <div id="checkResultContainer" class="hidden space-y-4"></div>
+      </details>
     </section>
 
     <!-- VIEW 4: SISTEMA E BACKUP -->
@@ -412,11 +418,8 @@
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
     </button>
-    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Inserimento">
-      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Inserimento</span>
-    </button>
-    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Ricerche">
-      <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[11px] font-semibold">Ricerche</span>
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Cerca e inserisci">
+      <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[11px] font-semibold">Cerca / Inserisci</span>
     </button>
     <button type="button" onclick="switchTab('settings')" id="tab-settings" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Sistema">
       <i class="fa-solid fa-gear text-lg"></i><span class="text-[11px] font-semibold">Sistema</span>
@@ -599,30 +602,15 @@
     }
 
     function switchTab(tabId) {
-      ['archive', 'add', 'check', 'settings'].forEach(t => {
-        document.getElementById(`view-${t}`).classList.add('hidden');
-        const btn = document.getElementById(`tab-${t}`);
-        btn.classList.remove('text-amber-400');
-        btn.classList.add('text-slate-400');
+      const showManual = tabId === 'add';
+      if (showManual) tabId = 'check';
+      ['archive', 'check', 'settings'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
+        const btn = document.getElementById('tab-' + t);
+        btn.classList.toggle('text-amber-400', t === tabId);
+        btn.classList.toggle('text-slate-400', t !== tabId);
       });
-
-      document.getElementById(`view-${tabId}`).classList.remove('hidden');
-      const activeBtn = document.getElementById(`tab-${tabId}`);
-      activeBtn.classList.add('text-amber-400');
-      activeBtn.classList.remove('text-slate-400');
-      
-      if(tabId !== 'add') {
-         document.getElementById('addPreviewImg').classList.add('hidden');
-         document.getElementById('addPlaceholder').classList.remove('hidden');
-         document.getElementById('addErrorOverlay').classList.add('hidden');
-      }
-      if(tabId !== 'check') {
-         document.getElementById('checkPreviewImg').classList.add('hidden');
-         document.getElementById('checkPlaceholder').classList.remove('hidden');
-         document.getElementById('checkResultContainer').classList.add('hidden');
-         document.getElementById('checkErrorOverlay').classList.add('hidden');
-      }
-      
+      if (showManual) document.getElementById('manualInsertDetails').open = true;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -1503,6 +1491,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       addExtraImages = [];
       document.getElementById('addExtraPhotosInput').value = '';
       renderPhotoThumbnails('add');
+      document.getElementById('manualInsertDetails').open = false;
       switchTab('archive');
     }
 
