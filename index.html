@@ -1061,10 +1061,9 @@
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
+          const scale = Math.min(1, maxWidth / Math.max(width, height));
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
@@ -1292,10 +1291,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let modelsToTry = [];
       let lastErrorMsg = "";
       const preferredFastModel = 'gemini-2.5-flash-lite';
-      const cacheKey = 'kicks_gemini_models_v8';
+      const cacheKey = 'kicks_gemini_models_v9';
       try {
-        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
-        if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 3600000) {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 86400000) {
           modelsToTry = cached.models;
         } else {
           if (statusEl) statusEl.textContent = 'Ricerca rapida del modello AI...';
@@ -1316,9 +1315,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           modelsToTry = supported.sort((a,b) => preference(a.name)-preference(b.name))
             .map(model => model.name.replace(/^models\//, ''));
           if (!modelsToTry.length) throw new Error('Nessun modello Gemini generateContent disponibile per questa chiave.');
-          sessionStorage.setItem(cacheKey, JSON.stringify({keyHint: apiKey.slice(-6), time: Date.now(), models: modelsToTry}));
+          localStorage.setItem(cacheKey, JSON.stringify({keyHint: apiKey.slice(-6), time: Date.now(), models: modelsToTry}));
         }
-        modelsToTry = [...new Set(modelsToTry)].sort((a,b) => (a === preferredFastModel ? -1 : b === preferredFastModel ? 1 : 0)).slice(0, 4);
+        const recentSuccess = localStorage.getItem('kicks_gemini_last_success_v2');
+        const firstModel = recentSuccess && modelsToTry.includes(recentSuccess) ? recentSuccess : preferredFastModel;
+        modelsToTry = [...new Set([firstModel, preferredFastModel, ...modelsToTry])].slice(0, 4);
       } catch (listingError) {
         lastErrorMsg = listingError.message; modelsToTry = [preferredFastModel, 'gemini-2.5-flash'];
       }
@@ -1397,7 +1398,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
               lastErrorMsg = 'Nessuna informazione leggibile sulla scatola. Fotografa da vicino l’etichetta.';
               break;
             }
-            sessionStorage.setItem('kicks_gemini_last_success', currentModel);
+            localStorage.setItem('kicks_gemini_last_success_v2', currentModel);
             if (geminiResultCache.size > 15) geminiResultCache.clear();
             geminiResultCache.set(analysisKey, parsed);
             if (imagesByMode[targetMode] !== base64Data) return;
