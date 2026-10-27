@@ -1529,8 +1529,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const sameColors = (a, b) => a.map(canonicalShoeColor).sort().join('|') === b.map(canonicalShoeColor).sort().join('|');
       const alreadyOwned = shoes.some(shoe => {
         if (canonicalShoeBrand(shoe.brand) !== canonicalShoeBrand(brand)) return false;
-        const ownedSku = normalizeSku(shoe.sku);
-        if (candidateSku && ownedSku) return candidateSku === ownedSku;
         return canonicalShoeModel(shoe.model) === canonicalShoeModel(model) &&
           sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors);
       });
@@ -1583,10 +1581,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const ownedColors = normalizeColors(myShoe.colors);
         const colorsEqual = sameColors(candidateColors, ownedColors);
         const shared = candidateColors.filter(color => ownedColors.includes(color));
-        if (brandEqual && skuEqual) {
-          exactMatches.push({ shoe: myShoe, reason: 'Stesso codice articolo / SKU' });
-        } else if (brandEqual && modelEqual && colorsEqual && !skuDifferent) {
-          highSimilarity.push({ shoe: myShoe, reason: 'Stessa marca, modello e colori: SKU non verificato' });
+        if (brandEqual && modelEqual && colorsEqual) {
+          exactMatches.push({ shoe: myShoe, reason: 'Stessa marca, modello e colori' });
+        } else if (brandEqual && skuEqual) {
+          highSimilarity.push({ shoe: myShoe, reason: 'Stesso SKU: verifica il modello e la colorazione' });
         } else if (brandEqual && modelEqual) {
           highSimilarity.push({ shoe: myShoe, reason: skuDifferent ? 'Stesso modello, SKU differente' : 'Stesso modello, colorazione differente' });
         } else if (brandEqual && shared.length && myShoe.category === candidate.category) {
@@ -1616,9 +1614,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           text: 'text-red-400',
           bg: 'bg-red-500/20',
           icon: 'fa-triangle-exclamation',
-          badge: 'DOPPIONE PROBABILE: SKU CORRISPONDENTE',
+          badge: 'SCARPA GIÀ PRESENTE',
           title: 'Ce l\'hai già nel tuo armadio!',
-          desc: 'Marca e codice articolo coincidono. Verifica la variante prima di aggiungere un altro paio.'
+          desc: 'Marca, modello e colori coincidono con una scarpa già memorizzata.'
         };
       } else if (highSimilarity.length > 0 || mediumSimilarity.length > 0) {
         status = {
@@ -1635,7 +1633,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
       const incomplete = !candidateBrand || !candidateModel || candidateColors.length === 0;
       const canSave = Boolean(candidateBrand || candidateModel || candidateColors.length);
-      const saveLevel = exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
+      const saveLevel = incomplete ? 'similar' : exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
       const saveButtonClass = saveLevel === 'identical'
         ? 'bg-red-600 hover:bg-red-500 text-white'
         : saveLevel === 'similar'
@@ -1667,7 +1665,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           </div>
 
           ${canSave ? `
-            <button type="button" onclick="${incomplete ? 'completeCheckedShoe()' : 'saveCheckedShoe()'}" class="mt-4 w-full min-h-12 rounded-xl ${incomplete ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950' : saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
+            <button type="button" onclick="${incomplete ? 'completeCheckedShoe()' : 'saveCheckedShoe()'}" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
               <i class="fa-solid fa-plus"></i> ${incomplete ? 'Completa e memorizza' : saveButtonText}
             </button>
             <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Modello non riconosciuto: verifica i dati. Il confronto con l’archivio non è ancora conclusivo.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa identica o simile trovata. Salva marca, modello, colori e foto.'}</p>
