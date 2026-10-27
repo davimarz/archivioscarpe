@@ -1227,7 +1227,7 @@
           document.getElementById('checkPreviewImg').classList.remove('hidden');
           document.getElementById('checkPlaceholder').classList.add('hidden');
           document.getElementById('checkScanningAnim').classList.remove('hidden');
-          document.getElementById('checkResultContainer').classList.add('hidden');
+          // Keep the local photographic report visible.
           try {
             await analyzeShoeWithGemini(base64Url, 'check');
           } finally {
@@ -1292,14 +1292,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let modelsToTry = [];
       let lastErrorMsg = "";
       const preferredFastModel = 'gemini-2.5-flash-lite';
-      const cacheKey = 'kicks_gemini_models_v4';
+      const cacheKey = 'kicks_gemini_models_v5';
       try {
         const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
         if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 3600000) {
           modelsToTry = cached.models;
         } else {
           if (statusEl) statusEl.textContent = 'Ricerca rapida del modello AI...';
-          const listing = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey));
+          const lc = new AbortController(); const lt = setTimeout(() => lc.abort(), 6000); let listing; try { listing = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey), {signal:lc.signal}); } finally {clearTimeout(lt);}
           const catalog = await listing.json();
           if (!listing.ok) throw new Error(catalog.error?.message || 'Impossibile ottenere i modelli Gemini.');
           const supported = (catalog.models || []).filter(model =>
@@ -1318,12 +1318,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (!modelsToTry.length) throw new Error('Nessun modello Gemini generateContent disponibile per questa chiave.');
           sessionStorage.setItem(cacheKey, JSON.stringify({keyHint: apiKey.slice(-6), time: Date.now(), models: modelsToTry}));
         }
-        modelsToTry = [...new Set([preferredFastModel, ...modelsToTry])].slice(0, 3);
+        modelsToTry = [...new Set([preferredFastModel, ...modelsToTry.filter(m => /flash/i.test(m) && !/latest|preview/i.test(m))])].slice(0, 2);
       } catch (listingError) {
-        lastErrorMsg = listingError.message;
-        if (errorTextEl) errorTextEl.textContent = 'Errore: ' + lastErrorMsg;
-        document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
-        return;
+        lastErrorMsg = listingError.message; modelsToTry = [preferredFastModel];
       }
 
       for (let i = 0; i < modelsToTry.length; i++) {
@@ -1334,7 +1331,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         for (let attempt = 0; attempt < 1; attempt++) {
           try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 18000);
+            const timeoutId = setTimeout(() => controller.abort(), 12000);
 
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
               method: 'POST',
@@ -1406,10 +1403,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             return; // Successo, interrompe il ciclo
 
           } catch (err) {
-            lastErrorMsg = err.name === 'AbortError' ? 'Il modello ' + currentModel + ' non ha risposto entro 40 secondi.' : err.message;
-            if (attempt === 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Breve attesa prima del secondo tentativo
-            }
+            lastErrorMsg = err.name === 'AbortError' ? 'Il modello ' + currentModel + ' non ha risposto entro 12 secondi.' : err.message;
+            // Retry is user initiated.
           }
         }
       }
