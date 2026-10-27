@@ -161,7 +161,7 @@
           </div>
         </div>
 
-        <details class="rounded-xl border border-slate-700 bg-slate-900 text-left"><summary class="cursor-pointer px-3 py-2 text-xs text-slate-300">Verifica codice articolo (OCR)</summary><div class="p-2">        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+        <details class="hidden" aria-hidden="true"><div class="p-2">        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
           <div class="flex justify-between items-center gap-2">
             <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
             <button type="button" id="checkOcrButton" onclick="runShoeOCR('check')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
@@ -187,7 +187,7 @@
         </div>
       </div>
 
-      <details class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-2 text-xs text-slate-300">Somiglianze fotografiche</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
+      <details open class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-2 text-xs text-slate-300">Report scarpe simili</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
         <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Confronto fotografico</h3>
         <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
         <div id="visualSearchResults" class="space-y-2"></div>
