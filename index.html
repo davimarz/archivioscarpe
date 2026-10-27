@@ -588,7 +588,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js', { scope: './' })
+        navigator.serviceWorker.register('./sw.js?v=2', { scope: './', updateViaCache: 'none' })
           .then(() => updateOfflineStatus())
           .catch(() => updateOfflineStatus('Offline non disponibile su questo browser.'));
       });
@@ -1292,7 +1292,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let modelsToTry = [];
       let lastErrorMsg = "";
       const preferredFastModel = 'gemini-3.8-flash';
-      const cacheKey = 'kicks_gemini_models_v6';
+      const cacheKey = 'kicks_gemini_models_v7';
       try {
         const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
         if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 3600000) {
@@ -1417,6 +1417,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           ? "I server AI di Google sono momentaneamente sovraccarichi. Attendi qualche secondo e riprova." 
           : `Errore: ${lastErrorMsg}`;
       }
+      if (targetMode === 'check') { const progress = document.getElementById('recognitionProgress'); if (progress) progress.textContent = 'Identificazione AI non riuscita. Il confronto fotografico resta disponibile.'; document.getElementById('checkResultContainer').classList.remove('hidden'); }
       document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
     }
 
