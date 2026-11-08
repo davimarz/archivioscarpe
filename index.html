@@ -406,9 +406,12 @@
         </h3>
         <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <p class="text-xs text-slate-400 leading-relaxed">
-        Inserisci la tua chiave API gratuita generata su <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-amber-400 underline font-semibold">Google AI Studio</a>.
-      </p>
+      <div class="rounded-xl border border-emerald-600/40 bg-emerald-950/30 p-3 space-y-2">
+        <p class="text-xs font-bold text-emerald-300">Gemini gratuito con il tuo account</p>
+        <p class="text-xs text-slate-300 leading-relaxed">Puoi usare il riconoscimento AI gratuitamente entro i limiti previsti da Google. Crea una chiave API personale su Google AI Studio e inseriscila qui. Non devi fornire la password Google.</p>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-emerald-300 underline">Crea la tua chiave Gemini gratuita</a>
+      </div>
+      <p class="text-[11px] text-slate-400 leading-relaxed">Quando la quota gratuita termina, attendi il ripristino previsto da Google. La chiave rimane in questo browser, ma potrebbe essere letta da codice eseguito sullo stesso sito: usa una chiave dedicata con limiti di utilizzo. Non inserire password.</p>
       <label for="apiKeyInput" class="block text-xs font-semibold text-slate-300">Chiave API Gemini</label>
       <div class="flex items-center gap-2">
         <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="AIzaSy..." class="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
