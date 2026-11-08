@@ -1,0 +1,33 @@
+name: Controlli di sicurezza
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verifica JavaScript e assenza di chiavi incorporate
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)];
+          if (!scripts.length) throw new Error('Nessuno script inline trovato');
+          for (const [, source] of scripts) new Function(source);
+          const files = ['index.html', 'sw.js', 'manifest.webmanifest'].filter(fs.existsSync);
+          for (const file of files) {
+            const content = fs.readFileSync(file, 'utf8');
+            if (/AIza[0-9A-Za-z_-]{35}/.test(content)) throw new Error('Possibile chiave Gemini incorporata in ' + file);
+            if (/gh[pousr]_[A-Za-z0-9_]{30,}/.test(content)) throw new Error('Possibile token GitHub incorporato in ' + file);
+          }
+          if (!html.includes('function isSafeShoeImageUrl(')) throw new Error('Controllo URL immagini mancante');
+          console.log('Controlli superati');
+          NODE
