@@ -322,13 +322,10 @@
           <button type="button" onclick="exportShoeBackup()" class="min-h-11 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold"><i class="fa-solid fa-download mr-1"></i>Esporta backup</button>
           <button type="button" onclick="document.getElementById('shoeBackupInput').click()" class="min-h-11 px-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-upload mr-1"></i>Ripristina backup</button>
         </div>
-        <button type="button" onclick="shareShoeBackup()" class="w-full min-h-11 px-2 rounded-xl bg-emerald-700 text-white text-xs font-semibold"><i class="fa-solid fa-share-nodes mr-1"></i>Condividi backup</button>
-        <p class="text-[11px] text-slate-400">Salva il file JSON sul dispositivo o condividilo con un'altra app. Per ripristinare, seleziona un file di backup precedentemente esportato.</p>
         <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
       </div>
 
-      <p class="text-xs text-slate-400 px-1">Il ripristino sostituisce le scarpe attualmente salvate su questo dispositivo. Prima di procedere, esporta una copia di sicurezza.</p>
     </section>
 
   </main>
@@ -487,26 +484,6 @@
         feedback.textContent = 'Download del backup avviato. Conserva il file JSON in un luogo sicuro.';
       } catch (error) {
         feedback.textContent = 'Impossibile esportare: ' + error.message;
-      }
-    }
-
-    async function shareShoeBackup() {
-      const feedback = document.getElementById('backupFeedback');
-      try {
-        const file = createShoeBackupFile();
-        if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'Backup Archivio Scarpe' });
-            feedback.textContent = 'Condivisione del backup avviata.';
-          } catch (error) {
-            feedback.textContent = error.name === 'AbortError' ? 'Condivisione annullata.' : 'Condivisione non riuscita: ' + error.message;
-          }
-        } else {
-          downloadShoeBackup(file);
-          feedback.textContent = 'La condivisione diretta non è disponibile in questo browser. Backup scaricato: puoi condividerlo dalla cartella Download.';
-        }
-      } catch (error) {
-        feedback.textContent = 'Impossibile condividere: ' + error.message;
       }
     }
 
