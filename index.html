@@ -336,6 +336,21 @@
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
       </div>
 
+      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-3">
+        <h3 class="text-sm font-bold text-slate-100">Google Drive · Backup personale</h3>
+        <p class="text-xs text-slate-400">Collega il tuo account Google per salvare e ripristinare una copia privata dell'archivio. La configurazione OAuth è necessaria una sola volta per questa installazione.</p>
+        <label for="googleClientId" class="block text-xs text-slate-300">ID client OAuth 2.0 Google (applicazione web)</label>
+        <input id="googleClientId" type="text" autocomplete="off" spellcheck="false" placeholder="…apps.googleusercontent.com" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+        <button type="button" onclick="saveGoogleClientId()" class="w-full min-h-11 rounded-xl bg-slate-800 text-xs font-semibold text-slate-100">Salva configurazione Google</button>
+        <p class="text-xs text-slate-400">Il sito rimane su GitHub Pages. Il backup sarà nella cartella applicativa nascosta di Drive, accessibile soltanto all'app autorizzata.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="connectGoogleDrive()" class="min-h-11 rounded-xl bg-blue-700 text-white text-xs font-semibold">Accedi con Google</button>
+          <button type="button" onclick="disconnectGoogleDrive()" class="min-h-11 rounded-xl bg-slate-800 text-xs text-slate-200 font-semibold">Disconnetti</button>
+          <button type="button" onclick="backupToGoogleDrive()" class="min-h-11 rounded-xl bg-emerald-700 text-white text-xs font-semibold">Backup su Drive</button>
+          <button type="button" onclick="restoreFromGoogleDrive()" class="min-h-11 rounded-xl bg-amber-500 text-slate-950 text-xs font-semibold">Ripristina da Drive</button>
+        </div>
+        <p id="googleDriveFeedback" role="status" aria-live="polite" class="text-xs text-slate-300">Google Drive non collegato. Il backup manuale resta disponibile.</p>
+      </div>
       <p class="text-xs text-slate-400 px-1">Il ripristino sostituisce le scarpe attualmente salvate su questo dispositivo. Prima di procedere, esporta una copia di sicurezza.</p>
     </section>
 
@@ -464,7 +479,139 @@
       saveToStorage();
       renderArchive();
       updateKeyUI();
+      initGoogleDriveUI();
     });
+
+
+    // OAuth Google Identity Services: il token vive solo in memoria, mai nel repository o localStorage.
+    let driveTokenClient = null;
+    let driveAccessToken = null;
+    let driveTokenExpiry = 0;
+    const driveScope = 'https://www.googleapis.com/auth/drive.appdata';
+    const driveBackupName = 'archivioscarpe-backup-v1.json';
+    function driveFeedback(message) {
+      const el = document.getElementById('googleDriveFeedback');
+      if (el) el.textContent = message;
+    }
+    function saveGoogleClientId() {
+      const id = document.getElementById('googleClientId').value.trim();
+      if (id && !/^[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(id)) {
+        driveFeedback('ID client non valido. Copia l’ID OAuth di tipo Applicazione web da Google Cloud.');
+        return;
+      }
+      localStorage.setItem('kicks_google_oauth_client_id_v1', id);
+      driveTokenClient = null;
+      driveAccessToken = null;
+      driveFeedback(id ? 'Configurazione salvata. Ora puoi accedere con Google.' : 'Configurazione rimossa.');
+    }
+    function initGoogleDriveUI() {
+      const input = document.getElementById('googleClientId');
+      if (input) input.value = localStorage.getItem('kicks_google_oauth_client_id_v1') || '';
+    }
+    function connectGoogleDrive() {
+      const clientId = localStorage.getItem('kicks_google_oauth_client_id_v1');
+      if (!clientId) { driveFeedback('Prima inserisci e salva l’ID client OAuth Google.'); return Promise.resolve(false); }
+      if (!window.google?.accounts?.oauth2) {
+        driveFeedback('Servizio di accesso Google non caricato. Verifica la connessione e riprova.');
+        return Promise.resolve(false);
+      }
+      return new Promise(resolve => {
+        try {
+          driveTokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: driveScope,
+            callback: response => {
+              if (response.error || !response.access_token) {
+                driveFeedback('Accesso Google non completato: ' + (response.error || 'autorizzazione negata'));
+                resolve(false); return;
+              }
+              driveAccessToken = response.access_token;
+              driveTokenExpiry = Date.now() + (Number(response.expires_in || 3600) - 60) * 1000;
+              driveFeedback('Google Drive collegato. Puoi creare o ripristinare il backup.');
+              resolve(true);
+            },
+            error_callback: () => { driveFeedback('Accesso Google annullato o non disponibile.'); resolve(false); }
+          });
+          driveTokenClient.requestAccessToken({ prompt: 'consent' });
+        } catch (err) { driveFeedback('Impossibile accedere: ' + err.message); resolve(false); }
+      });
+    }
+    function disconnectGoogleDrive() {
+      if (driveAccessToken && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(driveAccessToken, () => {});
+      driveAccessToken = null; driveTokenExpiry = 0;
+      driveFeedback('Disconnesso da Google Drive. I dati locali non sono stati modificati.');
+    }
+    async function ensureDriveAccess() {
+      if (driveAccessToken && Date.now() < driveTokenExpiry) return true;
+      return connectGoogleDrive();
+    }
+    async function driveRequest(url, options = {}) {
+      const response = await fetch(url, {
+        ...options,
+        headers: { Authorization: 'Bearer ' + driveAccessToken, ...(options.headers || {}) }
+      });
+      if (!response.ok) {
+        const details = await response.json().catch(() => ({}));
+        if (response.status === 401) { driveAccessToken = null; driveTokenExpiry = 0; }
+        throw new Error(details.error?.message || 'Google Drive HTTP ' + response.status);
+      }
+      return response;
+    }
+    async function findDriveBackup() {
+      const params = new URLSearchParams({
+        spaces: 'appDataFolder',
+        q: "name = '" + driveBackupName + "' and trashed = false",
+        fields: 'nextPageToken,files(id,name,modifiedTime)',
+        page_size: '100'
+      });
+      const result = await (await driveRequest('https://www.googleapis.com/drive/v3/files?' + params)).json();
+      return (result.files || []).sort((a,b) => (b.modifiedTime || '').localeCompare(a.modifiedTime || ''))[0] || null;
+    }
+    async function backupToGoogleDrive() {
+      if (!await ensureDriveAccess()) return;
+      try {
+        driveFeedback('Caricamento del backup in corso…');
+        const payload = JSON.stringify({
+          format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(),
+          shoes, collections: collectionNames
+        });
+        const old = await findDriveBackup();
+        const blob = new Blob([payload], { type: 'application/json' });
+        if (old) {
+          await driveRequest('https://www.googleapis.com/upload/drive/v3/files/' + encodeURIComponent(old.id) + '?uploadType=media', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: blob
+          });
+        } else {
+          const boundary = 'kicksarchive_' + Date.now();
+          const multipart = new Blob([
+            '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n',
+            JSON.stringify({ name: driveBackupName, parents: ['appDataFolder'], mimeType: 'application/json' }),
+            '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n',
+            blob, '\r\n--' + boundary + '--'
+          ]);
+          await driveRequest('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + boundary }, body: multipart
+          });
+        }
+        driveFeedback('Backup completato su Google Drive: ' + shoes.length + ' paia, fotografie e raccolte.');
+      } catch (err) { driveFeedback('Backup non riuscito: ' + err.message); }
+    }
+    async function restoreFromGoogleDrive() {
+      if (!await ensureDriveAccess()) return;
+      try {
+        driveFeedback('Ricerca del backup su Google Drive…');
+        const remote = await findDriveBackup();
+        if (!remote) { driveFeedback('Nessun backup trovato in questo account Google.'); return; }
+        const response = await driveRequest('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(remote.id) + '?alt=media');
+        const content = await response.text();
+        if (content.length > 100 * 1024 * 1024) throw new Error('Backup troppo grande (massimo 100 MB).');
+        const parsed = JSON.parse(content);
+        if (parsed.format !== 'kicksarchive-backup' || parsed.version !== 1 || !Array.isArray(parsed.shoes)) throw new Error('Formato backup non valido.');
+        const file = new File([content], driveBackupName, { type: 'application/json' });
+        await importShoeBackup({ files: [file], value: '' });
+        driveFeedback('Operazione di ripristino terminata. Controlla il messaggio del backup locale per l’esito.');
+      } catch (err) { driveFeedback('Ripristino non riuscito: ' + err.message); }
+    }
 
     function exportShoeBackup() {
       try {
@@ -1787,5 +1934,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
     }
   </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
