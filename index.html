@@ -101,7 +101,7 @@
         </div>
       </div>
 
-      <div class="flex gap-2 overflow-x-auto no-scrollbar py-2 px-3">
+      <div class="flex gap-2 overflow-x-auto py-2 px-3" aria-label="Categorie: scorri orizzontalmente per vedere tutte le opzioni">
         <button onclick="setCategoryFilter('all')" class="cat-pill active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-slate-950 transition whitespace-nowrap" data-cat="all">Tutte</button>
         <button onclick="setCategoryFilter('Sport / Running')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sport / Running">Running</button>
         <button onclick="setCategoryFilter('Sneakers')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sneakers">Sneakers</button>
@@ -142,7 +142,16 @@
           <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
         </div>
 
-        <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+        <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+            <i class="fa-solid fa-camera"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
+          </button>
+        </div></div>
+
+        <div id="checkDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="checkPlaceholder" class="p-6 text-center space-y-2">
@@ -184,14 +193,7 @@
         <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
         <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
 
-        <div class="grid grid-cols-2 gap-2.5">
-          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
-            <i class="fa-solid fa-camera"></i> Scatta Foto
-          </button>
-          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
-            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
-          </button>
-        </div>
+        
       </div>
 
       <details class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-3 text-xs text-slate-300">Mostra confronto fotografico dettagliato</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
@@ -211,7 +213,16 @@
           <p class="text-xs text-slate-400 mt-1">Carica una foto della scarpa o dell'etichetta per l'estrazione automatica dei dettagli.</p>
         </div>
 
-        <div id="addDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+        <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
+            <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
+          </button>
+        </div></div>
+
+        <div id="addDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="addPlaceholder" class="p-6 text-center space-y-2">
@@ -253,14 +264,7 @@
         <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
         <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
 
-        <div class="grid grid-cols-2 gap-2.5">
-          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
-            <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
-          </button>
-          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
-            <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
-          </button>
-        </div>
+        
 
         <details class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2 text-left"><summary class="text-xs font-semibold cursor-pointer py-2">Fotografie aggiuntive (facoltative)</summary>
           <p class="text-xs font-bold text-slate-200">Foto aggiuntive (massimo 4)</p>
