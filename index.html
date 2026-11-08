@@ -608,8 +608,8 @@
         const parsed = JSON.parse(content);
         if (parsed.format !== 'kicksarchive-backup' || parsed.version !== 1 || !Array.isArray(parsed.shoes)) throw new Error('Formato backup non valido.');
         const file = new File([content], driveBackupName, { type: 'application/json' });
-        await importShoeBackup({ files: [file], value: '' });
-        driveFeedback('Operazione di ripristino terminata. Controlla il messaggio del backup locale per l’esito.');
+        const restored = await importShoeBackup({ files: [file], value: '' });
+        driveFeedback(restored ? 'Ripristino da Google Drive completato correttamente.' : 'Ripristino non eseguito. L’archivio locale non è stato sostituito.');
       } catch (err) { driveFeedback('Ripristino non riuscito: ' + err.message); }
     }
 
@@ -636,7 +636,7 @@
       const feedback = document.getElementById('backupFeedback');
       const file = input.files && input.files[0];
       input.value = '';
-      if (!file) return;
+      if (!file) return false;
       try {
         if (file.size > 100 * 1024 * 1024) throw new Error('File troppo grande (massimo 100 MB).');
         const parsed = JSON.parse(await file.text());
@@ -654,7 +654,7 @@
         if (new Set(ids).size !== ids.length) throw new Error('Il backup contiene identificativi duplicati.');
         if (!confirm('Ripristinare ' + parsed.shoes.length + ' paia? Le ' + shoes.length + ' scarpe attualmente nell’archivio saranno sostituite. Esporta prima un backup se vuoi conservarle.')) {
           feedback.textContent = 'Ripristino annullato.';
-          return;
+          return false;
         }
         const serialized = JSON.stringify(parsed.shoes);
         const restoredCollections = Array.isArray(parsed.collections) ? parsed.collections.filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean) : [...new Set(parsed.shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections.filter(v => typeof v === 'string') : []))];
@@ -665,8 +665,10 @@
         saveCollectionNames();
         resetArchiveFilters();
         feedback.textContent = 'Ripristino completato: ' + shoes.length + ' paia recuperate.';
+        return true;
       } catch (error) {
         feedback.textContent = 'Ripristino non eseguito: ' + error.message;
+        return false;
       }
     }
 
