@@ -64,21 +64,20 @@
 
   </header>
 
-  <main class="flex-1 max-w-lg w-full mx-auto p-4">
+  <main class="flex-1 max-w-lg w-full mx-auto p-3 sm:p-4">
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
-      <div class="flex items-center justify-between gap-3">
-        <div class="relative flex-1">
-          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-          <input type="text" id="searchInput" aria-label="Cerca scarpe per marca, modello o colore" oninput="filterArchive()" placeholder="Cerca marca, modello o colore..." 
-            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
-        </div>
-        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700/80 text-xs px-2.5 py-2 rounded-xl font-semibold whitespace-nowrap">
-          0 paia
-        </span>
+      <div class="flex items-center justify-between gap-2">
+        <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Tutte le scarpe salvate su questo dispositivo</p></div>
+        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
       </div>
-
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Cerca</button>
+        <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi</button>
+      </div>
+      <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
+        <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e raccolte <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
         <div>
           <label for="brandFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Marca</label>
@@ -102,7 +101,7 @@
         </div>
       </div>
 
-      <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+      <div class="flex gap-2 overflow-x-auto no-scrollbar py-2 px-3">
         <button onclick="setCategoryFilter('all')" class="cat-pill active px-3.5 py-1.5 rounded-full text-xs font-medium bg-amber-500 text-slate-950 transition whitespace-nowrap" data-cat="all">Tutte</button>
         <button onclick="setCategoryFilter('Sport / Running')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sport / Running">Running</button>
         <button onclick="setCategoryFilter('Sneakers')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Sneakers">Sneakers</button>
@@ -110,7 +109,8 @@
         <button onclick="setCategoryFilter('Stivali')" class="cat-pill px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 transition whitespace-nowrap" data-cat="Stivali">Stivali</button>
       </div>
 
-      <div id="shoesGrid" class="grid grid-cols-2 gap-3.5" aria-live="polite"></div>
+      </details>
+      <div id="shoesGrid" class="grid grid-cols-2 gap-2.5" aria-live="polite"></div>
 
       <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
         <div class="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl">
@@ -126,13 +126,20 @@
 
     <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
     <section id="view-check" class="hidden space-y-4">
+      <div class="space-y-2">
+        <h2 class="text-lg font-bold">Ricerca</h2>
+        <label for="searchInput" class="text-xs text-slate-400">Cerca nel tuo archivio</label>
+        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Marca, modello, colore o codice SKU" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
+        <div id="quickSearchResults" class="space-y-2" aria-live="polite"></div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-slate-500"><span class="flex-1 border-t border-slate-800"></span>Oppure verifica con una foto<span class="flex-1 border-t border-slate-800"></span></div>
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
-            Ricerca e archivio
+            Radar acquisti
           </span>
           <h2 class="text-base font-bold text-slate-100">Cerca una scarpa</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Scatta o carica una foto. Controlla se è già presente e, se vuoi, premi Memorizza.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
         </div>
 
         <div id="checkDropZone" class="relative w-full aspect-square max-h-72 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
@@ -178,16 +185,16 @@
         <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
 
         <div class="grid grid-cols-2 gap-2.5">
-          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
             <i class="fa-solid fa-camera"></i> Scatta Foto
           </button>
-          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
             <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
           </button>
         </div>
       </div>
 
-      <details open class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-2 text-xs text-slate-300">Report scarpe simili</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
+      <details class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-3 text-xs text-slate-300">Mostra confronto fotografico dettagliato</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
         <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Confronto fotografico</h3>
         <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
         <div id="visualSearchResults" class="space-y-2"></div>
@@ -197,8 +204,6 @@
       <div id="checkResultContainer" class="hidden space-y-4"></div>
     </section>
 
-    <!-- Compatibilità con i precedenti controlli di inserimento: non visibile. -->
-    <div class="hidden" aria-hidden="true">
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
@@ -249,21 +254,21 @@
         <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
 
         <div class="grid grid-cols-2 gap-2.5">
-          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
+          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
             <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
           </button>
-          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
             <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
           </button>
         </div>
 
-        <div class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2 text-left">
+        <details class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2 text-left"><summary class="text-xs font-semibold cursor-pointer py-2">Fotografie aggiuntive (facoltative)</summary>
           <p class="text-xs font-bold text-slate-200">Foto aggiuntive (massimo 4)</p>
           <p class="text-[11px] text-slate-400">La prima foto rimane quella analizzata da Gemini. Puoi aggiungere altre inquadrature senza ripetere l'analisi.</p>
           <input type="file" id="addExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'add')">
           <div id="addExtraPhotosPreview" class="flex flex-wrap gap-2"></div>
-        </div>
-        <form id="addShoeForm" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
+        </details>
+        <form id="addShoeForm" oninput="updateAddDuplicateNotice()" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Marca</label>
             <input type="text" id="addBrand" required placeholder="es. Asics, Nike, New Balance..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
@@ -288,25 +293,24 @@
               <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
-<div><label for="addSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="addSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
+<details class="rounded-xl border border-slate-700 p-3"><summary class="cursor-pointer text-xs font-semibold text-slate-300 py-2">Altri dettagli (facoltativi)</summary><div class="space-y-3 pt-3"><div><label for="addSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="addSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
           <div>
             <label class="text-[11px] font-semibold text-slate-400 block mb-1">Note & Dettagli particolari</label>
             <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
           </div>
 
-          <button type="submit" class="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center justify-center gap-2 mt-2">
+          </div></details>
+          <div id="addDuplicateNotice" class="hidden rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-xs text-amber-200" role="status"></div>
+          <button type="submit" class="w-full min-h-12 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center justify-center gap-2 mt-2">
             <i class="fa-solid fa-floppy-disk"></i> Salva nel Guardaroba
           </button>
         </form>
       </div>
     </section>
 
-
-
-    </div>
-
     <!-- VIEW 4: SISTEMA E BACKUP -->
     <section id="view-settings" class="hidden space-y-4">
+      <h2 class="text-lg font-bold">Sistema</h2>
       <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between gap-3">
         <div><p class="font-semibold text-slate-100 text-sm">Intelligenza artificiale</p><p class="text-xs text-slate-400 mt-1">Stato e configurazione Gemini</p></div>
     <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
@@ -405,13 +409,18 @@
     </div>
   </div>
 
+  <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
+
   <!-- Bottom Navigation Bar -->
-  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-lg mx-auto grid grid-cols-3 gap-1 items-center">
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-lg mx-auto grid grid-cols-4 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
     </button>
-    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Cerca e memorizza">
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Ricerca">
       <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[11px] font-semibold">Cerca</span>
+    </button>
+    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Inserimento">
+      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Inserimento</span>
     </button>
     <button type="button" onclick="switchTab('settings')" id="tab-settings" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Sistema">
       <i class="fa-solid fa-gear text-lg"></i><span class="text-[11px] font-semibold">Sistema</span>
@@ -575,16 +584,25 @@
       renderArchive();
     }
 
+    let toastTimer;
+    function showToast(message) {
+      const el = document.getElementById('appToast');
+      el.textContent = message;
+      el.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
+    }
+
     function switchTab(tabId) {
-      const showManual = tabId === 'add';
-      if (showManual) tabId = 'check';
-      ['archive', 'check', 'settings'].forEach(t => {
+      if (!['archive', 'check', 'add', 'settings'].includes(tabId)) tabId = 'archive';
+      ['archive', 'check', 'add', 'settings'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
         const btn = document.getElementById('tab-' + t);
         btn.classList.toggle('text-amber-400', t === tabId);
         btn.classList.toggle('text-slate-400', t !== tabId);
+        btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
       });
-
+      if (tabId === 'check') updateQuickSearchResults();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -739,6 +757,8 @@
       filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
       badge.textContent = `${shoes.length} paia`;
       document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} paia visualizzate`;
+      updateActiveFiltersBadge();
+      updateQuickSearchResults();
 
       if (filtered.length === 0) {
         grid.innerHTML = '';
@@ -796,6 +816,47 @@
     }
 
     function filterArchive() { renderArchive(); }
+
+    function updateActiveFiltersBadge() {
+      const count = [
+        document.getElementById('brandFilter').value,
+        document.getElementById('colorFilter').value,
+        document.getElementById('collectionFilter').value,
+        currentCategory !== 'all' ? currentCategory : ''
+      ].filter(Boolean).length;
+      document.getElementById('activeFiltersBadge').textContent = count ? count + ' attivi' : '';
+    }
+
+    function updateQuickSearchResults() {
+      const container = document.getElementById('quickSearchResults');
+      if (!container) return;
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) { container.replaceChildren(); return; }
+      const matches = shoes.filter(shoe => shoeMatchesSmartSearch(shoe, query)).slice(0, 20);
+      container.innerHTML = '<p class="text-xs text-slate-400">' + matches.length + (matches.length === 20 ? '+' : '') + ' risultati nell’archivio</p>' +
+        (matches.length ? matches.map(shoe => '<button type="button" data-edit-shoe="' + escapeHtml(shoe.id) + '" class="w-full flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2 text-left min-h-14"><img src="' + escapeHtml(shoe.image || '') + '" alt="" class="w-12 h-12 object-cover rounded-lg"><span class="min-w-0 flex-1"><strong class="block text-sm truncate">' + escapeHtml(shoe.brand) + ' · ' + escapeHtml(shoe.model) + '</strong><span class="text-xs text-slate-400">' + escapeHtml(Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '') + '</span></span><i class="fa-solid fa-chevron-right text-slate-500"></i></button>').join('') : '<p class="text-xs text-slate-400">Nessuna scarpa trovata.</p>');
+    }
+
+    function getAddDuplicates() {
+      const brand = canonicalShoeBrand(document.getElementById('addBrand').value);
+      const model = canonicalShoeModel(document.getElementById('addModel').value);
+      const sku = normalizeSku(document.getElementById('addSku').value);
+      const colors = document.getElementById('addColors').value.split(',').map(canonicalShoeColor).filter(Boolean).sort().join('|');
+      if (!brand || (!model && !sku)) return [];
+      return shoes.filter(shoe => canonicalShoeBrand(shoe.brand) === brand && (
+        (sku && normalizeSku(shoe.sku) === sku) ||
+        (model && canonicalShoeModel(shoe.model) === model &&
+          colors && (Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',')).map(canonicalShoeColor).filter(Boolean).sort().join('|') === colors)
+      ));
+    }
+
+    function updateAddDuplicateNotice() {
+      const el = document.getElementById('addDuplicateNotice');
+      if (!el) return;
+      const duplicates = getAddDuplicates();
+      el.classList.toggle('hidden', !duplicates.length);
+      el.textContent = duplicates.length ? 'Possibile doppione: ' + duplicates.slice(0, 2).map(shoe => shoe.brand + ' ' + shoe.model).join(', ') + '. Controlla prima di salvare.' : '';
+    }
 
     function openEditShoeModal(id) {
       const shoe = shoes.find(item => String(item.id) === String(id));
@@ -1245,7 +1306,8 @@
       const errorTextEl = document.getElementById(`${targetMode}ErrorText`);
 
       if (!apiKey) {
-        alert("Inserisci la tua API Key di Google AI Studio toccando 'Imposta AI' in alto.");
+        const errorEl = document.getElementById(targetMode + 'ErrorText');
+        if (errorEl) errorEl.textContent = 'Chiave Gemini mancante. Apri Sistema → Imposta AI per configurarla.';
         openApiKeyModal();
         return;
       }
@@ -1412,6 +1474,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         document.getElementById('addColors').value = colorsStr;
         document.getElementById('addNotes').value = notes;
         document.getElementById('addSku').value = sku;
+        updateAddDuplicateNotice();
         if (!sku && !brand && !model && imagesByMode.add && !document.getElementById('addOcrText').value) {
           document.getElementById('addOcrStatus').textContent = 'SKU non rilevato: controllo OCR complementare in corso...';
           void runShoeOCR('add', true);
@@ -1454,10 +1517,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         dateAdded: new Date().toISOString().split('T')[0]
       };
 
+      const duplicates = getAddDuplicates();
+      if (duplicates.length && !confirm('Questa scarpa potrebbe essere già presente nell’archivio. Vuoi aggiungere comunque un altro paio?')) return;
       shoes.unshift(newShoe);
       saveToStorage();
 
       document.getElementById('addShoeForm').reset();
+      updateAddDuplicateNotice();
       document.getElementById('addPreviewImg').classList.add('hidden');
       document.getElementById('addPlaceholder').classList.remove('hidden');
       document.getElementById('addErrorOverlay').classList.add('hidden');
@@ -1466,6 +1532,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       addExtraImages = [];
       document.getElementById('addExtraPhotosInput').value = '';
       renderPhotoThumbnails('add');
+      showToast('Scarpa salvata nell’archivio.');
       switchTab('archive');
     }
 
