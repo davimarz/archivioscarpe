@@ -562,7 +562,7 @@
         spaces: 'appDataFolder',
         q: "name = '" + driveBackupName + "' and trashed = false",
         fields: 'nextPageToken,files(id,name,modifiedTime)',
-        page_size: '100'
+        pageSize: '100'
       });
       const result = await (await driveRequest('https://www.googleapis.com/drive/v3/files?' + params)).json();
       return (result.files || []).sort((a,b) => (b.modifiedTime || '').localeCompare(a.modifiedTime || ''))[0] || null;
