@@ -527,7 +527,8 @@
           (typeof item.id === 'string' || typeof item.id === 'number') &&
           typeof item.brand === 'string' && typeof item.model === 'string' &&
           (Array.isArray(item.colors) ? item.colors.every(c => typeof c === 'string') : typeof item.colors === 'string') &&
-          (!item.image || typeof item.image === 'string')
+          (!item.image || isSafeShoeImageUrl(item.image)) &&
+          (!item.images || (Array.isArray(item.images) && item.images.every(isSafeShoeImageUrl)))
         )) throw new Error('Il backup contiene dati non validi.');
         const ids = parsed.shoes.map(item => String(item.id));
         if (new Set(ids).size !== ids.length) throw new Error('Il backup contiene identificativi duplicati.');
@@ -625,6 +626,16 @@
       return String(value ?? '').replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       })[char]);
+    }
+
+    // Accetta solo URL di immagini compatibili con le fotografie archiviate.
+    function isSafeShoeImageUrl(value) {
+      if (typeof value !== 'string' || value.length > 12000000) return false;
+      return /^data:image\/(?:jpeg|jpg|png|webp|gif|svg\+xml);base64,[a-z0-9+/=]+$/i.test(value) ||
+        /^https:\/\/[^\s<>"']+$/i.test(value);
+    }
+    function safeShoeImageUrl(value) {
+      return isSafeShoeImageUrl(value) ? escapeHtml(value) : '';
     }
 
     // Raggruppa varianti cromatiche senza modificare i colori originali archiviati.
@@ -787,7 +798,7 @@
         return `
           <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
             <div class="relative aspect-square bg-slate-950 overflow-hidden">
-              <img src="${shoe.image}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+              <img src="${safeShoeImageUrl(shoe.image)}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
               <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-1.5 left-1.5 rounded-md bg-slate-950/85 border border-slate-600 px-1.5 py-1 text-[10px] leading-none text-white inline-flex items-center gap-1" aria-label="Apri ${shoePhotos(shoe).length} fotografie"><i class="fa-solid fa-images"></i><span>${shoePhotos(shoe).length}</span></button>
               <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
                 ${escapeHtml(shoe.category)}
@@ -849,7 +860,7 @@
       if (!query) { container.replaceChildren(); return; }
       const matches = shoes.filter(shoe => shoeMatchesSmartSearch(shoe, query)).slice(0, 20);
       container.innerHTML = '<p class="text-xs text-slate-400">' + matches.length + (matches.length === 20 ? '+' : '') + ' risultati nell’archivio</p>' +
-        (matches.length ? matches.map(shoe => '<button type="button" data-edit-shoe="' + escapeHtml(shoe.id) + '" class="w-full flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2 text-left min-h-14"><img src="' + escapeHtml(shoe.image || '') + '" alt="" class="w-12 h-12 object-cover rounded-lg"><span class="min-w-0 flex-1"><strong class="block text-sm truncate">' + escapeHtml(shoe.brand) + ' · ' + escapeHtml(shoe.model) + '</strong><span class="text-xs text-slate-400">' + escapeHtml(Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '') + '</span></span><i class="fa-solid fa-chevron-right text-slate-500"></i></button>').join('') : '<p class="text-xs text-slate-400">Nessuna scarpa trovata.</p>');
+        (matches.length ? matches.map(shoe => '<button type="button" data-edit-shoe="' + escapeHtml(shoe.id) + '" class="w-full flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2 text-left min-h-14"><img src="' + safeShoeImageUrl(shoe.image || '') + '" alt="" class="w-12 h-12 object-cover rounded-lg"><span class="min-w-0 flex-1"><strong class="block text-sm truncate">' + escapeHtml(shoe.brand) + ' · ' + escapeHtml(shoe.model) + '</strong><span class="text-xs text-slate-400">' + escapeHtml(Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '') + '</span></span><i class="fa-solid fa-chevron-right text-slate-500"></i></button>').join('') : '<p class="text-xs text-slate-400">Nessuna scarpa trovata.</p>');
     }
 
     function getAddDuplicates() {
@@ -1349,7 +1360,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           modelsToTry = cached.models;
         } else {
           if (statusEl) statusEl.textContent = 'Ricerca rapida del modello AI...';
-          const lc = new AbortController(); const lt = setTimeout(() => lc.abort(), 6000); let listing; try { listing = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(apiKey), {signal:lc.signal}); } finally {clearTimeout(lt);}
+          const lc = new AbortController(); const lt = setTimeout(() => lc.abort(), 6000); let listing; try { listing = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {signal:lc.signal, headers: {'x-goog-api-key': apiKey}}); } finally {clearTimeout(lt);}
           const catalog = await listing.json();
           if (!listing.ok) throw new Error(catalog.error?.message || 'Impossibile ottenere i modelli Gemini.');
           const supported = (catalog.models || []).filter(model =>
@@ -1385,9 +1396,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 22000);
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
               signal: controller.signal,
               body: JSON.stringify({ ...requestBody, generationConfig: { ...requestBody.generationConfig, ...(/gemini-2\\.5/.test(currentModel) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) } })
             });
@@ -1716,8 +1727,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
 
           <div class="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800">
             <p class="text-[10px] text-slate-500 uppercase font-semibold">Scarpa valutata</p>
-            <p class="text-xs font-bold text-slate-200">${candidate.brand || 'Marca n.d.'} - ${candidate.model || 'Modello n.d.'}</p>
-            <p class="text-[11px] text-amber-400">Colori: ${candColors.join(', ') || 'n.d.'}</p>
+            <p class="text-xs font-bold text-slate-200">${escapeHtml(candidate.brand || 'Marca n.d.')} - ${escapeHtml(candidate.model || 'Modello n.d.')}</p>
+            <p class="text-[11px] text-amber-400">Colori: ${escapeHtml(candColors.join(', ') || 'n.d.')}</p>
             <p class="text-[11px] text-slate-300">SKU: ${escapeHtml(candidateSku || 'non rilevato')}</p>
             <p class="text-[11px] text-slate-400 mt-1">Verifica incrociata: SKU, marca, modello, colori e fotografie. La somiglianza visiva da sola non prova un doppione.</p>
           </div>
@@ -1734,10 +1745,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
               <p class="text-xs font-semibold text-slate-300">Confronto con le tue scarpe:</p>
               ${allMatches.map(m => `
                 <div class="flex items-center gap-3 p-2 bg-slate-950/70 border border-slate-800 rounded-xl">
-                  <img src="${m.shoe.image}" class="w-12 h-12 object-cover rounded-lg border border-slate-800 shrink-0">
+                  <img src="${safeShoeImageUrl(m.shoe.image)}" class="w-12 h-12 object-cover rounded-lg border border-slate-800 shrink-0">
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-slate-200 truncate">${m.shoe.brand} ${m.shoe.model}</p>
-                    <p class="text-[11px] text-amber-300/90 truncate">${m.reason}</p>
+                    <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(m.shoe.brand)} ${escapeHtml(m.shoe.model)}</p>
+                    <p class="text-[11px] text-amber-300/90 truncate">${escapeHtml(m.reason)}</p>
                   </div>
                 </div>
               `).join('')}
@@ -1790,7 +1801,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       if (!key) { output.textContent = 'Inserisci prima una chiave API.'; return; }
       button.disabled = true;
       try {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key=' + encodeURIComponent(key));
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': key } });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error?.message || 'Errore HTTP ' + response.status);
         const models = (data.models || []).filter(m =>
@@ -1805,8 +1816,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         let errors = [];
         let working = '';
         for (const m of models.slice(0, 6)) {
-          const test = await fetch('https://generativelanguage.googleapis.com/v1beta/' + m.name + ':generateContent?key=' + encodeURIComponent(key), {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+          const test = await fetch('https://generativelanguage.googleapis.com/v1beta/' + m.name + ':generateContent', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
             body: JSON.stringify({ contents: [{ parts: [{ text: 'Descrivi brevemente questa immagine.' }, { inlineData: { mimeType: 'image/png', data: tinyPng } }] }], generationConfig: { maxOutputTokens: 60 } })
           });
           const result = await test.json();
