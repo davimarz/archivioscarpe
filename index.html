@@ -136,6 +136,15 @@
     #shoesGrid .shoe-card-actions button:last-child {color:#c52d42!important;background:#fff0f1!important}
     @media(max-width:410px){#shoesGrid > .shoe-card {grid-template-columns:45% minmax(0,1fr)!important}#shoesGrid .shoe-card-actions{gap:5px!important}#shoesGrid .shoe-card-actions button{width:33px!important;height:33px!important;min-width:33px!important;min-height:33px!important}}
     @media(min-width:640px){#shoesGrid > .shoe-card{grid-template-columns:45% minmax(0,1fr)!important}}
+
+    /* Filtri con la stessa palette chiara dello spazio pubblicitario. */
+    #archiveFiltersDetails{background:linear-gradient(110deg,#f1faff,#e4f3fc)!important;border:1px solid #d5e9f4!important;border-radius:20px!important;color:#2d576d!important}
+    #archiveFiltersDetails summary,#archiveFiltersDetails label,#archiveFiltersDetails #archiveResultCount{color:#2d576d!important}
+    #archiveFiltersDetails > div{background:transparent!important;border-color:#d5e9f4!important}
+    #archiveFiltersDetails select{background:#fff!important;color:#23485d!important;border:1px solid #cbdfe9!important;min-height:42px}
+    #archiveFiltersDetails select option,#archiveFiltersDetails select optgroup{background:#fff;color:#23485d}
+    #archiveFiltersDetails button:not(.cat-pill){background:#e5f3fa!important;color:#17617b!important;border:1px solid #cbdfe9!important}
+    #archiveFiltersDetails #activeFiltersBadge{color:#17617b!important}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -681,9 +690,17 @@
       const select = document.getElementById('collectionFilter');
       const selected = select.value;
       const names = [...new Set([...collectionNames, ...shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections : [])])].filter(v => typeof v === 'string' && v.trim()).sort((a,b) => a.localeCompare(b, 'it'));
+      const categories = [...new Set(shoes.map(shoe => String(shoe.category || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'it'));
       select.replaceChildren(new Option('Tutte le raccolte', ''));
-      names.forEach(name => select.add(new Option(name, name)));
-      select.value = names.includes(selected) ? selected : '';
+      const categoryGroup = document.createElement('optgroup');
+      categoryGroup.label = 'Tipologie presenti nell’armadio';
+      categories.forEach(name => categoryGroup.append(new Option(name, 'category:' + name)));
+      if (categories.length) select.append(categoryGroup);
+      const collectionGroup = document.createElement('optgroup');
+      collectionGroup.label = 'Raccolte personali';
+      names.forEach(name => collectionGroup.append(new Option(name, 'collection:' + name)));
+      if (names.length) select.append(collectionGroup);
+      select.value = [...select.options].some(option => option.value === selected) ? selected : '';
     }
 
     function createCollection() {
@@ -1045,7 +1062,9 @@
         const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
-        const matchesCollection = !collectionFilter || (Array.isArray(shoe.collections) && shoe.collections.includes(collectionFilter));
+        const matchesCollection = !collectionFilter ||
+          (collectionFilter.startsWith('category:') && shoe.category === collectionFilter.slice(9)) ||
+          (collectionFilter.startsWith('collection:') && Array.isArray(shoe.collections) && shoe.collections.includes(collectionFilter.slice(11)));
         return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
       });
 
