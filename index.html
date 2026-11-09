@@ -125,6 +125,17 @@
     #view-add #addErrorOverlay,#view-check #checkErrorOverlay {background:rgba(19,39,53,.95)!important;color:#fff!important}
     #view-add #addErrorOverlay .text-slate-200,#view-check #checkErrorOverlay .text-slate-200 {color:#fff!important}
     #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction {position:static!important;left:auto!important;bottom:auto!important;transform:none!important}
+
+    /* Scheda: foto 50% più larga rispetto ai 128px precedenti, comandi a destra. */
+    #shoesGrid > .shoe-card {display:grid!important;grid-template-columns:192px minmax(0,1fr)!important;min-height:190px}
+    #shoesGrid > .shoe-card > .shoe-card-photo {height:100%;min-height:190px;aspect-ratio:auto!important}
+    #shoesGrid > .shoe-card > .shoe-card-info {padding:12px!important;min-width:0}
+    #shoesGrid .shoe-card-actions button {width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;flex-shrink:0}
+    #shoesGrid .shoe-card-actions button:first-child {color:#1c7189!important;background:#e8f5fa!important}
+    #shoesGrid .shoe-card-actions button:nth-child(2) {color:#087c9c!important;background:#e8f5fa!important}
+    #shoesGrid .shoe-card-actions button:last-child {color:#c52d42!important;background:#fff0f1!important}
+    @media(max-width:410px){#shoesGrid > .shoe-card {grid-template-columns:45% minmax(0,1fr)!important}#shoesGrid .shoe-card-actions{gap:5px!important}#shoesGrid .shoe-card-actions button{width:33px!important;height:33px!important;min-width:33px!important;min-height:33px!important}}
+    @media(min-width:640px){#shoesGrid > .shoe-card{grid-template-columns:45% minmax(0,1fr)!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -1079,31 +1090,25 @@
       grid.innerHTML = filtered.map(shoe => {
         const colorsList = Array.isArray(shoe.colors) ? shoe.colors : [shoe.colors || 'N/D'];
         return `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between group">
-            <div class="relative aspect-square bg-slate-950 overflow-hidden">
+          <div class="shoe-card bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg group">
+            <div class="shoe-card-photo relative bg-slate-950 overflow-hidden">
               <img src="${safeShoeImageUrl(shoe.image)}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
-              <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" class="absolute bottom-1.5 left-1.5 rounded-md bg-slate-950/85 border border-slate-600 px-1.5 py-1 text-[10px] leading-none text-white inline-flex items-center gap-1" aria-label="Apri ${shoePhotos(shoe).length} fotografie"><i class="fa-solid fa-images"></i><span>${shoePhotos(shoe).length}</span></button>
-              <span class="absolute top-2 left-2 bg-slate-950/80 backdrop-blur-md text-[10px] font-bold text-slate-300 px-2 py-0.5 rounded-md border border-slate-800">
-                ${escapeHtml(shoe.category)}
-              </span>
-              <div class="absolute bottom-2 right-2 flex flex-col gap-1.5">
-                <button type="button" data-edit-shoe="${escapeHtml(shoe.id)}" aria-label="Modifica scarpa" title="Modifica scarpa" class="w-10 h-10 bg-slate-950/90 border border-slate-600 text-amber-400 rounded-full flex items-center justify-center hover:bg-slate-800 transition"><i class="fa-solid fa-pen text-sm"></i></button>
-                <button type="button" data-delete-shoe="${escapeHtml(shoe.id)}" aria-label="Elimina scarpa" title="Elimina scarpa" class="w-10 h-10 bg-red-950/90 border border-red-900 text-red-400 rounded-full flex items-center justify-center hover:bg-red-900 transition"><i class="fa-solid fa-trash text-sm"></i></button>
-              </div>
             </div>
-            <div class="p-3 space-y-1.5 flex-1 flex flex-col justify-between">
-              <div>
+            <div class="shoe-card-info p-3 flex flex-col min-w-0">
+              <div class="min-w-0">
                 <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">${escapeHtml(shoe.brand)}</p>
-                <h3 class="text-xs font-semibold text-slate-100 line-clamp-1">${escapeHtml(shoe.model)}</h3>
-                <p class="text-xs text-slate-400">${escapeHtml([shoe.size ? "EU "+shoe.size : "",shoe.price != null ? Number(shoe.price).toLocaleString("it-IT",{style:"currency",currency:"EUR"}) : "",shoe.store || ""].filter(Boolean).join(" · "))}</p>
+                <h3 class="text-sm font-semibold text-slate-100 break-words">${escapeHtml(shoe.model)}</h3>
+                <p class="text-xs text-slate-400">${escapeHtml(shoe.category)}</p>
+                <p class="text-xs text-slate-400 break-words">${escapeHtml([shoe.size ? "EU "+shoe.size : "",shoe.price != null ? Number(shoe.price).toLocaleString("it-IT",{style:"currency",currency:"EUR"}) : "",shoe.store || ""].filter(Boolean).join(" · "))}</p>
+                ${shoe.sku ? `<p class="text-[10px] text-slate-400 break-all">SKU: ${escapeHtml(shoe.sku)}</p>` : ''}
+                <div class="flex flex-wrap gap-1 mt-1">
+                  ${colorsList.map(c => `<span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded-md font-medium">${escapeHtml(String(c).trim())}</span>`).join('')}
+                </div>
               </div>
-              <div class="flex flex-wrap gap-1 mt-1">
-                ${shoe.sku ? `<p class="text-[10px] text-slate-400">SKU: ${escapeHtml(shoe.sku)}</p>` : ''}
-                ${colorsList.map(c => `
-                  <span class="text-[9px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded-md font-medium">
-                    ${escapeHtml(String(c).trim())}
-                  </span>
-                `).join('')}
+              <div class="shoe-card-actions flex items-center gap-2 mt-auto pt-3">
+                <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" aria-label="Apri ${shoePhotos(shoe).length} fotografie" title="Fotografie" class="w-10 h-10 bg-slate-800 border border-slate-600 text-slate-700 rounded-xl flex items-center justify-center gap-1"><i class="fa-solid fa-images"></i><span class="text-xs">${shoePhotos(shoe).length}</span></button>
+                <button type="button" data-edit-shoe="${escapeHtml(shoe.id)}" aria-label="Modifica scarpa" title="Modifica scarpa" class="w-10 h-10 bg-slate-800 border border-slate-600 text-cyan-700 rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen text-sm"></i></button>
+                <button type="button" data-delete-shoe="${escapeHtml(shoe.id)}" aria-label="Elimina scarpa" title="Elimina scarpa" class="w-10 h-10 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-sm"></i></button>
               </div>
             </div>
           </div>
