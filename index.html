@@ -79,7 +79,7 @@
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Cerca</button>
+        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Verifica</button>
         <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi</button>
       </div>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
@@ -645,7 +645,7 @@
         const el = document.getElementById(mode + 'AiStatus');
         if (!el) continue;
         el.replaceChildren();
-        el.append(document.createTextNode(ready ? 'Riconoscimento AI configurato. ' : 'Riconoscimento AI da configurare. '));
+        el.append(document.createTextNode(ready ? 'Riconoscimento AI configurato (non ancora verificato). ' : 'Riconoscimento AI da configurare. '));
         if (!ready) {
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'underline font-semibold text-amber-300';
@@ -905,7 +905,7 @@
         document.getElementById('collectionFilter').value,
         currentCategory !== 'all' ? currentCategory : ''
       ].filter(Boolean).length;
-      document.getElementById('activeFiltersBadge').textContent = count ? count + ' attivi' : '';
+      document.getElementById('activeFiltersBadge').textContent = count ? count + (count === 1 ? ' filtro attivo' : ' filtri attivi') : '';
     }
 
     function updateQuickSearchResults() {
@@ -1618,7 +1618,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
 
       const duplicates = getAddDuplicates();
-      if (duplicates.length && !confirm('Questa scarpa potrebbe essere già presente nell’archivio. Vuoi aggiungere comunque un altro paio?')) return;
+      if (duplicates.length && !confirm('Possibile doppione: ' + duplicates.slice(0, 2).map(shoe => shoe.brand + ' ' + shoe.model).join(', ') + '. Vuoi aggiungere comunque un altro paio?')) return;
       shoes.unshift(newShoe);
       saveToStorage();
 
