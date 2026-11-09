@@ -372,7 +372,7 @@
 
   <!-- Modifica scarpa archiviata -->
   <div id="editShoeModal" role="dialog" aria-modal="true" aria-labelledby="editShoeTitle" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl" style="max-height:calc(100dvh - 2rem);overflow-y:auto;overscroll-behavior:contain">
       <div class="flex items-center justify-between gap-3">
         <h3 id="editShoeTitle" class="font-bold text-lg text-white"><i class="fa-solid fa-pen text-amber-400 mr-2"></i>Modifica scarpa</h3>
         <button type="button" onclick="closeEditShoeModal()" aria-label="Chiudi modifica" class="w-10 h-10 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
