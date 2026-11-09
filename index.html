@@ -158,7 +158,7 @@
       <div class="truncate">
         <h1 class="font-bold text-base leading-tight tracking-tight text-white">Archivio Scarpe</h1>
         <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
-        <p class="text-[11px] text-slate-400">Realizzato da Davide Marziano</p>
+        <p class="text-[11px] text-slate-400">realizzato da Davide Marziano</p>
       </div>
     </div>
 
@@ -170,6 +170,11 @@
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
+      <!-- Spazio riservato a future campagne di affiliazione Awin: nessun tracciamento attivo. -->
+      <aside id="affiliateAdSlot" aria-label="Spazio pubblicitario" class="rounded-xl border border-dashed border-slate-700 bg-slate-900/70 px-4 py-3 text-center space-y-1">
+        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Spazio pubblicitario</p>
+        <p class="text-sm font-medium text-slate-300">Presto offerte su scarpe e accessori</p>
+      </aside>
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
@@ -180,11 +185,6 @@
         <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
         <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
-      <!-- Spazio riservato a future campagne di affiliazione Awin: nessun tracciamento attivo. -->
-      <aside id="affiliateAdSlot" aria-label="Spazio pubblicitario" class="rounded-xl border border-dashed border-slate-700 bg-slate-900/70 px-4 py-3 text-center space-y-1">
-        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Spazio pubblicitario</p>
-        <p class="text-sm font-medium text-slate-300">Presto offerte su scarpe e accessori</p>
-      </aside>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
         <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e raccolte <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
