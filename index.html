@@ -77,12 +77,12 @@
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
       <div class="flex items-center justify-between gap-2">
-        <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Tutte le scarpe salvate su questo dispositivo</p></div>
+        <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Verifica</button>
-        <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi</button>
+        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-camera mr-1"></i> Confronta</button>
+        <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi scarpa</button>
       </div>
       <div id="archiveSearchPanel" class="mode-panel space-y-2">
         
@@ -140,7 +140,7 @@
 
     <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
     <section id="view-check" class="hidden space-y-4">
-      <h2 class="text-lg font-bold">Confronta una scarpa</h2>
+      <h2 class="text-lg font-bold">Hai già questa scarpa?</h2>
       <p class="help-text">Scatta una foto della scarpa che vuoi comprare. Vedrai se ne hai già una uguale o simile.</p>
       <div class="hidden grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
         <button type="button" id="checkModeText" onclick="setCheckMode('text')" aria-pressed="true" class="min-h-12 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Cerca per nome</button>
@@ -152,7 +152,7 @@
           <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
             Radar acquisti
           </span>
-          <h2 class="text-base font-bold text-slate-100">Cerca una scarpa</h2>
+          <h2 class="text-base font-bold text-slate-100">Fotografa la scarpa</h2>
           <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
         </div>
 
@@ -455,8 +455,8 @@
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
     </button>
-    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Verifica acquisto">
-      <i class="fa-solid fa-magnifying-glass text-lg"></i><span class="text-[11px] font-semibold">Verifica</span>
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
+      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
     </button>
     <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa">
       <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
