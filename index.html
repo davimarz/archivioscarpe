@@ -454,7 +454,6 @@
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
         <div class="rounded-xl border border-slate-700 p-3 space-y-2"><p class="text-sm font-semibold">Backup automatico locale</p><p class="help-text">Una copia viene aggiornata dopo le modifiche nello stesso browser. Non protegge dalla perdita del dispositivo o dalla cancellazione dei dati del browser.</p><p id="autoBackupStatus" class="help-text" role="status">Stato non disponibile</p><button type="button" onclick="restoreAutomaticSnapshot()" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Ripristina ultima copia locale</button></div>
       </div>
-      <div class="rounded-2xl bg-slate-900 border border-slate-700 p-4 space-y-3"><h3 class="font-bold text-sm">Sincronizzazione cloud (facoltativa)</h3><p class="help-text">Per sincronizzare dispositivi diversi serve un progetto Supabase personale configurato con le regole di accesso indicate nel repository. Non è attivo finché non lo configuri.</p><label for="cloudUrl" class="text-xs">URL progetto Supabase</label><input id="cloudUrl" type="url" placeholder="https://progetto.supabase.co" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><label for="cloudAnonKey" class="text-xs">Chiave pubblica (anon/publishable, mai service_role)</label><input id="cloudAnonKey" type="password" autocomplete="off" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><label for="cloudEmail" class="text-xs">Email account personale</label><input id="cloudEmail" type="email" autocomplete="email" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><div class="grid grid-cols-2 gap-2"><button type="button" onclick="signInCloud()" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Accedi via email</button><button type="button" onclick="syncCloudArchive('download')" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Scarica dal cloud</button></div><label class="flex gap-2 items-center text-xs"><input id="cloudAutoSync" type="checkbox" onchange="configureCloudSync()"> Sincronizza automaticamente le modifiche dopo l'accesso</label><button type="button" onclick="syncCloudArchive('upload')" class="w-full rounded-lg bg-amber-500 text-slate-950 font-bold p-2 text-xs">Invia archivio al cloud</button><button type="button" onclick="signOutCloud()" class="rounded-lg border border-slate-700 bg-slate-800 p-2 text-xs">Disconnetti account cloud</button><p id="cloudStatus" role="status" class="help-text">Cloud non configurato.</p></div>
     </section>
 
   </main>
@@ -591,7 +590,7 @@
       saveToStorage();
       renderArchive();
       updateKeyUI();
-      initCloudSync();
+      initLocalBackupStatus();
       updateOfflineStatus();
       localStorage.removeItem("kicks_google_oauth_client_id_v1");
     });
@@ -724,96 +723,9 @@
     }
 
 
-    let cloudSession=null,cloudLastVersion=null,cloudBusy=false,cloudTimer=null;
-    function cloudStatus(message){const el=document.getElementById('cloudStatus');if(el)el.textContent=message;}
-    function cloudConfig(){
-      const input=document.getElementById('cloudUrl').value.trim();
-      const parsed=new URL(input);
-      if(parsed.protocol!=='https:'||!parsed.hostname.endsWith('.supabase.co')||parsed.pathname!=='/'||parsed.username||parsed.password)throw Error('URL progetto Supabase non valido.');
-      const key=document.getElementById('cloudAnonKey').value.trim();
-      if(!key||key.includes('service_role')||key.startsWith('sb_secret_'))throw Error('Usa una chiave pubblica, mai service_role.');
-      return {url:parsed.origin,key};
-    }
-    function initCloudSync(){
-      try{
-        const cfg=JSON.parse(localStorage.getItem('kicks_cloud_cfg_v1')||'null');
-        if(cfg){document.getElementById('cloudUrl').value=cfg.url||'';document.getElementById('cloudAnonKey').value=cfg.key||'';document.getElementById('cloudEmail').value=cfg.email||'';document.getElementById('cloudAutoSync').checked=Boolean(cfg.auto);}
-        const hash=new URLSearchParams(location.hash.slice(1));
-        if(hash.has('access_token')&&hash.has('expires_in')){
-          cloudSession={token:hash.get('access_token'),expires:Date.now()+Math.max(0,Number(hash.get('expires_in'))-30)*1000};
-          sessionStorage.setItem('kicks_cloud_session_v1',JSON.stringify(cloudSession));
-          history.replaceState(null,'',location.pathname+location.search);
-        }else cloudSession=JSON.parse(sessionStorage.getItem('kicks_cloud_session_v1')||'null');
-        cloudStatus(cloudSession&&cloudSession.expires>Date.now()?'Accesso cloud effettuato. Scegli se caricare o scaricare.':'Cloud non connesso.');
-      }catch(e){cloudStatus('Cloud non configurato: '+e.message);}
+    function initLocalBackupStatus() {
       const snapshot=localStorage.getItem('kicks_archive_snapshot_v1');
       if(snapshot){try{const v=JSON.parse(snapshot);document.getElementById('autoBackupStatus').textContent='Ultima copia locale: '+new Date(v.exportedAt).toLocaleString('it-IT');}catch{}}
-    }
-    function configureCloudSync(){
-      try{
-        const cfg=cloudConfig();cfg.email=document.getElementById('cloudEmail').value.trim();cfg.auto=document.getElementById('cloudAutoSync').checked;
-        localStorage.setItem('kicks_cloud_cfg_v1',JSON.stringify(cfg));
-        cloudStatus('Impostazioni salvate. '+(cfg.auto?'La sincronizzazione partirà dopo accesso e primo caricamento.':'Sincronizzazione manuale.'));
-      }catch(e){document.getElementById('cloudAutoSync').checked=false;cloudStatus(e.message);}
-    }
-    async function signInCloud(){
-      try{
-        configureCloudSync();const {url,key}=cloudConfig();const email=document.getElementById('cloudEmail').value.trim();
-        if(!email.includes('@'))throw Error('Inserisci una email valida.');
-        const res=await fetch(url+'/auth/v1/otp',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true,options:{email_redirect_to:location.origin+location.pathname}})});
-        if(!res.ok)throw Error('Accesso non riuscito (HTTP '+res.status+'). Controlla redirect e configurazione.');
-        cloudStatus('Controlla la tua email e apri il link di accesso su questo dispositivo.');
-      }catch(e){cloudStatus(e.message);}
-    }
-    function signOutCloud(){
-      cloudSession=null;cloudLastVersion=null;clearTimeout(cloudTimer);
-      sessionStorage.removeItem('kicks_cloud_session_v1');
-      document.getElementById('cloudAutoSync').checked=false;
-      cloudStatus('Account cloud disconnesso. L’archivio locale rimane sul dispositivo.');
-    }
-    function cloudUserId(token){
-      const part=token.split('.')[1];if(!part)throw Error('Sessione non valida');
-      const obj=JSON.parse(atob(part.replace(/-/g,'+').replace(/_/g,'/')));
-      if(typeof obj.sub!=='string'||obj.sub.length!==36)throw Error('Utente cloud non valido');return obj.sub;
-    }
-    async function cloudRequest(path,opts={}){
-      const {url,key}=cloudConfig();
-      if(!cloudSession||cloudSession.expires<=Date.now())throw Error('Sessione scaduta: accedi di nuovo.');
-      const res=await fetch(url+path,{...opts,headers:{apikey:key,Authorization:'Bearer '+cloudSession.token,'Content-Type':'application/json',...(opts.headers||{})}});
-      if(!res.ok)throw Error('Errore cloud HTTP '+res.status+'; controlla tabella e policy RLS.');
-      const body=await res.text();return body?JSON.parse(body):null;
-    }
-    async function syncCloudArchive(direction='upload',automatic=false){
-      if(cloudBusy)return;cloudBusy=true;
-      try{
-        const userId=cloudUserId(cloudSession?.token||'');
-        const rows=await cloudRequest('/rest/v1/shoe_archives?user_id=eq.'+encodeURIComponent(userId)+'&select=user_id,payload,updated_at');
-        const remote=Array.isArray(rows)?rows[0]:null;
-        if(direction==='download'){
-          if(!remote)throw Error('Nessun archivio cloud trovato. Carica prima un backup.');
-          if(!remote.payload||!isValidShoeArchive(remote.payload.shoes))throw Error('Archivio cloud non valido.');
-          if(!confirm('Scaricare '+remote.payload.shoes.length+' scarpe dal cloud? Sostituirà l’archivio locale.'))return;
-          const previous=JSON.stringify(shoes);
-          localStorage.setItem('kicks_archive_v17',JSON.stringify(remote.payload.shoes));
-          shoes=remote.payload.shoes;collectionNames=Array.isArray(remote.payload.collections)?remote.payload.collections:[];
-          saveCollectionNames();saveAutomaticSnapshot(previous);cloudLastVersion=remote.updated_at;resetArchiveFilters();
-          cloudStatus('Archivio scaricato. Copia precedente conservata localmente.');
-        }else{
-          if(automatic&&remote&&(!cloudLastVersion||remote.updated_at!==cloudLastVersion)){
-            document.getElementById('cloudAutoSync').checked=false;configureCloudSync();
-            throw Error('Il cloud contiene modifiche non verificate: sincronizzazione sospesa.');
-          }
-          if(!automatic&&remote&&!confirm('Sostituire il backup cloud con l’archivio di questo dispositivo?'))return;
-          const payload={format:'kicksarchive-backup',version:1,shoes,collections:collectionNames};
-          const updated=await cloudRequest('/rest/v1/shoe_archives?on_conflict=user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({user_id:userId,payload,updated_at:new Date().toISOString()})});
-          cloudLastVersion=updated?.[0]?.updated_at||null;
-          cloudStatus('Archivio inviato al cloud: '+shoes.length+' paia.');
-        }
-      }catch(e){cloudStatus('Sincronizzazione non riuscita: '+e.message);}finally{cloudBusy=false;}
-    }
-    function scheduleCloudSync(){
-      if(!document.getElementById('cloudAutoSync')?.checked||!cloudSession||cloudSession.expires<=Date.now()||!cloudLastVersion)return;
-      clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>{if(navigator.onLine)void syncCloudArchive('upload',true);},1800);
     }
     function saveToStorage() {
       const previous=localStorage.getItem('kicks_archive_v17');
@@ -822,7 +734,6 @@
       localStorage.setItem('kicks_archive_v17',current);
       if(previous!==current)saveAutomaticSnapshot(current);
       renderArchive();
-      if(previous!==current)scheduleCloudSync();
     }
     function isValidShoeArchive(items){
       return Array.isArray(items)&&items.length<=10000&&items.every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&(typeof item.id==='string'||typeof item.id==='number')&&typeof item.brand==='string'&&typeof item.model==='string'&&(Array.isArray(item.colors)?item.colors.every(c=>typeof c==='string'):typeof item.colors==='string')&&(!item.image||isSafeShoeImageUrl(item.image))&&(!item.images||(Array.isArray(item.images)&&item.images.every(isSafeShoeImageUrl))))&&new Set(items.map(item=>String(item.id))).size===items.length;
