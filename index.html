@@ -301,7 +301,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Aggiungi una scarpa</h2>
-          <p class="text-xs text-slate-400 mt-1">Carica una foto della scarpa o dell'etichetta per l'estrazione automatica dei dettagli.</p>
+          <p class="text-xs text-slate-400 mt-1">Controlla i dati della scarpa e salvala nell’armadio. La foto del confronto viene riutilizzata.</p>
         </div>
 
         <p id="addAiStatus" class="help-text text-left" role="status">Puoi inserire i dati anche manualmente.</p>
@@ -526,12 +526,9 @@
   <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
 
   <!-- Bottom Navigation Bar -->
-  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-3 gap-1 items-center">
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-2 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
-    </button>
-    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa">
-      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
     </button>
     <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
       <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
@@ -1872,6 +1869,29 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
 
     let lastCheckedCandidate = null;
 
+    function addComparedShoe() {
+      const candidate = lastCheckedCandidate || {};
+      const photo = imagesByMode.check;
+      if (!photo) { showToast('Scatta prima una foto nella pagina Confronta.'); return; }
+      document.getElementById('addShoeForm').reset();
+      addExtraImages = [];
+      imagesByMode.add = photo;
+      selectedImageBase64 = photo;
+      document.getElementById('addPreviewImg').src = photo;
+      document.getElementById('addPreviewImg').classList.remove('hidden');
+      document.getElementById('addPlaceholder').classList.add('hidden');
+      document.getElementById('addBrand').value = candidate.brand || '';
+      document.getElementById('addModel').value = candidate.model || '';
+      document.getElementById('addColors').value = Array.isArray(candidate.colors) ? candidate.colors.join(', ') : (candidate.colors || '');
+      document.getElementById('addSku').value = candidate.sku || '';
+      document.getElementById('addNotes').value = candidate.notes || '';
+      const category = document.getElementById('addCategory');
+      if (candidate.category && [...category.options].some(option => option.value === candidate.category)) category.value = candidate.category;
+      renderPhotoThumbnails('add');
+      updateAddDuplicateNotice();
+      switchTab('add');
+    }
+
     function completeCheckedShoe() {
       if (!lastCheckedCandidate) return;
       const brand = prompt('Marca della scarpa:', lastCheckedCandidate.brand || '');
@@ -2015,7 +2035,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
       const sideBySide=allMatches.length?renderSideBySideComparison(candidate,allMatches[0].shoe):'';
       const incomplete = !candidateBrand || !candidateModel || candidateColors.length === 0;
-      const canSave = Boolean(candidateBrand || candidateModel || candidateColors.length);
+      const canSave = Boolean(imagesByMode.check);
       const saveLevel = incomplete ? 'similar' : exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
       const saveButtonClass = saveLevel === 'identical'
         ? 'bg-red-600 hover:bg-red-500 text-white'
@@ -2023,7 +2043,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           ? 'bg-orange-500 hover:bg-orange-400 text-slate-950'
           : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950';
       const saveButtonText = 'Memorizza';
-      if (canSave) lastCheckedCandidate = { ...candidate, image: candidate.image || imagesByMode.check };
+      if (canSave) lastCheckedCandidate = { ...candidate, image: imagesByMode.check };
       else lastCheckedCandidate = null;
 
       container.innerHTML = `
@@ -2048,10 +2068,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           </div>
 
           ${canSave ? `
-            <button type="button" onclick="${incomplete ? 'completeCheckedShoe()' : 'saveCheckedShoe()'}" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
-              <i class="fa-solid fa-plus"></i> ${incomplete ? 'Completa e memorizza' : saveButtonText}
+            <button type="button" onclick="addComparedShoe()" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-plus"></i> Aggiungi all’armadio
             </button>
-            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Modello non riconosciuto: verifica i dati. Il confronto con l’archivio non è ancora conclusivo.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'Nessuna scarpa identica o simile trovata. Salva marca, modello, colori e foto.'}</p>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Completa i dati nella schermata successiva. La foto sarà già inserita.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'La foto verrà trasferita automaticamente al modulo di inserimento.'}</p>
           ` : ''}
 
           ${sideBySide}
