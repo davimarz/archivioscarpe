@@ -532,7 +532,7 @@
         )) throw new Error('Il backup contiene dati non validi.');
         const ids = parsed.shoes.map(item => String(item.id));
         if (new Set(ids).size !== ids.length) throw new Error('Il backup contiene identificativi duplicati.');
-        if (!confirm('Ripristinare ' + parsed.shoes.length + ' paia? Le ' + shoes.length + ' scarpe attualmente nell’archivio saranno sostituite. Esporta prima un backup se vuoi conservarle.')) {
+        if (!confirm('Ripristinare ' + parsed.shoes.length + (parsed.shoes.length === 1 ? ' paio' : ' paia') + '? Le ' + shoes.length + ' scarpe attualmente nell’archivio saranno sostituite. Esporta prima un backup se vuoi conservarle.')) {
           feedback.textContent = 'Ripristino annullato.';
           return false;
         }
@@ -544,7 +544,7 @@
         collectionNames = restoredCollections;
         saveCollectionNames();
         resetArchiveFilters();
-        feedback.textContent = 'Ripristino completato: ' + shoes.length + ' paia recuperate.';
+        feedback.textContent = 'Ripristino completato: ' + shoes.length + (shoes.length === 1 ? ' paio recuperato.' : ' paia recuperate.');
         return true;
       } catch (error) {
         feedback.textContent = 'Ripristino non eseguito: ' + error.message;
@@ -781,8 +781,8 @@
       });
 
       filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
-      badge.textContent = `${shoes.length} paia`;
-      document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} paia visualizzate`;
+      badge.textContent = `${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'}`;
+      document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'} ${filtered.length === 1 ? 'visualizzato' : 'visualizzati'}`;
       updateActiveFiltersBadge();
       updateQuickSearchResults();
 
@@ -859,7 +859,7 @@
       const query = document.getElementById('searchInput').value.trim();
       if (!query) { container.replaceChildren(); return; }
       const matches = shoes.filter(shoe => shoeMatchesSmartSearch(shoe, query)).slice(0, 20);
-      container.innerHTML = '<p class="text-xs text-slate-400">' + matches.length + (matches.length === 20 ? '+' : '') + ' risultati nell’archivio</p>' +
+      container.innerHTML = '<p class="text-xs text-slate-400">' + matches.length + (matches.length === 20 ? '+' : '') + (matches.length === 1 ? ' risultato' : ' risultati') + ' nell’archivio</p>' +
         (matches.length ? matches.map(shoe => '<button type="button" data-edit-shoe="' + escapeHtml(shoe.id) + '" class="w-full flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2 text-left min-h-14"><img src="' + safeShoeImageUrl(shoe.image || '') + '" alt="" class="w-12 h-12 object-cover rounded-lg"><span class="min-w-0 flex-1"><strong class="block text-sm truncate">' + escapeHtml(shoe.brand) + ' · ' + escapeHtml(shoe.model) + '</strong><span class="text-xs text-slate-400">' + escapeHtml(Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '') + '</span></span><i class="fa-solid fa-chevron-right text-slate-500"></i></button>').join('') : '<p class="text-xs text-slate-400">Nessuna scarpa trovata.</p>');
     }
 
