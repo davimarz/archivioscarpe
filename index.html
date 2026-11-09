@@ -314,6 +314,7 @@
               <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
             </div>
           </div>
+          <details class="rounded-xl border border-slate-700 p-3"><summary class="text-xs cursor-pointer font-semibold">Dati acquisto (facoltativi)</summary><div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs">Taglia EU<input id="addShoeSize" type="text" maxlength="20" placeholder="42,5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Prezzo €<input id="addShoePrice" type="number" min="0" step="0.01" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Data acquisto<input id="addPurchaseDate" type="date" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Negozio<input id="addShoeStore" type="text" maxlength="120" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label></div></details>
 <div id="addDuplicateNotice" class="hidden rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2" role="status"></div>
 <details class="rounded-xl border border-slate-700 p-3"><summary class="cursor-pointer text-xs font-semibold text-slate-300 py-2">Altri dettagli (facoltativi)</summary><div class="space-y-3 pt-3"><div><label for="addSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="addSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
           <div>
@@ -362,8 +363,9 @@
         <p class="help-text">Le scarpe sono salvate su questo dispositivo. Esporta periodicamente un backup. Attenzione: il ripristino sostituisce l'archivio attuale.</p>
         <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
         <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2"><p class="text-sm font-semibold">Backup automatico locale</p><p class="help-text">Una copia viene aggiornata dopo le modifiche nello stesso browser. Non protegge dalla perdita del dispositivo o dalla cancellazione dei dati del browser.</p><p id="autoBackupStatus" class="help-text" role="status">Stato non disponibile</p><button type="button" onclick="restoreAutomaticSnapshot()" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Ripristina ultima copia locale</button></div>
       </div>
-
+      <div class="rounded-2xl bg-slate-900 border border-slate-700 p-4 space-y-3"><h3 class="font-bold text-sm">Sincronizzazione cloud (facoltativa)</h3><p class="help-text">Per sincronizzare dispositivi diversi serve un progetto Supabase personale configurato con le regole di accesso indicate nel repository. Non è attivo finché non lo configuri.</p><label for="cloudUrl" class="text-xs">URL progetto Supabase</label><input id="cloudUrl" type="url" placeholder="https://progetto.supabase.co" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><label for="cloudAnonKey" class="text-xs">Chiave pubblica (anon/publishable, mai service_role)</label><input id="cloudAnonKey" type="password" autocomplete="off" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><label for="cloudEmail" class="text-xs">Email account personale</label><input id="cloudEmail" type="email" autocomplete="email" class="w-full bg-slate-950 rounded-lg border border-slate-700 p-2 text-sm"><div class="grid grid-cols-2 gap-2"><button type="button" onclick="signInCloud()" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Accedi via email</button><button type="button" onclick="syncCloudArchive('download')" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Scarica dal cloud</button></div><label class="flex gap-2 items-center text-xs"><input id="cloudAutoSync" type="checkbox" onchange="configureCloudSync()"> Sincronizza automaticamente le modifiche dopo l'accesso</label><button type="button" onclick="syncCloudArchive('upload')" class="w-full rounded-lg bg-amber-500 text-slate-950 font-bold p-2 text-xs">Invia archivio al cloud</button><p id="cloudStatus" role="status" class="help-text">Cloud non configurato.</p></div>
     </section>
 
   </main>
@@ -379,6 +381,7 @@
         <input type="hidden" id="editShoeId">
         <div><label for="editShoeBrand" class="block text-sm text-slate-300 mb-1">Marca</label><input id="editShoeBrand" required maxlength="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
         <div><label for="editShoeModel" class="block text-sm text-slate-300 mb-1">Modello</label><input id="editShoeModel" required maxlength="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
+        <div class="grid grid-cols-2 gap-2"><label class="text-xs">Taglia EU<input id="editShoeSize" maxlength="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Prezzo €<input id="editShoePrice" type="number" min="0" step="0.01" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Data acquisto<input id="editPurchaseDate" type="date" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Negozio<input id="editShoeStore" maxlength="120" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label></div>
         <div><label for="editShoeColors" class="block text-sm text-slate-300 mb-1">Colore o colori</label><input id="editShoeColors" required maxlength="200" placeholder="Es. Nero, Bianco" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><p class="text-xs text-slate-400 mt-1">Separa più colori con una virgola.</p></div>
 <div><label for="editShoeSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="editShoeSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
         <div><label for="editShoeCategory" class="block text-xs text-slate-300 mb-1">Categoria</label><select id="editShoeCategory" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><option>Sport / Running</option><option>Sneakers</option><option>Eleganti</option><option>Stivali</option><option>Casual / Altro</option></select></div>
@@ -866,6 +869,7 @@
               <div>
                 <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">${escapeHtml(shoe.brand)}</p>
                 <h3 class="text-xs font-semibold text-slate-100 line-clamp-1">${escapeHtml(shoe.model)}</h3>
+                <p class="text-xs text-slate-400">${escapeHtml([shoe.size ? "EU "+shoe.size : "",shoe.price != null ? Number(shoe.price).toLocaleString("it-IT",{style:"currency",currency:"EUR"}) : "",shoe.store || ""].filter(Boolean).join(" · "))}</p>
               </div>
               <div class="flex flex-wrap gap-1 mt-1">
                 ${shoe.sku ? `<p class="text-[10px] text-slate-400">SKU: ${escapeHtml(shoe.sku)}</p>` : ''}
@@ -964,6 +968,10 @@
       document.getElementById('editShoeModel').value = shoe.model || '';
       document.getElementById('editShoeColors').value = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || '');
       document.getElementById('editShoeSku').value = shoe.sku || '';
+      document.getElementById('editShoeSize').value = shoe.size || '';
+      document.getElementById('editShoePrice').value = shoe.price ?? '';
+      document.getElementById('editPurchaseDate').value = shoe.purchaseDate || '';
+      document.getElementById('editShoeStore').value = shoe.store || '';
       document.getElementById('editShoeCategory').value = shoe.category || 'Casual / Altro';
       document.getElementById('editShoeNotes').value = shoe.notes || '';
       document.getElementById('editShoeCollections').value = Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '';
@@ -992,6 +1000,7 @@
       shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
       shoe.category = document.getElementById('editShoeCategory').value;
       shoe.notes = document.getElementById('editShoeNotes').value.trim();
+      Object.assign(shoe, readShoePurchaseFields('edit'));
       shoe.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
       shoe.collections.forEach(name => { if (!collectionNames.includes(name)) collectionNames.push(name); });
       saveCollectionNames();
@@ -1103,7 +1112,7 @@
         img.loading = 'lazy';
         container.appendChild(img);
       });
-      document.getElementById('shoeGalleryTitle').textContent = shoe.brand + ' ' + shoe.model + ' — ' + photos.length + ' foto';
+      document.getElementById('shoeGalleryTitle').textContent = shoe.brand + ' ' + shoe.model + ' — ' + photos.length + ' foto' + (shoe.size ? ' · EU ' + shoe.size : '') + (shoe.purchaseDate ? ' · ' + shoe.purchaseDate : '') + (shoe.store ? ' · ' + shoe.store : '');
       document.getElementById('shoeGalleryModal').classList.remove('hidden');
     }
 
@@ -1597,6 +1606,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
     }
 
+    function readShoePurchaseFields(prefix) {
+      const rawPrice = document.getElementById(prefix + 'ShoePrice').value;
+      const price = rawPrice === '' ? null : Number(rawPrice);
+      return {size:document.getElementById(prefix + 'ShoeSize').value.trim().slice(0,20),price:Number.isFinite(price)&&price>=0?price:null,purchaseDate:document.getElementById(prefix + 'PurchaseDate').value,store:document.getElementById(prefix + 'ShoeStore').value.trim().slice(0,120)};
+    }
     function saveShoe(e) {
       e.preventDefault();
       const rawColors = document.getElementById('addColors').value;
@@ -1615,7 +1629,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         collections: [],
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
-        dateAdded: new Date().toISOString().split('T')[0]
+        dateAdded: new Date().toISOString().split('T')[0],
+        ...readShoePurchaseFields('add')
       };
 
       const duplicates = getAddDuplicates();
