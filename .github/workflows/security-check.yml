@@ -33,3 +33,5 @@ jobs:
           NODE
       - name: Test regressione interfaccia UX
         run: node tests/ux-smoke.test.cjs
+      - name: Test nuove funzionalita archivio
+        run: node tests/features-smoke.test.cjs
