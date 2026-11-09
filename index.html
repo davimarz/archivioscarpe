@@ -64,14 +64,15 @@
       </div>
       <div class="truncate">
         <h1 class="font-bold text-base leading-tight tracking-tight text-white">Archivio Scarpe</h1>
-        <p class="text-[10px] text-slate-400">Archivio & Radar Scarpe AI</p>
+        <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
       </div>
     </div>
 
 
+    <button id="headerSettingsButton" type="button" onclick="switchTab('settings')" aria-label="Apri impostazioni" title="Impostazioni" class="absolute right-4 top-2 w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300"><i class="fa-solid fa-gear"></i></button>
   </header>
 
-  <main class="flex-1 max-w-lg w-full mx-auto p-3 sm:p-4">
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4">
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
@@ -82,6 +83,12 @@
       <div class="grid grid-cols-2 gap-2">
         <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-magnifying-glass mr-1"></i> Verifica</button>
         <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi</button>
+      </div>
+      <div id="archiveSearchPanel" class="mode-panel space-y-2">
+        
+        <label for="searchInput" class="block text-sm font-semibold text-slate-200">Cerca le tue scarpe</label>
+        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
+        <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
         <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e raccolte <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
@@ -133,17 +140,11 @@
 
     <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
     <section id="view-check" class="hidden space-y-4">
-      <h2 class="text-lg font-bold">Verifica un acquisto</h2>
-      <p class="help-text">Controlla se una scarpa è già nel tuo archivio.</p>
-      <div class="grid grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
+      <h2 class="text-lg font-bold">Confronta una scarpa</h2>
+      <p class="help-text">Scatta una foto della scarpa che vuoi comprare. Vedrai se ne hai già una uguale o simile.</p>
+      <div class="hidden grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
         <button type="button" id="checkModeText" onclick="setCheckMode('text')" aria-pressed="true" class="min-h-12 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Cerca per nome</button>
         <button type="button" id="checkModePhoto" onclick="setCheckMode('photo')" aria-pressed="false" class="min-h-12 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-sm">Verifica con foto</button>
-      </div>
-      <div id="checkTextPanel" class="mode-panel space-y-2">
-        <h3 class="text-sm font-semibold">Cerca nell'archivio</h3>
-        <label for="searchInput" class="text-xs text-slate-400">Cerca nel tuo archivio</label>
-        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Marca, modello, colore o codice SKU" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
-        <div id="quickSearchResults" class="space-y-2" aria-live="polite"></div>
       </div>
       <div id="checkPhotoPanel" class="mode-panel space-y-3" hidden>
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
@@ -450,7 +451,7 @@
   <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
 
   <!-- Bottom Navigation Bar -->
-  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-3 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
     </button>
@@ -460,9 +461,7 @@
     <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa">
       <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
     </button>
-    <button type="button" onclick="switchTab('settings')" id="tab-settings" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Impostazioni">
-      <i class="fa-solid fa-gear text-lg"></i><span class="text-[11px] font-semibold">Impostazioni</span>
-    </button>
+
   </nav>
 
   <script>
@@ -792,11 +791,14 @@
       ['archive', 'check', 'add', 'settings'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
         const btn = document.getElementById('tab-' + t);
-        btn.classList.toggle('text-amber-400', t === tabId);
-        btn.classList.toggle('text-slate-400', t !== tabId);
-        btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
+        if (btn) {
+          btn.classList.toggle('text-amber-400', t === tabId);
+          btn.classList.toggle('text-slate-400', t !== tabId);
+          btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
+        }
       });
-      if (tabId === 'check') updateQuickSearchResults();
+      if (tabId === 'check') setCheckMode('photo');
+      if (tabId === 'archive') updateQuickSearchResults();
       updatePhotoAiStatus();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
