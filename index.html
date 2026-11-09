@@ -1038,12 +1038,25 @@
         return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
       });
 
+      // Data effettiva di inserimento, non data d'acquisto o nome della scarpa.
+      // Per gli archivi precedenti usa l'ID timestamp; per record senza
+      // timestamp conserva l'ordine originale di memorizzazione.
+      const insertionOrder = new Map(shoes.map((shoe, index) => [shoe, index]));
+      const insertionTime = shoe => {
+        const explicit = Date.parse(shoe.createdAt || '');
+        if (Number.isFinite(explicit)) return explicit;
+        const id = String(shoe.id || '');
+        if (/^\d{13}$/.test(id)) return Number(id);
+        const legacy = Date.parse(shoe.dateAdded || '');
+        return Number.isFinite(legacy) ? legacy : null;
+      };
       filtered.sort((a, b) => {
-        const dateDifference = String(b.dateAdded || '').localeCompare(String(a.dateAdded || ''));
-        if (dateDifference) return dateDifference;
-        const aId = /^\d{13}$/.test(String(a.id || '')) ? Number(a.id) : 0;
-        const bId = /^\d{13}$/.test(String(b.id || '')) ? Number(b.id) : 0;
-        return bId - aId;
+        const aTime = insertionTime(a);
+        const bTime = insertionTime(b);
+        if (aTime !== null && bTime !== null && aTime !== bTime) return bTime - aTime;
+        if (aTime !== null && bTime === null) return -1;
+        if (bTime !== null && aTime === null) return 1;
+        return insertionOrder.get(a) - insertionOrder.get(b);
       });
       badge.textContent = `${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'}`;
       document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'} ${filtered.length === 1 ? 'visualizzato' : 'visualizzati'}`;
@@ -1853,6 +1866,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         collections: [],
         image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
+        createdAt: new Date().toISOString(),
         dateAdded: new Date().toISOString().split('T')[0],
         ...readShoePurchaseFields('add')
       };
@@ -1949,6 +1963,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         collections: [],
         image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
         images: [candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b')],
+        createdAt: new Date().toISOString(),
         dateAdded: new Date().toISOString().split('T')[0]
       };
       shoes.unshift(newShoe);
