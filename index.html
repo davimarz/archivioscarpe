@@ -446,6 +446,7 @@
     </div>
   </div>
 
+  <div id="offlineStatus" class="hidden fixed top-2 right-2 z-50 rounded-lg bg-amber-500 text-slate-950 px-3 py-1 text-xs font-bold" role="status">Offline · archivio locale disponibile</div>
   <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
 
   <!-- Bottom Navigation Bar -->
@@ -502,6 +503,8 @@
       saveToStorage();
       renderArchive();
       updateKeyUI();
+      initCloudSync();
+      updateOfflineStatus();
       localStorage.removeItem("kicks_google_oauth_client_id_v1");
     });
 
@@ -609,17 +612,45 @@
       alert('Raccolta pronta. Per assegnare una scarpa, apri la sua modifica e inserisci il nome nel campo Raccolte.');
     }
 
+    function updateOfflineStatus(){const el=document.getElementById('offlineStatus');if(el)el.classList.toggle('hidden',navigator.onLine);}
+    window.addEventListener('online',updateOfflineStatus);window.addEventListener('offline',updateOfflineStatus);
     // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=3', { scope: './', updateViaCache: 'none' })
           .catch(error => console.warn('Cache offline non disponibile:', error));
       });
     }
 
     function saveToStorage() {
-      localStorage.setItem('kicks_archive_v17', JSON.stringify(shoes));
+      const previous=localStorage.getItem('kicks_archive_v17');
+      const current=JSON.stringify(shoes);
+      if(previous!==current&&previous) saveAutomaticSnapshot(previous);
+      localStorage.setItem('kicks_archive_v17',current);
+      if(!previous)saveAutomaticSnapshot(current);
       renderArchive();
+      if(previous!==current)scheduleCloudSync();
+    }
+    function saveAutomaticSnapshot(serialized) {
+      try {
+        const snapshot={format:'kicksarchive-backup',version:1,exportedAt:new Date().toISOString(),shoes:JSON.parse(serialized),collections:collectionNames};
+        localStorage.setItem('kicks_archive_snapshot_v1',JSON.stringify(snapshot));
+        const el=document.getElementById('autoBackupStatus');if(el)el.textContent='Ultima copia locale: '+new Date().toLocaleString('it-IT');
+        return true;
+      }catch(e){const el=document.getElementById('autoBackupStatus');if(el)el.textContent='Copia locale non disponibile: '+e.message;return false;}
+    }
+    function restoreAutomaticSnapshot() {
+      try {
+        const raw=localStorage.getItem('kicks_archive_snapshot_v1');
+        if(!raw){alert('Nessuna copia locale disponibile.');return;}
+        const snapshot=JSON.parse(raw);
+        if(snapshot.format!=='kicksarchive-backup'||!Array.isArray(snapshot.shoes))throw Error('Copia non valida');
+        if(!confirm('Ripristinare la copia locale? L’archivio corrente sarà sostituito.'))return;
+        const before=JSON.stringify(shoes);
+        localStorage.setItem('kicks_archive_v17',JSON.stringify(snapshot.shoes));
+        shoes=snapshot.shoes;collectionNames=Array.isArray(snapshot.collections)?snapshot.collections:[];
+        saveCollectionNames();saveAutomaticSnapshot(before);resetArchiveFilters();showToast('Copia locale ripristinata.');
+      }catch(e){alert('Ripristino non riuscito: '+e.message);}
     }
 
     let toastTimer;
