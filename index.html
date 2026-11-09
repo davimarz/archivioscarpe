@@ -1038,7 +1038,13 @@
         return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
       });
 
-      filtered.sort((a, b) => String(a.brand || '').localeCompare(String(b.brand || ''), 'it', { sensitivity: 'base' }) || String(a.model || '').localeCompare(String(b.model || ''), 'it', { sensitivity: 'base' }) || String(a.colors || '').localeCompare(String(b.colors || ''), 'it', { sensitivity: 'base' }));
+      filtered.sort((a, b) => {
+        const dateDifference = String(b.dateAdded || '').localeCompare(String(a.dateAdded || ''));
+        if (dateDifference) return dateDifference;
+        const aId = /^\d{13}$/.test(String(a.id || '')) ? Number(a.id) : 0;
+        const bId = /^\d{13}$/.test(String(b.id || '')) ? Number(b.id) : 0;
+        return bId - aId;
+      });
       badge.textContent = `${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'}`;
       document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'} ${filtered.length === 1 ? 'visualizzato' : 'visualizzati'}`;
       updateActiveFiltersBadge();
