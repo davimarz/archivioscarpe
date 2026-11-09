@@ -685,21 +685,25 @@
       localStorage.setItem('kicks_archive_collections_v1', JSON.stringify(collectionNames));
     }
 
+    // Le raccolte personali precedenti non fanno più parte dell'archivio.
+    // Mantiene inalterati i dati delle scarpe, comprese le loro categorie.
+    function removeLegacyPersonalCollections() {
+      if (localStorage.getItem('kicks_archive_collections_removed_v1') === '1') return;
+      collectionNames = [];
+      shoes.forEach(shoe => { delete shoe.collections; });
+      localStorage.removeItem('kicks_archive_collections_v1');
+      localStorage.setItem('kicks_archive_v17', JSON.stringify(shoes));
+      localStorage.setItem('kicks_archive_collections_removed_v1', '1');
+    }
+    removeLegacyPersonalCollections();
+
     function updateCollectionOptions() {
       const select = document.getElementById('collectionFilter');
       const selected = select.value;
-      const names = [...new Set([...collectionNames, ...shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections : [])])].filter(v => typeof v === 'string' && v.trim()).sort((a,b) => a.localeCompare(b, 'it'));
       const categories = [...new Set(shoes.map(shoe => String(shoe.category || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'it'));
       select.replaceChildren(new Option('Tutte le raccolte', ''));
-      const categoryGroup = document.createElement('optgroup');
-      categoryGroup.label = 'Tipologie presenti nell’armadio';
-      categories.forEach(name => categoryGroup.append(new Option(name, 'category:' + name)));
-      if (categories.length) select.append(categoryGroup);
-      const collectionGroup = document.createElement('optgroup');
-      collectionGroup.label = 'Raccolte personali';
-      names.forEach(name => collectionGroup.append(new Option(name, 'collection:' + name)));
-      if (names.length) select.append(collectionGroup);
-      select.value = [...select.options].some(option => option.value === selected) ? selected : '';
+      categories.forEach(name => select.add(new Option(name, 'category:' + name)));
+      select.value = categories.some(name => 'category:' + name === selected) ? selected : '';
     }
 
     function createCollection() {
@@ -1062,8 +1066,7 @@
         const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
         const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
         const matchesCollection = !collectionFilter ||
-          (collectionFilter.startsWith('category:') && shoe.category === collectionFilter.slice(9)) ||
-          (collectionFilter.startsWith('collection:') && Array.isArray(shoe.collections) && shoe.collections.includes(collectionFilter.slice(11)));
+          (collectionFilter.startsWith('category:') && shoe.category === collectionFilter.slice(9));
         return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
       });
 
