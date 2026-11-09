@@ -1,5 +1,5 @@
 /* Archivio Scarpe - service worker v1 */
-const CACHE = 'archivio-scarpe-shell-v2';
+const CACHE = 'archivio-scarpe-shell-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 const EXTERNAL = [
   'https://cdn.tailwindcss.com',
