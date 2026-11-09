@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archivio Scarpe - Il tuo Guardaroba Scarpe</title>
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#f8fbfd">
   <meta name="application-name" content="Archivio Scarpe">
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
@@ -52,6 +52,56 @@
     @keyframes scan { 0% { top: 5%; } 100% { top: 95%; } }
     .spin-slow { animation: spin 3s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Tema chiaro Archivio Scarpe */
+    :root{color-scheme:light;--surface:#fff;--line:#dfe8ee;--gold:#06a8c5}
+    html,body,body.bg-slate-950{background:#f8fbfd!important;color:#1b2b39!important}
+    body::before{display:none}
+    header{background:#fff!important;border-color:#e3eaf0!important;box-shadow:0 2px 14px #15354d0a!important}
+    header h1{color:#172735!important}header p{color:#657988!important}
+    header .bg-gradient-to-tr{background:linear-gradient(135deg,#00bbd4,#1483b4)!important}
+    #headerSettingsButton{background:#f0f7fa!important;color:#203b4d!important;border-color:#e0e8ee!important}
+    main{padding-top:16px!important}main section{color:#243848}
+    main section h2,main section h3{color:#172b3b!important}
+    main .text-white,main .text-slate-100,main .text-slate-200,main .text-slate-300{color:#253c4c!important}
+    main .text-slate-400,main .text-slate-500{color:#657a89!important}
+    main .text-amber-400,main .text-indigo-300{color:#008bab!important}
+    main .bg-slate-950,main .bg-slate-900,main .bg-slate-800{background:#fff!important}
+    main .border-slate-800,main .border-slate-700,main .border-slate-600{border-color:#dfe8ee!important}
+    main .bg-amber-500,main .bg-indigo-600{background:#06b1cd!important;color:white!important}
+    input:not([type=file]),select,textarea{background:#fff!important;color:#203848!important;border-color:#dce6ec!important;border-radius:12px}
+    input::placeholder,textarea::placeholder{color:#8194a1!important}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #00a9c8!important}
+    #archiveSearchPanel input{background:#f2f8fb!important;border-radius:999px!important;box-shadow:0 4px 12px #163f5b0d}
+    #shoesCountBadge{background:#e8f7fb!important;color:#087e9b!important;border-color:#d5ecf3!important}
+    #archiveFiltersDetails{background:#fff!important;border:1px solid #e0e9ef!important}
+    #archiveFiltersDetails summary{color:#253c4c!important}
+    .cat-pill{background:#f0f5f8!important;color:#425a69!important;border:1px solid #e0e8ee!important}
+    .cat-pill[aria-pressed=true]{background:#ddf4fa!important;color:#087e9b!important;border-color:#91d8e8!important;box-shadow:none}
+    #affiliateAdSlot{background:linear-gradient(110deg,#f1faff,#e4f3fc)!important;border:1px solid #d5e9f4!important;padding:18px!important;border-radius:20px}
+    #affiliateAdSlot p{color:#2d576d!important}
+    #shoesGrid{grid-template-columns:1fr!important;gap:12px}
+    #shoesGrid>div{background:#fff!important;border:1px solid #e0e8ef!important;border-radius:18px!important;box-shadow:0 2px 9px #163e570a!important;display:grid!important;grid-template-columns:128px minmax(0,1fr);min-height:142px;overflow:hidden}
+    #shoesGrid>div:hover{transform:none;border-color:#98dce9!important;box-shadow:0 5px 16px #153c5114!important}
+    #shoesGrid>div>div:first-child{aspect-ratio:auto!important;height:100%;min-height:142px;background:#f0f5f8!important}
+    #shoesGrid>div>div:last-child{padding:13px!important;min-width:0}
+    #shoesGrid h3{font-size:15px!important;line-height:1.35;white-space:normal}
+    #shoesGrid .bg-slate-800{background:#e7f5fb!important;border-color:#d8edf5!important}
+    #shoesGrid .absolute.top-2.left-2{background:#fff!important;color:#344d5d!important;border-color:#dce6eb!important}
+    #shoesGrid .absolute.bottom-2.right-2{right:4px;bottom:4px;gap:3px}
+    #shoesGrid .absolute.bottom-2.right-2 button{width:31px;height:31px;min-width:31px;min-height:31px}
+    #shoesGrid button[data-view-shoe-photos]{background:#fff!important;color:#28485b!important;border-color:#dce6eb!important}
+    #view-add>div:first-child,#view-check>div:first-child{background:#fff!important;border-color:#e0e8ef!important}
+    #addDropZone,#checkDropZone{background:#f1f8fb!important;border-color:#bcdce7!important}
+    .help-text{color:#607786!important}
+    nav{background:#fff!important;border-color:#dfe9ee!important;box-shadow:0 -4px 20px #142f440d!important}
+    nav button{color:#617787!important}
+    nav button.text-amber-400{color:#008bb1!important;background:#e9f7fc!important}
+    nav button.text-slate-400{color:#617787!important}
+    #quickAddButton{position:fixed;right:max(18px,calc((100vw - 1080px)/2 + 20px));bottom:calc(94px + env(safe-area-inset-bottom));z-index:39;width:60px;height:60px;border-radius:50%;background:#06b5d1;color:#fff;box-shadow:0 8px 24px #0092b942;font-size:29px;display:flex;align-items:center;justify-content:center}
+    #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction{position:static;transform:none;box-shadow:none}
+    @media(min-width:640px){#shoesGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#shoesGrid>div{grid-template-columns:116px minmax(0,1fr)}}
+    @media(max-width:359px){#shoesGrid>div{grid-template-columns:108px minmax(0,1fr)}#shoesGrid>div>div:last-child{padding:9px!important}header p{font-size:10px!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -459,16 +509,18 @@
   <!-- Bottom Navigation Bar -->
   <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-3 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
-      <i class="fa-solid fa-boxes-stacked text-lg"></i><span class="text-[11px] font-semibold">Archivio</span>
-    </button>
-    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
-      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
+      <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
     </button>
     <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa">
       <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
     </button>
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
+      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
+    </button>
 
   </nav>
+
+  <button id="quickAddButton" type="button" onclick="switchTab('add')" aria-label="Aggiungi una scarpa" title="Aggiungi scarpa"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
 
   <script>
     function createShoeSvgBase64(brand, model, bgHex) {
