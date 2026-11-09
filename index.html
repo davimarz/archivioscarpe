@@ -562,6 +562,7 @@
           return false;
         }
         const serialized = JSON.stringify(parsed.shoes);
+        saveAutomaticSnapshot(JSON.stringify(shoes));
         const restoredCollections = Array.isArray(parsed.collections) ? parsed.collections.filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean) : [...new Set(parsed.shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections.filter(v => typeof v === 'string') : []))];
         // Prima si scrive il nuovo archivio: se lo spazio è insufficiente, quello corrente rimane intatto.
         localStorage.setItem('kicks_archive_v17', serialized);
@@ -684,7 +685,7 @@
         const remote=Array.isArray(rows)?rows[0]:null;
         if(direction==='download'){
           if(!remote)throw Error('Nessun archivio cloud trovato. Carica prima un backup.');
-          if(!remote.payload||!Array.isArray(remote.payload.shoes))throw Error('Archivio cloud non valido.');
+          if(!remote.payload||!isValidShoeArchive(remote.payload.shoes))throw Error('Archivio cloud non valido.');
           if(!confirm('Scaricare '+remote.payload.shoes.length+' scarpe dal cloud? Sostituirà l’archivio locale.'))return;
           const previous=JSON.stringify(shoes);
           localStorage.setItem('kicks_archive_v17',JSON.stringify(remote.payload.shoes));
@@ -711,11 +712,14 @@
     function saveToStorage() {
       const previous=localStorage.getItem('kicks_archive_v17');
       const current=JSON.stringify(shoes);
-      if(previous!==current&&previous) saveAutomaticSnapshot(previous);
+      if(previous!==current&&previous){try{localStorage.setItem('kicks_archive_previous_v1',previous);}catch{}}
       localStorage.setItem('kicks_archive_v17',current);
-      if(!previous)saveAutomaticSnapshot(current);
+      if(previous!==current)saveAutomaticSnapshot(current);
       renderArchive();
       if(previous!==current)scheduleCloudSync();
+    }
+    function isValidShoeArchive(items){
+      return Array.isArray(items)&&items.length<=10000&&items.every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&(typeof item.id==='string'||typeof item.id==='number')&&typeof item.brand==='string'&&typeof item.model==='string'&&(Array.isArray(item.colors)?item.colors.every(c=>typeof c==='string'):typeof item.colors==='string')&&(!item.image||isSafeShoeImageUrl(item.image))&&(!item.images||(Array.isArray(item.images)&&item.images.every(isSafeShoeImageUrl))))&&new Set(items.map(item=>String(item.id))).size===items.length;
     }
     function saveAutomaticSnapshot(serialized) {
       try {
@@ -727,15 +731,16 @@
     }
     function restoreAutomaticSnapshot() {
       try {
-        const raw=localStorage.getItem('kicks_archive_snapshot_v1');
+        const raw=localStorage.getItem('kicks_archive_previous_v1')||localStorage.getItem('kicks_archive_snapshot_v1');
         if(!raw){alert('Nessuna copia locale disponibile.');return;}
         const snapshot=JSON.parse(raw);
-        if(snapshot.format!=='kicksarchive-backup'||!Array.isArray(snapshot.shoes))throw Error('Copia non valida');
+        const restored=Array.isArray(snapshot)?snapshot:snapshot.shoes;
+        if(!isValidShoeArchive(restored))throw Error('Copia non valida');
         if(!confirm('Ripristinare la copia locale? L’archivio corrente sarà sostituito.'))return;
         const before=JSON.stringify(shoes);
-        localStorage.setItem('kicks_archive_v17',JSON.stringify(snapshot.shoes));
-        shoes=snapshot.shoes;collectionNames=Array.isArray(snapshot.collections)?snapshot.collections:[];
-        saveCollectionNames();saveAutomaticSnapshot(before);resetArchiveFilters();showToast('Copia locale ripristinata.');
+        localStorage.setItem('kicks_archive_v17',JSON.stringify(restored));
+        shoes=restored;collectionNames=Array.isArray(snapshot.collections)?snapshot.collections:collectionNames;
+        saveCollectionNames();try{localStorage.setItem('kicks_archive_previous_v1',before);}catch{}saveAutomaticSnapshot(JSON.stringify(shoes));resetArchiveFilters();showToast('Copia locale ripristinata.');
       }catch(e){alert('Ripristino non riuscito: '+e.message);}
     }
 
