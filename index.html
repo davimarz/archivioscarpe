@@ -42,6 +42,7 @@
     .cat-pill[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(251,191,36,.4); }
     .help-text { font-size:12px!important;color:#cbd5e1!important;line-height:1.5; }
     .mode-panel[hidden] { display:none!important; }
+    @media(max-width:639px) { #emptyArchiveMsg:not(.hidden) { padding-bottom:105px; } #emptyArchiveMsg:not(.hidden) #emptyArchiveAction { position:fixed;bottom:calc(91px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:35;min-height:48px;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.6); } }
     @media(max-width:639px) { .category-pills { display:flex;flex-wrap:wrap;overflow:visible; } .category-pills .cat-pill { flex:1 1 auto; } }
     @media(max-width:359px) { #view-add .grid-cols-2,#view-check .grid-cols-2 { gap:7px; } #view-add button,#view-check button { font-size:11px; } }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important; } }
