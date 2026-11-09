@@ -760,7 +760,8 @@
 
     function setCheckMode(mode) {
       const photo = mode === 'photo';
-      document.getElementById('checkTextPanel').hidden = photo;
+      const textPanel = document.getElementById('checkTextPanel');
+      if (textPanel) textPanel.hidden = photo;
       document.getElementById('checkPhotoPanel').hidden = !photo;
       for (const [name,active] of [['Text',!photo],['Photo',photo]]) {
         const btn = document.getElementById('checkMode' + name);
