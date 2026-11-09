@@ -132,13 +132,19 @@
 
     <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
     <section id="view-check" class="hidden space-y-4">
-      <div class="space-y-2">
-        <h2 class="text-lg font-bold">Ricerca</h2>
+      <h2 class="text-lg font-bold">Verifica un acquisto</h2>
+      <p class="help-text">Controlla se una scarpa è già nel tuo archivio.</p>
+      <div class="grid grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
+        <button type="button" id="checkModeText" onclick="setCheckMode('text')" aria-pressed="true" class="min-h-12 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Cerca per nome</button>
+        <button type="button" id="checkModePhoto" onclick="setCheckMode('photo')" aria-pressed="false" class="min-h-12 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-sm">Verifica con foto</button>
+      </div>
+      <div id="checkTextPanel" class="mode-panel space-y-2">
+        <h3 class="text-sm font-semibold">Cerca nell'archivio</h3>
         <label for="searchInput" class="text-xs text-slate-400">Cerca nel tuo archivio</label>
         <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Marca, modello, colore o codice SKU" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
         <div id="quickSearchResults" class="space-y-2" aria-live="polite"></div>
       </div>
-      <div class="flex items-center gap-2 text-xs text-slate-500"><span class="flex-1 border-t border-slate-800"></span>Oppure verifica con una foto<span class="flex-1 border-t border-slate-800"></span></div>
+      <div id="checkPhotoPanel" class="mode-panel space-y-3" hidden>
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
@@ -148,6 +154,7 @@
           <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
         </div>
 
+        <p id="checkAiStatus" class="help-text text-left" role="status">Verifica lo stato del riconoscimento automatico.</p>
         <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
           <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
             <i class="fa-solid fa-camera"></i> Scatta Foto
@@ -210,15 +217,17 @@
 </details>
       <p id="recognitionProgress" class="text-xs text-slate-300" role="status" aria-live="polite"></p>
       <div id="checkResultContainer" class="hidden space-y-4"></div>
+      </div>
     </section>
 
     <section id="view-add" class="hidden space-y-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
-          <h2 class="text-base font-bold text-slate-100">Archivia una nuova scarpa</h2>
+          <h2 class="text-base font-bold text-slate-100">Aggiungi una scarpa</h2>
           <p class="text-xs text-slate-400 mt-1">Carica una foto della scarpa o dell'etichetta per l'estrazione automatica dei dettagli.</p>
         </div>
 
+        <p id="addAiStatus" class="help-text text-left" role="status">Puoi inserire i dati anche manualmente.</p>
         <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
           <button type="button" onclick="document.getElementById('addCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
             <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
@@ -618,6 +627,34 @@
       toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
     }
 
+    function setCheckMode(mode) {
+      const photo = mode === 'photo';
+      document.getElementById('checkTextPanel').hidden = photo;
+      document.getElementById('checkPhotoPanel').hidden = !photo;
+      for (const [name,active] of [['Text',!photo],['Photo',photo]]) {
+        const btn = document.getElementById('checkMode' + name);
+        btn.setAttribute('aria-pressed',String(active));
+        btn.classList.toggle('bg-indigo-600',active);
+        btn.classList.toggle('text-white',active);
+        btn.classList.toggle('bg-slate-800',!active);
+      }
+    }
+    function updatePhotoAiStatus() {
+      const ready = Boolean(localStorage.getItem('gemini_api_key'));
+      for (const mode of ['add','check']) {
+        const el = document.getElementById(mode + 'AiStatus');
+        if (!el) continue;
+        el.replaceChildren();
+        el.append(document.createTextNode(ready ? 'Riconoscimento AI configurato. ' : 'Riconoscimento AI da configurare. '));
+        if (!ready) {
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'underline font-semibold text-amber-300';
+          button.textContent = 'Configura Gemini'; button.onclick = openApiKeyModal;
+          el.appendChild(button);
+        }
+        if (mode === 'add') el.append(document.createTextNode(' Puoi inserire i dati anche manualmente.'));
+      }
+    }
     function switchTab(tabId) {
       if (!['archive', 'check', 'add', 'settings'].includes(tabId)) tabId = 'archive';
       ['archive', 'check', 'add', 'settings'].forEach(t => {
@@ -628,6 +665,7 @@
         btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
       });
       if (tabId === 'check') updateQuickSearchResults();
+      updatePhotoAiStatus();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -898,7 +936,23 @@
       if (!el) return;
       const duplicates = getAddDuplicates();
       el.classList.toggle('hidden', !duplicates.length);
-      el.textContent = duplicates.length ? 'Possibile doppione: ' + duplicates.slice(0, 2).map(shoe => shoe.brand + ' ' + shoe.model).join(', ') + '. Controlla prima di salvare.' : '';
+      el.replaceChildren();
+      if (duplicates.length) {
+        const heading = document.createElement('p');
+        heading.className = 'font-bold';
+        heading.textContent = 'Possibile doppione: questa scarpa potrebbe essere già presente.';
+        el.appendChild(heading);
+        for (const shoe of duplicates.slice(0,2)) {
+          const btn = document.createElement('button');
+          btn.type='button';btn.className='flex items-center gap-2 rounded-lg border border-amber-500/40 p-2 w-full text-left';
+          btn.textContent = shoe.brand + ' · ' + shoe.model + ' · ' + (Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '');
+          btn.dataset.duplicateShoe = String(shoe.id);
+          el.appendChild(btn);
+        }
+        const note = document.createElement('p');
+        note.textContent = 'Tocca la scarpa per visualizzarne le fotografie. Puoi comunque salvarne un altro paio dopo la conferma.';
+        el.appendChild(note);
+      }
     }
 
     function openEditShoeModal(id) {
@@ -947,6 +1001,8 @@
     }
 
     document.addEventListener('click', event => {
+      const duplicateButton = event.target.closest('[data-duplicate-shoe]');
+      if (duplicateButton) { openShoeGallery(duplicateButton.dataset.duplicateShoe); return; }
       const photoButton = event.target.closest('[data-view-shoe-photos]');
       if (photoButton) { openShoeGallery(photoButton.dataset.viewShoePhotos); return; }
       const editButton = event.target.closest('[data-edit-shoe]');
@@ -956,7 +1012,8 @@
     });
 
     function deleteShoe(id) {
-      if (confirm('Vuoi rimuovere questa scarpa dal tuo archivio?')) {
+      const shoe = shoes.find(s => String(s.id) === String(id));
+      if (shoe && confirm('Eliminare definitivamente ' + shoe.brand + ' ' + shoe.model + ' dall’archivio?')) {
         shoes = shoes.filter(s => s.id !== id);
         saveToStorage();
       }
@@ -1860,6 +1917,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const key = localStorage.getItem('gemini_api_key');
       const label = document.getElementById('keyLabel');
       const btn = document.getElementById('keyStatusBtn');
+      updatePhotoAiStatus();
       if (key) {
         label.textContent = 'AI Attiva';
         btn.classList.add('text-emerald-400', 'border-emerald-500/40');
