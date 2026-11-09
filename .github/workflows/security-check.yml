@@ -31,3 +31,5 @@ jobs:
           if (!html.includes('function isSafeShoeImageUrl(')) throw new Error('Controllo URL immagini mancante');
           console.log('Controlli superati');
           NODE
+      - name: Test regressione interfaccia UX
+        run: node tests/ux-smoke.test.cjs
