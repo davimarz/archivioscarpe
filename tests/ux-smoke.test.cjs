@@ -7,7 +7,7 @@ const cases = [
   ['Empty state can clear filters', /emptyAction\.onclick = filteredEmpty \? resetArchiveFilters/.test(html)],
   ['Mobile safe bottom spacing', /padding-bottom:calc\(125px \+ env\(safe-area-inset-bottom\)\)/.test(html)],
   ['Empty action remains above mobile navigation', /#emptyArchiveMsg:not\(\.hidden\) #emptyArchiveAction/.test(html) && /bottom:calc\(91px \+ env\(safe-area-inset-bottom\)\)/.test(html)],
-  ['Search and photo have separate panels', /id="checkTextPanel"/.test(html) && /id="checkPhotoPanel"/.test(html)],
+  ['Search in archive and photo comparison separate', /id="archiveSearchPanel"/.test(html) && /id="checkPhotoPanel"/.test(html)],
   ['AI status near upload actions', /id="addAiStatus"/.test(html) && /id="checkAiStatus"/.test(html)],
   ['Duplicate warning shows existing item', /dataset\.duplicateShoe/.test(html) && /openShoeGallery\(duplicateButton\.dataset\.duplicateShoe\)/.test(html)],
   ['Desktop responsive grid', /max-width:1080px/.test(html)],
