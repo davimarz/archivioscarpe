@@ -102,6 +102,29 @@
     #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction{position:static;transform:none;box-shadow:none}
     @media(min-width:640px){#shoesGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#shoesGrid>div{grid-template-columns:116px minmax(0,1fr)}}
     @media(max-width:359px){#shoesGrid>div{grid-template-columns:108px minmax(0,1fr)}#shoesGrid>div>div:last-child{padding:9px!important}header p{font-size:10px!important}}
+
+    /* Contrasto coerente anche nelle sezioni secondarie */
+    #view-settings .bg-slate-900, #view-settings .bg-slate-800, #view-settings .bg-slate-950,
+    #view-add .bg-slate-900, #view-add .bg-slate-800, #view-add .bg-slate-950,
+    #view-check .bg-slate-900, #view-check .bg-slate-800, #view-check .bg-slate-950,
+    #view-settings [class*="bg-slate-900/"], #view-add [class*="bg-slate-950/70"], #view-check [class*="bg-slate-950/70"] {
+      background:#fff!important;border-color:#dce6ec!important;
+    }
+    #view-settings .text-slate-100,#view-settings .text-slate-200,#view-settings .text-slate-300,
+    #view-add .text-slate-100,#view-add .text-slate-200,#view-add .text-slate-300,
+    #view-check .text-slate-100,#view-check .text-slate-200,#view-check .text-slate-300,
+    #view-settings details,#view-add details,#view-check details {color:#243b4b!important}
+    #view-settings .text-slate-400,#view-add .text-slate-400,#view-check .text-slate-400 {color:#566e7f!important}
+    #view-settings .border-slate-700,#view-add .border-slate-700,#view-check .border-slate-700 {border-color:#dce6ec!important}
+    #view-settings .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500 {background:#08aec9!important;color:#fff!important}
+    #view-settings button.bg-slate-800,#view-add button.bg-slate-800,#view-check button.bg-slate-800 {background:#edf6fa!important;color:#17617b!important}
+    #view-settings .bg-slate-900\/80,#view-add .bg-slate-900\/80 {background:#fff!important}
+    #view-settings .help-text,#view-add .help-text,#view-check .help-text {color:#536b7d!important}
+    #view-settings summary,#view-add summary,#view-check summary {color:#243b4b!important}
+    #view-settings input[type=file],#view-add input[type=file],#view-check input[type=file] {color:#243b4b!important}
+    #view-add #addErrorOverlay,#view-check #checkErrorOverlay {background:rgba(19,39,53,.95)!important;color:#fff!important}
+    #view-add #addErrorOverlay .text-slate-200,#view-check #checkErrorOverlay .text-slate-200 {color:#fff!important}
+    #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction {position:static!important;left:auto!important;bottom:auto!important;transform:none!important}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -130,10 +153,6 @@
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <button type="button" onclick="switchTab('check')" class="min-h-12 rounded-xl border border-slate-700 bg-slate-800 text-sm font-semibold"><i class="fa-solid fa-camera mr-1"></i> Confronta</button>
-        <button type="button" onclick="switchTab('add')" class="min-h-12 rounded-xl bg-amber-500 text-slate-950 text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> Aggiungi scarpa</button>
       </div>
       <div id="archiveSearchPanel" class="mode-panel space-y-2">
         
@@ -520,7 +539,6 @@
 
   </nav>
 
-  <button id="quickAddButton" type="button" onclick="switchTab('add')" aria-label="Aggiungi una scarpa" title="Aggiungi scarpa"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
 
   <script>
     function createShoeSvgBase64(brand, model, bgHex) {
