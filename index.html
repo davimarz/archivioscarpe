@@ -146,6 +146,13 @@
     #archiveFiltersDetails select option,#archiveFiltersDetails select optgroup{background:#fff;color:#23485d}
     #archiveFiltersDetails button:not(.cat-pill){background:#e5f3fa!important;color:#17617b!important;border:1px solid #cbdfe9!important}
     #archiveFiltersDetails #activeFiltersBadge{color:#17617b!important}
+
+    #affiliateAdSlot .cisalfa-product-card{display:flex;flex-direction:column;min-width:0;padding:8px;border:1px solid #d5e9f4;border-radius:14px;background:#fff;text-decoration:none;color:#21475b;gap:5px}
+    #affiliateAdSlot .cisalfa-product-card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f5f8fa;border-radius:10px}
+    #affiliateAdSlot .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    #affiliateAdSlot .cisalfa-product-price{font-size:15px;color:#124f65}
+    #affiliateAdSlot .cisalfa-product-link{font-size:11px;font-weight:700;background:#dff4fa;color:#086d8a;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
+    #affiliateAdSlot button{color:#12566e;border-color:#badce7;background:#fff}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -171,10 +178,14 @@
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
-      <!-- Spazio riservato a future campagne di affiliazione Awin: nessun tracciamento attivo. -->
-      <aside id="affiliateAdSlot" aria-label="Spazio pubblicitario" class="rounded-xl border border-dashed border-slate-700 bg-slate-900/70 px-4 py-3 text-center space-y-1">
-        <p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Spazio pubblicitario</p>
-        <p class="text-sm font-medium text-slate-300">Presto offerte su scarpe e accessori</p>
+      <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
+      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati Cisalfa Sport" class="rounded-xl px-3 py-3">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div><p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p><h3 class="text-sm font-bold">Scarpe da Cisalfa Sport</h3></div>
+          <div class="flex gap-2"><button type="button" id="cisalfaPrev" aria-label="Prodotti precedenti" class="rounded-lg border px-3 py-2">‹</button><button type="button" id="cisalfaNext" aria-label="Prodotti successivi" class="rounded-lg border px-3 py-2">›</button></div>
+        </div>
+        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" aria-live="polite"></div>
+        <p class="text-[11px] mt-3">Prezzi dal catalogo Cisalfa del 10/11/2026; disponibilità e prezzo effettivo sul sito del venditore.</p>
       </aside>
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
@@ -2133,6 +2144,49 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         btn.classList.add('text-amber-400');
       }
     }
+  </script>
+
+  <script>
+    // Catalogo statico selezionato dal feed Awin Cisalfa: nessuna chiave API è pubblicata.
+    (() => {
+      const products = [{"name":"Adidas Hyperboost Edge M - Scarpe Running - Uomo","price":"169,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw2efac59d/cisalfa/files/S6030871-UNI/image/S6030871_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=45290583713&a=3150312&m=16259"},{"name":"Adidas Grand Court 3.0 Gs Jr - Scarpe Sneakers - Bianco","price":"40,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw2a12791e/cisalfa/files/S5949209-UNI/image/S5949209_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=45455506766&a=3150312&m=16259"},{"name":"New Balance Fresh Foam 860 V15 M - Scarpe Running - Uomo","price":"170,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwcefffadf/cisalfa/files/S6045347--/image/S6045347_-.jpg","url":"https://www.awin1.com/pclick.php?p=45212758582&a=3150312&m=16259"},{"name":"Hoka Clifton 10 Jr - Scarpe Running - Nero","price":"74,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwd36fa042/cisalfa/files/S5889283-BBLC/image/S5889283_BBLC.jpg","url":"https://www.awin1.com/pclick.php?p=45765555674&a=3150312&m=16259"},{"name":"Adidas Gazelle W - Scarpe Sneakers - Donna - Rosa","price":"55,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwde6d8c98/cisalfa/files/S5870530-UNI/image/S5870530_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=41689001141&a=3150312&m=16259"},{"name":"Asics Blazeblast M - Scarpe Running - Uomo","price":"120,90","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw706ddacd/cisalfa/files/S6054647-700/image/S6054647_700.jpg","url":"https://www.awin1.com/pclick.php?p=45935954778&a=3150312&m=16259"},{"name":"Nike Air Max 90 M - Scarpe Sneakers - Uomo - Bianco","price":"149,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw3b83cde1/cisalfa/files/S5167678-100/image/S5167678_100.jpg","url":"https://www.awin1.com/pclick.php?p=46317446849&a=3150312&m=16259"},{"name":"Puma Softride M - Scarpe Sneakers - Uomo - Grigio","price":"39,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw499333e2/cisalfa/files/S5974194-03/image/S5974194_03.jpg","url":"https://www.awin1.com/pclick.php?p=43889749166&a=3150312&m=16259"},{"name":"Asics Novablast 5 W - Scarpe Running - Donna - Nero","price":"99,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw43090fb8/cisalfa/files/S5934292-003/image/S5934292_003.jpg","url":"https://www.awin1.com/pclick.php?p=43307953913&a=3150312&m=16259"},{"name":"New Balance 530 W - Scarpe Sneakers - Donna - Grigio","price":"120,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw280ff210/cisalfa/files/S6046091--/image/S6046091_-.jpg","url":"https://www.awin1.com/pclick.php?p=45204078120&a=3150312&m=16259"},{"name":"Salomon X Ultra 5 Gtx D W - Scarpe Trail - Donna","price":"128,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw151a2baf/cisalfa/files/S5978545-UNI/image/S5978545_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=44475790271&a=3150312&m=16259"},{"name":"Converse Chuck Taylor All Star Fold Over Lift X-high W","price":"110,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwc56c477e/cisalfa/files/S5921646-200/image/S5921646_200.jpg","url":"https://www.awin1.com/pclick.php?p=45396508333&a=3150312&m=16259"}];
+      const slot = document.getElementById('cisalfaProducts');
+      if (!slot || !products.length) return;
+      let page = 0;
+      const createCard = (product) => {
+        const card = document.createElement('a');
+        card.href = product.url;
+        card.target = '_blank';
+        card.rel = 'sponsored noopener noreferrer';
+        card.className = 'cisalfa-product-card';
+        const img = document.createElement('img');
+        img.src = product.image;
+        img.alt = product.name;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        const name = document.createElement('span');
+        name.className = 'cisalfa-product-name';
+        name.textContent = product.name;
+        const price = document.createElement('strong');
+        price.className = 'cisalfa-product-price';
+        price.textContent = product.price + ' €';
+        const action = document.createElement('span');
+        action.className = 'cisalfa-product-link';
+        action.textContent = 'Vedi su Cisalfa';
+        card.append(img, name, price, action);
+        return card;
+      };
+      const render = () => {
+        const start = (page * 2) % products.length;
+        slot.replaceChildren(createCard(products[start]), createCard(products[(start + 1) % products.length]));
+      };
+      document.getElementById('cisalfaPrev')?.addEventListener('click', () => { page = (page - 1 + products.length / 2) % (products.length / 2); render(); });
+      document.getElementById('cisalfaNext')?.addEventListener('click', () => { page = (page + 1) % (products.length / 2); render(); });
+      render();
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setInterval(() => { if (!document.hidden && slot.getClientRects().length) { page = (page + 1) % (products.length / 2); render(); } }, 9000);
+      }
+    })();
   </script>
 </body>
 </html>
