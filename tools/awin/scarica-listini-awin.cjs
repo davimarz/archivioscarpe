@@ -81,28 +81,51 @@ async function fillAdvertiserSearch(page, name) {
   throw new Error('Campo Ricerca advertiser da identificare');
 }
 
-async function saveFeed(page, name, setStage) {
-  setStage("Apertura di Create-a-Feed");
-  await open(page, '/datafeed/step-one');
+async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSelection, setStage) {
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
-  const clear = control(page, 'Deseleziona tutto');
-  if (await clear.isVisible()) await clear.click();
+  if (clearSelection) {
+    const clear = control(page, 'Deseleziona tutto');
+    if (await clear.isVisible() && await clear.isEnabled()) await clear.click();
+  }
   setStage('Ricerca advertiser');
   await fillAdvertiserSearch(page, name);
   setStage('Attesa della riga del feed');
-  const row = page.getByRole('row').filter({
+  const rows = page.getByRole('row').filter({
     has: page.getByRole('cell', { name, exact: true })
-  }).filter({ visible: true }).first();
-  await row.waitFor({ timeout: 10000 });
-  const boxes = page.getByRole('row').filter({
-    has: page.getByRole('cell', { name, exact: true })
-  }).filter({ visible: true }).getByRole('checkbox');
-  if (await boxes.count() !== 1) throw new Error('Più feed da scegliere per questo advertiser');
+  }).filter({ visible: true });
+  await rows.first().waitFor({ timeout: 10000 });
+
+  const feeds = [];
+  for (const row of await rows.all()) {
+    const checkbox = row.getByRole('checkbox');
+    if (await checkbox.count() !== 1) continue;
+    // Create-a-Feed lists the format in the third cell, after ID and advertiser.
+    const format = (await row.getByRole('cell').nth(2).innerText()).trim().toLowerCase();
+    if (format) feeds.push({ format, checkbox });
+  }
+  if (!feeds.length) throw new Error('Nessun feed selezionabile per questo advertiser');
+  const formats = [...new Set(feeds.map(feed => feed.format))];
+  const format = batchFormat ?? requestedFormat ?? formats[0];
+  const desired = requestedFormat ? [requestedFormat] : formats;
+  const deferred = desired.filter(value => value !== format);
+  let selected = 0;
   setStage('Selezione del feed');
-  await boxes.check();
+  if (desired.includes(format)) {
+    for (const feed of feeds.filter(feed => feed.format === format)) {
+      if (!await feed.checkbox.isEnabled()) continue;
+      await feed.checkbox.check();
+      selected++;
+    }
+  }
   setStage('Salva');
   await control(page, 'Salva').click();
+  await rows.first().waitFor({ state: 'hidden' });
+  if (!selected && !deferred.length) throw new Error('Nessun feed selezionabile per questo advertiser');
+  return { format, selected, deferred };
+}
+
+async function downloadBatch(page, name, setStage) {
   setStage('Successivo');
   await control(page, 'Successivo').click();
 
@@ -160,13 +183,28 @@ async function readJoinedAdvertisers(page) {
   return advertisers.filter((name, index) => found[index]);
 }
 
+function reportFailure(name, stage, error) {
+  const safeErrors = [
+    'Pagina Awin non disponibile',
+    'Campo Ricerca advertiser da identificare',
+    'Pulsante del riquadro centrale Advertiser non identificato',
+    'Dopo il clic non compare la finestra con Ricerca advertiser',
+    'Nessun feed selezionabile per questo advertiser',
+    'Formato del download da verificare',
+    'File scaricato vuoto'
+  ];
+  const message = safeErrors.includes(error.message) ? error.message : 'Passaggio non completato nella pagina Awin';
+  console.log(name + ' | errore al passaggio «' + stage + '» | ' + message);
+  process.exitCode = 1;
+}
+
 async function main() {
   if (!/^\d+$/.test(publisherId)) {
     console.error('Uso: node scarica-listini-awin.cjs <publisher-id>');
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v6');
+  console.log('Scarica listini Awin v7');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -207,25 +245,46 @@ async function main() {
       console.log(name + ' | non rilevato nella pagina dei programmi iscritti');
     }
     let completed = 0;
-    for (const name of active) {
-      let stage = 'Avvio';
+    let pending = active.map(name => ({ name, format: null }));
+    while (pending.length) {
+      const deferred = [];
+      const selected = new Set();
+      let format = null;
+      let selectionFailed = false;
+      let stage = 'Apertura di Create-a-Feed';
+      const setStage = value => { stage = value; };
+      await open(page, '/datafeed/step-one');
+
+      for (const entry of pending) {
+        try {
+          const result = await addAdvertiser(page, entry.name, entry.format, format, selected.size === 0, setStage);
+          deferred.push(...result.deferred.map(value => ({ name: entry.name, format: value })));
+          if (result.selected) {
+            format = result.format;
+            selected.add(entry.name);
+            console.log(entry.name + ' | selezionato | ' + result.selected + ' feed');
+          }
+        } catch (error) {
+          reportFailure(entry.name, stage, error);
+          selectionFailed = true;
+          break;
+        }
+      }
+
+      if (selectionFailed || !selected.size) break;
+      const label = 'feed-' + format;
       try {
-        await saveFeed(page, name, value => { stage = value; });
+        setStage('Verifica della selezione salvata');
+        for (const name of selected) {
+          await page.getByText(name, { exact: true }).filter({ visible: true }).first().waitFor();
+        }
+        console.log('Download del gruppo ' + format + ': ' + [...selected].join(', '));
+        await downloadBatch(page, label, setStage);
         completed++;
       } catch (error) {
-        const safeErrors = [
-          'Pagina Awin non disponibile',
-          'Campo Ricerca advertiser da identificare',
-          'Pulsante del riquadro centrale Advertiser non identificato',
-          'Dopo il clic non compare la finestra con Ricerca advertiser',
-          'Più feed da scegliere per questo advertiser',
-          'Formato del download da verificare',
-          'File scaricato vuoto'
-        ];
-        const message = safeErrors.includes(error.message) ? error.message : 'Passaggio non completato nella pagina Awin';
-        console.log(name + ' | errore al passaggio «' + stage + '» | ' + message);
-        process.exitCode = 1;
+        reportFailure(label, stage, error);
       }
+      pending = deferred;
     }
     if (completed) console.log('Cartella dei listini (' + completed + '): ' + output);
     else console.log('Nessun listino salvato.');
