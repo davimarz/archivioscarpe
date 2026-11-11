@@ -5,7 +5,7 @@ if "%~1"=="" (
   exit /b 1
 )
 pushd "%~dp0" || exit /b 1
-powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $tmp=Join-Path (Get-Location) 'scarica-listini-awin.aggiornamento.cjs'; try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/davimarz/archivioscarpe/refs/heads/tools/awin-playwright/tools/awin/scarica-listini-awin.cjs' -OutFile $tmp; node --check $tmp; if ($LASTEXITCODE -ne 0) { throw 'Script non valido' }; Move-Item -LiteralPath $tmp -Destination 'scarica-listini-awin.cjs' -Force } finally { Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue }"
+powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; $ProgressPreference='SilentlyContinue'; $tmp=Join-Path (Get-Location) ('scarica-listini-awin.' + [guid]::NewGuid().ToString('N') + '.cjs'); $result=0; try { Invoke-WebRequest -UseBasicParsing -Uri 'https://raw.githubusercontent.com/davimarz/archivioscarpe/refs/heads/tools/awin-playwright/tools/awin/scarica-listini-awin.cjs' -OutFile $tmp; node --check $tmp; if ($LASTEXITCODE -ne 0) { throw 'Script non valido' }; Move-Item -LiteralPath $tmp -Destination 'scarica-listini-awin.cjs' -Force } catch { [Console]::Error.WriteLine($_.Exception.Message); $result=1 } finally { if (Test-Path -LiteralPath $tmp) { Remove-Item -LiteralPath $tmp -ErrorAction SilentlyContinue } }; exit $result"
 if errorlevel 1 (
   echo Aggiornamento non riuscito. Nessun download Awin avviato.
   popd
