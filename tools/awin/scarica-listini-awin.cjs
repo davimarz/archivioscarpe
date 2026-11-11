@@ -180,30 +180,61 @@ async function downloadBatch(page, name, setStage) {
   console.log(name + ' | scaricato | ' + file.size + ' byte | ' + filename);
 }
 
-async function readJoinedAdvertisers(page) {
-  const heading = page.getByText(/^Advertiser personali(?:\s*\(\d+\))?$/i)
-    .filter({ visible: true });
-  await heading.waitFor({ timeout: 30000 });
+function inspectPersonalAdvertisers(waitForRows) {
+  const normalize = text => (text ?? '').replace(/\s+/g, ' ').trim();
+  const visible = element => element.getClientRects().length > 0 &&
+    getComputedStyle(element).visibility !== 'hidden';
+  const titlePattern = /^Advertiser personali(?:\s*\(\s*\d+\s*\))?$/i;
+  const heading = [...document.querySelectorAll('body *')].find(element =>
+    titlePattern.test(normalize(element.textContent)) && visible(element) &&
+    ![...element.children].some(child => titlePattern.test(normalize(child.textContent)) && visible(child))
+  );
+  if (!heading) return waitForRows ? null : { issue: 'Titolo «Advertiser personali» non visibile.' };
 
-  const section = heading.locator('xpath=ancestor::*[.//table or .//*[@role="table"]][1]');
-  const table = section.getByRole('table').filter({
-    has: page.getByRole('columnheader', { name: 'Advertiser', exact: true }),
-    visible: true
-  });
-  await table.waitFor({ timeout: 15000 });
+  const tableSelector = 'table, [role="table"], [role="grid"]';
+  let table;
+  for (let section = heading.parentElement; section && !table; section = section.parentElement) {
+    table = [...section.querySelectorAll(tableSelector)].find(candidate => {
+      if (!visible(candidate) || !(heading.compareDocumentPosition(candidate) & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        return false;
+      }
+      const headers = [...candidate.querySelectorAll('th, [role="columnheader"]')];
+      if (headers.some(header => /^advertiser$/i.test(normalize(header.innerText)))) return true;
+      // Some layouts render the header as ordinary cells.
+      const firstRow = candidate.querySelector('tr, [role="row"]');
+      const firstCell = firstRow?.querySelector('td, [role="cell"], [role="gridcell"]');
+      return /^advertiser$/i.test(normalize(firstCell?.innerText));
+    });
+  }
+  if (!table) return waitForRows ? null : { issue: 'Titolo trovato, ma la tabella sottostante con colonna «Advertiser» non è visibile.' };
 
-  const rows = table.getByRole('row').filter({ has: page.getByRole('cell'), visible: true });
-  await rows.first().waitFor({ timeout: 30000 });
   const names = [];
-  for (const row of await rows.all()) {
-    const name = (await row.getByRole('cell').first().innerText()).replace(/\s+/g, ' ').trim();
-    if (name) names.push(name);
+  for (const row of table.querySelectorAll('tr, [role="row"]')) {
+    if (!visible(row)) continue;
+    const cells = [...row.children].filter(cell => cell.matches('td, [role="cell"], [role="gridcell"]'));
+    if (cells.length < 2) continue;
+    const name = normalize(cells[0].innerText);
+    if (name && !/^advertiser$/i.test(name)) names.push(name);
   }
-  const total = (await heading.innerText()).match(/\((\d+)\)/);
-  if (total && Number(total[1]) > names.length) {
-    console.log('Advertiser personali: ' + names.length + ' righe visibili su ' + total[1] + '. Questa esecuzione legge la pagina corrente.');
+  if (!names.length) return waitForRows ? null : { issue: 'Tabella trovata, ma la prima colonna non contiene righe visibili.' };
+  const count = normalize(heading.textContent).match(/\(\s*(\d+)\s*\)/);
+  return { names: [...new Set(names)], total: count ? Number(count[1]) : null };
+}
+
+async function readJoinedAdvertisers(page) {
+  try {
+    const ready = await page.waitForFunction(inspectPersonalAdvertisers, true, { timeout: 30000, polling: 250 });
+    const result = await ready.jsonValue();
+    if (result.total > result.names.length) {
+      console.log('Advertiser personali: ' + result.names.length + ' nomi visibili su ' + result.total + '. Questa esecuzione legge la pagina corrente.');
+    }
+    return result.names;
+  } catch {
+    const result = await page.evaluate(inspectPersonalAdvertisers, false);
+    if (result.names?.length) return result.names;
+    console.error(result.issue);
+    return [];
   }
-  return [...new Set(names)];
 }
 
 function reportFailure(name, stage, error) {
@@ -227,7 +258,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v9');
+  console.log('Scarica listini Awin v10');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -244,24 +275,11 @@ async function main() {
       await open(page, '/merchant-directory/index/tab/active/page/1');
     }
     await joinedTab.waitFor();
-    let active;
-    try {
-      active = await readJoinedAdvertisers(page);
-    } catch {
-      console.log('La scheda Iscritto è visibile, ma non ho identificato le righe di Advertiser personali.');
-      const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
-      try {
-        await terminal.question('Controlla che la tabella Advertiser personali sia visibile. Premi Invio per rileggere la pagina: ');
-      } finally {
-        terminal.close();
-      }
-      try {
-        active = await readJoinedAdvertisers(page);
-      } catch {
-        console.error('Nessun programma riconosciuto nella scheda Iscritto. Nessun download eseguito.');
-        process.exitCode = 1;
-        return;
-      }
+    const active = await readJoinedAdvertisers(page);
+    if (!active.length) {
+      console.error('Nessun download eseguito.');
+      process.exitCode = 1;
+      return;
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
     let completed = 0;
