@@ -5,7 +5,6 @@ const readline = require('node:readline/promises');
 
 const publisherId = process.argv[2] || '';
 const account = 'https://ui.awin.com/awin/affiliate/' + publisherId;
-const advertisers = ['Cisalfa Sport IT', 'Marco Cerullo', 'Voghion Global', 'OneStreet'];
 const profile = path.join(__dirname, '.awin-profile');
 const output = path.join(__dirname, 'listini-' + new Date().toISOString().replace(/[:.]/g, '-'));
 
@@ -21,34 +20,42 @@ async function open(page, route) {
   if (!response?.ok()) throw new Error('Pagina Awin non disponibile');
 }
 
-async function openAdvertiserPicker(page) {
-  const sectionTitles = page.getByText('Advertiser', { exact: true }).filter({ visible: true });
-  const selectText = page.getByText('Seleziona advertiser', { exact: true }).filter({ visible: true });
-  const searchCaption = page.getByText('Ricerca advertiser', { exact: true })
+function pickerSearch(page) {
+  return page.getByText('Ricerca advertiser', { exact: true })
     .or(page.getByLabel('Ricerca advertiser', { exact: true }))
     .or(page.getByPlaceholder('Ricerca advertiser', { exact: true }))
     .filter({ visible: true }).first();
+}
 
-  await selectText.first().waitFor();
-  const titles = await sectionTitles.all();
-  let containers = titles;
-  let selectButton;
-  // Prefer the closest container with both the section title and the action.
-  for (let depth = 0; depth < 4 && !selectButton; depth++) {
-    containers = containers.map(container => container.locator('..'));
-    for (const container of containers) {
-      const candidate = container.getByText('Seleziona advertiser', { exact: true }).filter({ visible: true });
-      if (await candidate.count() === 1) {
-        selectButton = candidate;
-        break;
-      }
-    }
-  }
-  if (!selectButton && await selectText.count() === 1) selectButton = selectText;
-  if (!selectButton) throw new Error('Pulsante del riquadro centrale Advertiser non identificato');
-  await selectButton.click();
+async function openAdvertiserPicker(page) {
+  const search = pickerSearch(page);
+  if (await search.isVisible()) return;
+  const label = 'Seleziona advertiser';
+  const actions = page.getByRole('button', { name: label, exact: true })
+    .or(page.getByRole('link', { name: label, exact: true }))
+    .filter({ visible: true });
+  const text = page.getByText(label, { exact: true }).filter({ visible: true });
+
   try {
-    await searchCaption.waitFor({ state: 'visible', timeout: 12000 });
+    await actions.or(text).first().waitFor({ timeout: 8000 });
+    const actionCount = await actions.count();
+    if (actionCount === 1) await actions.click({ timeout: 5000 });
+    else if (await text.count() === 1) await text.click({ timeout: 5000 });
+    await search.waitFor({ timeout: 5000 });
+    return;
+  } catch {
+    // The user can open the picker if the current Awin layout differs.
+  }
+
+  const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await terminal.question('Nella finestra Awin, clicca il pulsante centrale Seleziona advertiser. Quando vedi Ricerca advertiser, premi Invio qui (Q per fermarti): ');
+    if (answer.trim().toLowerCase() === 'q') throw new Error('Operazione interrotta');
+  } finally {
+    terminal.close();
+  }
+  try {
+    await search.waitFor({ timeout: 12000 });
   } catch {
     throw new Error('Dopo il clic non compare la finestra con Ricerca advertiser');
   }
@@ -174,20 +181,28 @@ async function downloadBatch(page, name, setStage) {
 }
 
 async function readJoinedAdvertisers(page) {
-  const entries = advertisers.map(name =>
-    page.getByText(name, { exact: true }).filter({ visible: true })
-  );
-  const anyEntry = entries.reduce((combined, entry) => combined.or(entry)).first();
-  await anyEntry.waitFor({ state: 'visible', timeout: 30000 });
-  const found = await Promise.all(entries.map(entry => entry.first().isVisible()));
-  return advertisers.filter((name, index) => found[index]);
+  const table = page.getByRole('table').filter({
+    has: page.getByRole('columnheader', { name: 'Advertiser', exact: true })
+  }).filter({ visible: true }).first();
+  const rows = table.getByRole('row').filter({
+    has: page.getByRole('cell'),
+    hasText: 'Promuovi',
+    visible: true
+  });
+  await rows.first().waitFor({ timeout: 30000 });
+  const names = [];
+  for (const row of await rows.all()) {
+    const name = (await row.getByRole('cell').first().innerText()).replace(/\s+/g, ' ').trim();
+    if (name) names.push(name);
+  }
+  return [...new Set(names)];
 }
 
 function reportFailure(name, stage, error) {
   const safeErrors = [
     'Pagina Awin non disponibile',
     'Campo Ricerca advertiser da identificare',
-    'Pulsante del riquadro centrale Advertiser non identificato',
+    'Operazione interrotta',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
     'Formato del download da verificare',
@@ -204,7 +219,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v7');
+  console.log('Scarica listini Awin v8');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -241,9 +256,6 @@ async function main() {
       }
     }
     console.log('Programmi riconosciuti: ' + active.join(', '));
-    for (const name of advertisers.filter(name => !active.includes(name))) {
-      console.log(name + ' | non rilevato nella pagina dei programmi iscritti');
-    }
     let completed = 0;
     let pending = active.map(name => ({ name, format: null }));
     while (pending.length) {
