@@ -181,19 +181,27 @@ async function downloadBatch(page, name, setStage) {
 }
 
 async function readJoinedAdvertisers(page) {
-  const table = page.getByRole('table').filter({
-    has: page.getByRole('columnheader', { name: 'Advertiser', exact: true })
-  }).filter({ visible: true }).first();
-  const rows = table.getByRole('row').filter({
-    has: page.getByRole('cell'),
-    hasText: 'Promuovi',
+  const heading = page.getByText(/^Advertiser personali(?:\s*\(\d+\))?$/i)
+    .filter({ visible: true });
+  await heading.waitFor({ timeout: 30000 });
+
+  const section = heading.locator('xpath=ancestor::*[.//table or .//*[@role="table"]][1]');
+  const table = section.getByRole('table').filter({
+    has: page.getByRole('columnheader', { name: 'Advertiser', exact: true }),
     visible: true
   });
+  await table.waitFor({ timeout: 15000 });
+
+  const rows = table.getByRole('row').filter({ has: page.getByRole('cell'), visible: true });
   await rows.first().waitFor({ timeout: 30000 });
   const names = [];
   for (const row of await rows.all()) {
     const name = (await row.getByRole('cell').first().innerText()).replace(/\s+/g, ' ').trim();
     if (name) names.push(name);
+  }
+  const total = (await heading.innerText()).match(/\((\d+)\)/);
+  if (total && Number(total[1]) > names.length) {
+    console.log('Advertiser personali: ' + names.length + ' righe visibili su ' + total[1] + '. Questa esecuzione legge la pagina corrente.');
   }
   return [...new Set(names)];
 }
@@ -219,7 +227,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v8');
+  console.log('Scarica listini Awin v9');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -240,10 +248,10 @@ async function main() {
     try {
       active = await readJoinedAdvertisers(page);
     } catch {
-      console.log('La scheda Iscritto è visibile, ma non ho identificato i nomi dei programmi entro 30 secondi.');
+      console.log('La scheda Iscritto è visibile, ma non ho identificato le righe di Advertiser personali.');
       const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
       try {
-        await terminal.question('Controlla che la tabella sia visibile. Premi Invio per rileggere la pagina: ');
+        await terminal.question('Controlla che la tabella Advertiser personali sia visibile. Premi Invio per rileggere la pagina: ');
       } finally {
         terminal.close();
       }
@@ -255,7 +263,7 @@ async function main() {
         return;
       }
     }
-    console.log('Programmi riconosciuti: ' + active.join(', '));
+    console.log('Advertiser personali rilevati: ' + active.join(', '));
     let completed = 0;
     let pending = active.map(name => ({ name, format: null }));
     while (pending.length) {
