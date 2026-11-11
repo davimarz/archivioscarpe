@@ -122,11 +122,13 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
     const checkbox = row.getByRole('checkbox');
     if (await checkbox.count() !== 1) continue;
     // Create-a-Feed lists the format in the third cell, after ID and advertiser.
-    const format = (await row.getByRole('cell').nth(2).innerText()).trim().toLowerCase();
+    const formatText = (await row.getByRole('cell').nth(2).innerText()).trim().toLowerCase();
+    const format = formatText.match(/^(awin|google)\b/)?.[1] ?? formatText;
     if (format) feeds.push({ format, checkbox });
   }
   if (!feeds.length) throw new Error('Nessun feed selezionabile per questo advertiser');
   const formats = [...new Set(feeds.map(feed => feed.format))];
+  console.log(name + ' | formato rilevato: ' + formats.join(', '));
   const format = batchFormat ?? requestedFormat ?? formats[0];
   const desired = requestedFormat ? [requestedFormat] : formats;
   const deferred = desired.filter(value => value !== format);
@@ -146,8 +148,48 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
     setStage('Verifica dopo Salva');
     await verifySavedAdvertiser(page, name);
   }
-  if (!selected && !deferred.length) throw new Error('Nessun feed selezionabile per questo advertiser');
+  if (!selected && !deferred.length) throw new Error('Awin non ha abilitato la casella del feed per il formato richiesto');
+  if (deferred.length) console.log(name + ' | rinviato al gruppo: ' + deferred.join(', '));
   return { format, selected, deferred };
+}
+
+async function fetchGeneratedExport(page, name) {
+  const urls = await page.locator('textarea:visible, input:visible').evaluateAll(elements =>
+    elements.map(element => element.value.trim()).filter(value => value.startsWith('https://'))
+  );
+  const url = urls.find(value => {
+    try {
+      const parsed = new URL(value);
+      return parsed.origin === 'https://productdata.awin.com' &&
+        parsed.pathname.startsWith('/datafeed/download/');
+    } catch {
+      return false;
+    }
+  });
+  if (!url) throw new Error('Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile');
+  console.log(name + ' | uso il link di esportazione generato da Create-a-Feed');
+  let bytes;
+  let type;
+  try {
+    const response = await page.request.get(url, { timeout: 120000, maxRedirects: 0 });
+    try {
+      if (!response.ok()) throw new Error();
+      type = response.headers()['content-type'] ?? '';
+      bytes = await response.body();
+    } finally {
+      await response.dispose();
+    }
+  } catch {
+    throw new Error('Awin non ha restituito un file di listino valido');
+  }
+  const extension = bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])) ? 'zip'
+    : bytes[0] === 0x1f && bytes[1] === 0x8b ? 'gz'
+    : /^text\/csv\b/i.test(type) && bytes.length ? 'csv' : null;
+  if (!extension) throw new Error('Awin non ha restituito un file di listino valido');
+  return {
+    suggestedFilename: () => 'listino.' + extension,
+    saveAs: filename => fs.writeFile(filename, bytes)
+  };
 }
 
 async function downloadBatch(page, name, setStage) {
@@ -169,13 +211,18 @@ async function downloadBatch(page, name, setStage) {
 
   setStage('Scarica feed di prodotto');
   const button = control(page, 'Scarica feed di prodotto');
-  await button.waitFor();
-  const [download] = await Promise.all([
-    page.waitForEvent('download', { timeout: 120000 }),
-    button.click()
-  ]);
+  const downloadEvent = page.waitForEvent('download', { timeout: 45000 }).catch(() => null);
+  try {
+    await button.click({ timeout: 12000 });
+    console.log(name + ' | clic su Scarica feed di prodotto');
+  } catch {
+    console.log(name + ' | pulsante di download non azionabile');
+  }
+  setStage('Attesa del file');
+  const download = await downloadEvent;
+  const exportFile = download ?? await fetchGeneratedExport(page, name);
   setStage('Verifica del nome del file');
-  const original = path.basename(download.suggestedFilename());
+  const original = path.basename(exportFile.suggestedFilename());
   if (!/\.(csv|tsv|gz|gzip|zip|jsonl?|xml)$/i.test(original)) {
     throw new Error('Formato del download da verificare');
   }
@@ -185,7 +232,7 @@ async function downloadBatch(page, name, setStage) {
   const temporary = path.join(__dirname, path.basename(output) + '-' + filename + '.part');
   let file;
   try {
-    await download.saveAs(temporary);
+    await exportFile.saveAs(temporary);
     file = await fs.stat(temporary);
     if (!file.size) throw new Error('File scaricato vuoto');
     await fs.mkdir(output, { recursive: true });
@@ -262,6 +309,9 @@ function reportFailure(name, stage, error) {
     'Operazione interrotta',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
+    'Awin non ha abilitato la casella del feed per il formato richiesto',
+    'Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile',
+    'Awin non ha restituito un file di listino valido',
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto'
@@ -277,7 +327,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v12');
+  console.log('Scarica listini Awin v13');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -302,6 +352,7 @@ async function main() {
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
     let completed = 0;
+    let batchNumber = 0;
     let pending = active.map(name => ({ name, format: null }));
     while (pending.length) {
       const deferred = [];
@@ -312,9 +363,10 @@ async function main() {
       const setStage = value => { stage = value; };
       await open(page, '/datafeed/step-one');
 
-      for (const entry of pending) {
+      const resetSelection = batchNumber++ > 0;
+      for (const [index, entry] of pending.entries()) {
         try {
-          const result = await addAdvertiser(page, entry.name, entry.format, format, completed > 0 && selected.size === 0, setStage);
+          const result = await addAdvertiser(page, entry.name, entry.format, format, resetSelection && index === 0, setStage);
           deferred.push(...result.deferred.map(value => ({ name: entry.name, format: value })));
           if (result.selected) {
             format = result.format;
