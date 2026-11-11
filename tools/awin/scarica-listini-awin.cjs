@@ -21,6 +21,33 @@ async function open(page, route) {
   if (!response?.ok()) throw new Error('Pagina Awin non disponibile');
 }
 
+async function fillAdvertiserSearch(page, name) {
+  const label = 'Ricerca advertiser';
+  const named = page.getByLabel(label, { exact: true })
+    .or(page.getByPlaceholder(label, { exact: true })).filter({ visible: true }).first();
+  const caption = page.getByText(label, { exact: true }).filter({ visible: true }).first();
+  await named.or(caption).first().waitFor();
+  if (await named.isVisible()) {
+    await named.fill(name);
+    return;
+  }
+
+  // Awin may render the caption as plain text without linking it to the input.
+  let container = caption;
+  for (let depth = 0; depth < 5; depth++) {
+    container = container.locator('..');
+    const inputs = container.locator('input:not([type]), input[type="text"], input[type="search"]')
+      .filter({ visible: true });
+    const count = await inputs.count();
+    if (count === 1 && await inputs.isEditable()) {
+      await inputs.fill(name);
+      return;
+    }
+    if (count > 1) break;
+  }
+  throw new Error('Campo Ricerca advertiser da identificare');
+}
+
 async function saveFeed(page, name, setStage) {
   setStage("Apertura di Create-a-Feed");
   await open(page, '/datafeed/step-one');
@@ -29,17 +56,7 @@ async function saveFeed(page, name, setStage) {
   const clear = control(page, 'Deseleziona tutto');
   if (await clear.isVisible()) await clear.click();
   setStage('Ricerca advertiser');
-  const searchLabel = /ricerca advertiser/i;
-  const search = page.getByRole('textbox', { name: searchLabel })
-    .or(page.getByPlaceholder(searchLabel)).filter({ visible: true }).first();
-  if (await search.isVisible()) {
-    await search.fill(name);
-  } else {
-    const dialog = page.getByRole('dialog').filter({ visible: true });
-    const textboxes = dialog.getByRole('textbox').filter({ visible: true });
-    if (await textboxes.count() !== 1) throw new Error('Campo Ricerca advertiser da identificare');
-    await textboxes.fill(name);
-  }
+  await fillAdvertiserSearch(page, name);
   setStage('Attesa della riga del feed');
   const row = page.getByRole('row').filter({
     has: page.getByRole('cell', { name, exact: true })
@@ -112,7 +129,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v4');
+  console.log('Scarica listini Awin v5');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
