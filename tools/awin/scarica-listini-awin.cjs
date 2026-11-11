@@ -65,25 +65,26 @@ async function fillAdvertiserSearch(page, name) {
   const label = 'Ricerca advertiser';
   const named = page.getByLabel(label, { exact: true })
     .or(page.getByPlaceholder(label, { exact: true })).filter({ visible: true }).first();
-  const caption = page.getByText(label, { exact: true }).filter({ visible: true }).first();
-  await named.or(caption).first().waitFor();
   if (await named.isVisible()) {
     await named.fill(name);
     return;
   }
 
-  // Awin may render the caption as plain text without linking it to the input.
-  let container = caption;
-  for (let depth = 0; depth < 5; depth++) {
-    container = container.locator('..');
-    const inputs = container.locator('input:not([type]), input[type="text"], input[type="search"]')
-      .filter({ visible: true });
-    const count = await inputs.count();
-    if (count === 1 && await inputs.isEditable()) {
-      await inputs.fill(name);
-      return;
-    }
-    if (count > 1) break;
+  const caption = page.getByText(label, { exact: true }).filter({ visible: true }).first();
+  await caption.waitFor();
+  const adjacent = caption.locator('xpath=following::input[not(@type) or @type="text" or @type="search"][1]')
+    .filter({ visible: true });
+  if (await adjacent.isVisible() && await adjacent.isEditable()) {
+    await adjacent.fill(name);
+    return;
+  }
+
+  // Create-a-Feed focuses its search input as soon as the picker opens.
+  const focused = page.locator('input:focus:not([type]), input[type="text"]:focus, input[type="search"]:focus')
+    .filter({ visible: true });
+  if (await focused.count() === 1 && await focused.isEditable()) {
+    await focused.fill(name);
+    return;
   }
   throw new Error('Campo Ricerca advertiser da identificare');
 }
@@ -92,11 +93,13 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
   if (clearSelection) {
+    setStage('Preparazione di un gruppo di formato diverso');
     const clear = control(page, 'Deseleziona tutto');
-    if (await clear.isVisible() && await clear.isEnabled()) await clear.click();
+    if (await clear.isVisible()) await clear.click();
   }
   setStage('Ricerca advertiser');
   await fillAdvertiserSearch(page, name);
+  console.log(name + ' | scritto in Ricerca advertiser');
   setStage('Attesa della riga del feed');
   const rows = page.getByRole('row').filter({
     has: page.getByRole('cell', { name, exact: true })
@@ -127,7 +130,11 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   }
   setStage('Salva');
   await control(page, 'Salva').click();
-  await rows.first().waitFor({ state: 'hidden' });
+  await pickerSearch(page).waitFor({ state: 'hidden' });
+  if (selected) {
+    setStage('Verifica dopo Salva');
+    await page.getByText(name, { exact: true }).filter({ visible: true }).first().waitFor();
+  }
   if (!selected && !deferred.length) throw new Error('Nessun feed selezionabile per questo advertiser');
   return { format, selected, deferred };
 }
@@ -258,7 +265,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v10');
+  console.log('Scarica listini Awin v11');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -295,7 +302,7 @@ async function main() {
 
       for (const entry of pending) {
         try {
-          const result = await addAdvertiser(page, entry.name, entry.format, format, selected.size === 0, setStage);
+          const result = await addAdvertiser(page, entry.name, entry.format, format, completed > 0 && selected.size === 0, setStage);
           deferred.push(...result.deferred.map(value => ({ name: entry.name, format: value })));
           if (result.selected) {
             format = result.format;
