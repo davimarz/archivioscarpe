@@ -21,6 +21,39 @@ async function open(page, route) {
   if (!response?.ok()) throw new Error('Pagina Awin non disponibile');
 }
 
+async function openAdvertiserPicker(page) {
+  const sectionTitles = page.getByText('Advertiser', { exact: true }).filter({ visible: true });
+  const selectText = page.getByText('Seleziona advertiser', { exact: true }).filter({ visible: true });
+  const searchCaption = page.getByText('Ricerca advertiser', { exact: true })
+    .or(page.getByLabel('Ricerca advertiser', { exact: true }))
+    .or(page.getByPlaceholder('Ricerca advertiser', { exact: true }))
+    .filter({ visible: true }).first();
+
+  await selectText.first().waitFor();
+  const titles = await sectionTitles.all();
+  let containers = titles;
+  let selectButton;
+  // Prefer the closest container with both the section title and the action.
+  for (let depth = 0; depth < 4 && !selectButton; depth++) {
+    containers = containers.map(container => container.locator('..'));
+    for (const container of containers) {
+      const candidate = container.getByText('Seleziona advertiser', { exact: true }).filter({ visible: true });
+      if (await candidate.count() === 1) {
+        selectButton = candidate;
+        break;
+      }
+    }
+  }
+  if (!selectButton && await selectText.count() === 1) selectButton = selectText;
+  if (!selectButton) throw new Error('Pulsante del riquadro centrale Advertiser non identificato');
+  await selectButton.click();
+  try {
+    await searchCaption.waitFor({ state: 'visible', timeout: 12000 });
+  } catch {
+    throw new Error('Dopo il clic non compare la finestra con Ricerca advertiser');
+  }
+}
+
 async function fillAdvertiserSearch(page, name) {
   const label = 'Ricerca advertiser';
   const named = page.getByLabel(label, { exact: true })
@@ -52,7 +85,7 @@ async function saveFeed(page, name, setStage) {
   setStage("Apertura di Create-a-Feed");
   await open(page, '/datafeed/step-one');
   setStage('Apertura di Seleziona advertiser');
-  await control(page, 'Seleziona advertiser').click();
+  await openAdvertiserPicker(page);
   const clear = control(page, 'Deseleziona tutto');
   if (await clear.isVisible()) await clear.click();
   setStage('Ricerca advertiser');
@@ -81,6 +114,10 @@ async function saveFeed(page, name, setStage) {
     const checkbox = page.getByRole('checkbox', { name: field, exact: true }).filter({ visible: true });
     if (await checkbox.count() === 1 && await checkbox.isEnabled()) await checkbox.check();
   }
+
+  setStage('Formato ZIP');
+  const zip = page.getByRole('radio', { name: 'zip', exact: true }).filter({ visible: true });
+  if (await zip.count() === 1 && await zip.isEnabled()) await zip.check();
 
   setStage('Scarica feed di prodotto');
   const button = control(page, 'Scarica feed di prodotto');
@@ -129,7 +166,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v5');
+  console.log('Scarica listini Awin v6');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -179,6 +216,8 @@ async function main() {
         const safeErrors = [
           'Pagina Awin non disponibile',
           'Campo Ricerca advertiser da identificare',
+          'Pulsante del riquadro centrale Advertiser non identificato',
+          'Dopo il clic non compare la finestra con Ricerca advertiser',
           'Più feed da scegliere per questo advertiser',
           'Formato del download da verificare',
           'File scaricato vuoto'
