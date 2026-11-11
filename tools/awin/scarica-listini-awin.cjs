@@ -89,6 +89,17 @@ async function fillAdvertiserSearch(page, name) {
   throw new Error('Campo Ricerca advertiser da identificare');
 }
 
+async function verifySavedAdvertiser(page, name) {
+  // Outside the picker, Step 1 may render the advertiser and feed in one card.
+  await pickerSearch(page).waitFor({ state: 'hidden' });
+  const saved = page.getByText(name, { exact: false }).filter({ visible: true });
+  try {
+    await saved.first().waitFor({ state: 'visible', timeout: 15000 });
+  } catch {
+    throw new Error('Il nome non compare nel riepilogo Step 1 dopo Salva');
+  }
+}
+
 async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSelection, setStage) {
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
@@ -133,7 +144,7 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   await pickerSearch(page).waitFor({ state: 'hidden' });
   if (selected) {
     setStage('Verifica dopo Salva');
-    await page.getByText(name, { exact: true }).filter({ visible: true }).first().waitFor();
+    await verifySavedAdvertiser(page, name);
   }
   if (!selected && !deferred.length) throw new Error('Nessun feed selezionabile per questo advertiser');
   return { format, selected, deferred };
@@ -251,6 +262,7 @@ function reportFailure(name, stage, error) {
     'Operazione interrotta',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
+    'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto'
   ];
@@ -265,7 +277,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v11');
+  console.log('Scarica listini Awin v12');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -321,7 +333,7 @@ async function main() {
       try {
         setStage('Verifica della selezione salvata');
         for (const name of selected) {
-          await page.getByText(name, { exact: true }).filter({ visible: true }).first().waitFor();
+          await verifySavedAdvertiser(page, name);
         }
         console.log('Download del gruppo ' + format + ': ' + [...selected].join(', '));
         await downloadBatch(page, label, setStage);
