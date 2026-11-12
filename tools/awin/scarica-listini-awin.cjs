@@ -364,8 +364,12 @@ async function downloadBatch(page, name, setStage) {
   setStage('Attesa della pagina di esportazione');
   const button = control(page, 'Scarica feed di prodotto');
   await button.waitFor({ state: 'visible' });
-  setStage('Selezione delle colonne di confronto');
-  await selectComparisonColumns(page, name);
+  if (name.trim().toLowerCase() === 'onestreet') {
+    console.log(name + ' | download diretto con le impostazioni Awin');
+  } else {
+    setStage('Selezione delle colonne di confronto');
+    await selectComparisonColumns(page, name);
+  }
   setStage('Scarica feed di prodotto');
   const exportUrl = await generatedExportUrl(page);
   const observer = observeBrowserDownload(page);
@@ -570,7 +574,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v22');
+  console.log('Scarica listini Awin v23');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
