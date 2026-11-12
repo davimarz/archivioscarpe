@@ -254,6 +254,20 @@ async function fetchGeneratedExport(page, name, url) {
   }
 }
 
+function enhancedUiExportUrl(value) {
+  if (!value) return null;
+  const url = new URL(value);
+  if (url.origin !== 'https://productdata.awin.com') return null;
+  const parts = url.pathname.split('/');
+  const key = parts[parts.indexOf('apikey') + 1];
+  const feedIds = parts[parts.indexOf('fid') + 1];
+  if (!parts.includes('apikey') || !parts.includes('fid') ||
+      !/^[a-z0-9_-]+$/i.test(key ?? '') ||
+      !/^F\d+(?:,F\d+)*$/i.test(feedIds ?? '')) return null;
+  return 'https://ui.awin.com/productdata-darwin-download/publisher/' +
+    publisherId + '/' + key + '/1/feed/' + feedIds + '.csv.gz';
+}
+
 function observeBrowserDownload(page) {
   const context = page.context();
   const watched = new Set();
@@ -294,17 +308,39 @@ const comparisonColumns = [
   'merchant_product_category_path', 'product_type', 'search_price', 'store_price',
   'display_price', 'product_price_old', 'rrp_price', 'saving', 'savings_percent',
   'currency', 'delivery_cost', 'in_stock', 'stock_status', 'size_stock_status',
-  'merchant_image_url', 'aw_image_url', 'last_updated', 'commission_group'
+  'merchant_image_url', 'aw_image_url', 'last_updated', 'commission_group',
+  'category_id', 'language', 'brand_id', 'condition', 'product_short_description',
+  'merchant_product_second_category', 'merchant_product_third_category',
+  'valid_from', 'valid_to', 'is_for_sale', 'stock_quantity', 'size_stock_amount',
+  'delivery_restrictions', 'delivery_time', 'large_image'
 ];
 
+async function columnCheckbox(page, field) {
+  const labelled = page.getByRole('checkbox', { name: field, exact: true })
+    .or(page.getByLabel(field, { exact: true }).and(page.locator('input[type="checkbox"]')))
+    .filter({ visible: true });
+  if (await labelled.count() === 1) return labelled;
+
+  // The selected-column summary repeats names, so only use a nearby input.
+  const captions = page.getByText(field, { exact: true }).filter({ visible: true });
+  for (const caption of await captions.all()) {
+    const nearby = caption.locator('xpath=ancestor-or-self::*[count(.//input[@type="checkbox"])=1][1]')
+      .locator('input[type="checkbox"]').filter({ visible: true });
+    if (await nearby.count() === 1) return nearby;
+  }
+  return null;
+}
+
 async function selectComparisonColumns(page, name) {
+  const recommended = await columnCheckbox(page, 'Consigliato');
+  if (recommended && await recommended.isEnabled() && !await recommended.isChecked()) {
+    await recommended.check({ timeout: 2500 }).catch(() => {});
+  }
   let included = 0;
   const skipped = [];
   for (const field of comparisonColumns) {
-    const checkbox = page.getByRole('checkbox', { name: field, exact: true })
-      .or(page.getByLabel(field, { exact: true }))
-      .filter({ visible: true });
-    if (await checkbox.count() !== 1) continue;
+    const checkbox = await columnCheckbox(page, field);
+    if (!checkbox) continue;
     try {
       if (!await checkbox.isChecked() && await checkbox.isEnabled()) {
         await checkbox.check({ timeout: 2500 });
@@ -354,7 +390,14 @@ async function downloadBatch(page, name, setStage) {
       url = (await generatedExportUrl(tab)) || url;
       if (url) break;
     }
-    exportFile = await fetchGeneratedExport(page, name, url);
+    try {
+      exportFile = await fetchGeneratedExport(page, name, url);
+    } catch (error) {
+      const enhancedUrl = enhancedUiExportUrl(url);
+      if (!enhancedUrl) throw error;
+      console.log(name + ' | provo il percorso Awin per i feed Enhanced');
+      exportFile = await fetchGeneratedExport(page, name, enhancedUrl);
+    }
   }
   setStage('Verifica del nome del file');
   const original = path.basename(exportFile.suggestedFilename());
@@ -527,7 +570,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v21');
+  console.log('Scarica listini Awin v22');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
