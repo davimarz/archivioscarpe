@@ -50,7 +50,7 @@ self.addEventListener('fetch', event => {
     })());
     return;
   }
-  if (!cacheable(request, url)) return;
+  if (request.cache === 'no-store' || !cacheable(request, url)) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(request);
