@@ -100,18 +100,9 @@ async function verifySavedAdvertiser(page, name) {
   }
 }
 
-async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSelection, setStage) {
+async function addAdvertiser(page, name, setStage) {
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
-  if (clearSelection) {
-    setStage('Preparazione di un gruppo di formato diverso');
-    const clear = control(page, 'Deseleziona tutto');
-    try {
-      await clear.click({ timeout: 3500 });
-    } catch {
-      throw new Error('La pagina conserva la selezione precedente e Awin non consente di azzerarla');
-    }
-  }
   setStage('Ricerca advertiser');
   await fillAdvertiserSearch(page, name);
   console.log(name + ' | scritto in Ricerca advertiser');
@@ -121,40 +112,23 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   }).filter({ visible: true });
   await rows.first().waitFor({ timeout: 10000 });
 
-  const feeds = [];
+  let selected = 0;
+  setStage('Selezione del feed');
   for (const row of await rows.all()) {
     const checkbox = row.getByRole('checkbox');
     if (await checkbox.count() !== 1) continue;
-    // Create-a-Feed lists the format in the third cell, after ID and advertiser.
-    const formatText = (await row.getByRole('cell').nth(2).innerText()).trim().toLowerCase();
-    const format = formatText.match(/^(awin|google)\b/)?.[1] ?? formatText;
-    if (format) feeds.push({ format, checkbox });
-  }
-  if (!feeds.length) throw new Error('Nessun feed selezionabile per questo advertiser');
-  const formats = [...new Set(feeds.map(feed => feed.format))];
-  console.log(name + ' | formato rilevato: ' + formats.join(', '));
-  const format = batchFormat ?? requestedFormat ?? formats[0];
-  const desired = requestedFormat ? [requestedFormat] : formats;
-  const deferred = desired.filter(value => value !== format);
-  let selected = 0;
-  setStage('Selezione del feed');
-  if (desired.includes(format)) {
-    for (const feed of feeds.filter(feed => feed.format === format)) {
-      if (!await feed.checkbox.isEnabled()) continue;
-      await feed.checkbox.check();
-      selected++;
+    if (!await checkbox.isChecked()) {
+      if (!await checkbox.isEnabled()) continue;
+      await checkbox.check();
     }
+    selected++;
   }
+  if (!selected) throw new Error('Nessun feed selezionabile per questo advertiser');
   setStage('Salva');
   await control(page, 'Salva').click();
-  await pickerSearch(page).waitFor({ state: 'hidden' });
-  if (selected) {
-    setStage('Verifica dopo Salva');
-    await verifySavedAdvertiser(page, name);
-  }
-  if (!selected && !deferred.length) throw new Error('Awin non ha abilitato la casella del feed per il formato richiesto');
-  if (deferred.length) console.log(name + ' | rinviato al gruppo: ' + deferred.join(', '));
-  return { format, selected, deferred };
+  setStage('Verifica dopo Salva');
+  await verifySavedAdvertiser(page, name);
+  return selected;
 }
 
 async function generatedExportUrl(page) {
@@ -168,17 +142,22 @@ async function generatedExportUrl(page) {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     while (walker.nextNode()) {
       const node = walker.currentNode;
-      if (node.nodeValue.includes('productdata.awin.com') && visible(node.parentElement)) {
+      if (node.nodeValue.includes('awin.com') && visible(node.parentElement)) {
         values.push(node.nodeValue);
       }
     }
-    return values.flatMap(value => value.match(/https:\/\/productdata\.awin\.com\/datafeed\/download\/[^\s"'<>]+/gi) || []);
+    return values.flatMap(value => value.match(/https:\/\/(?:productdata|ui)\.awin\.com\/[^\s"'<>]+/gi) || []);
   }).catch(() => []);
   return urls.find(value => {
     try {
       const parsed = new URL(value);
-      return parsed.origin === 'https://productdata.awin.com' &&
-        parsed.pathname.startsWith('/datafeed/download/');
+      if (parsed.origin === 'https://productdata.awin.com') {
+        return parsed.pathname.startsWith('/datafeed/download/');
+      }
+      if (parsed.origin !== 'https://ui.awin.com') return false;
+      const prefix = '/productdata-darwin-download/publisher/' + publisherId + '/';
+      return parsed.pathname.startsWith(prefix) &&
+        /^[^/]+\/\d+\/feed\/[A-Z0-9,]+\.(?:csv(?:\.gz)?|zip)$/i.test(parsed.pathname.slice(prefix.length));
     } catch {
       return false;
     }
@@ -248,21 +227,9 @@ async function downloadBatch(page, name, setStage) {
   await control(page, 'Successivo').click();
   console.log(name + ' | premuto Successivo');
 
-  setStage('Selezione delle colonne');
-  const columns = page.getByRole('checkbox', { name: 'Seleziona tutti', exact: true })
-    .filter({ visible: true });
-  if (await columns.count() === 1) await columns.check();
-  for (const field of ['size', 'category']) {
-    const checkbox = page.getByRole('checkbox', { name: field, exact: true }).filter({ visible: true });
-    if (await checkbox.count() === 1 && await checkbox.isEnabled()) await checkbox.check();
-  }
-
-  setStage('Formato ZIP');
-  const zip = page.getByRole('radio', { name: 'zip', exact: true }).filter({ visible: true });
-  if (await zip.count() === 1 && await zip.isEnabled()) await zip.check();
-
   setStage('Scarica feed di prodotto');
   const button = control(page, 'Scarica feed di prodotto');
+  await button.waitFor({ state: 'visible' });
   const exportUrl = await generatedExportUrl(page);
   const observer = observeBrowserDownload(page);
   let download;
@@ -368,10 +335,8 @@ function reportFailure(name, stage, error) {
     'Operazione interrotta',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
-    'Awin non ha abilitato la casella del feed per il formato richiesto',
     'Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile',
     'Awin non ha restituito un file di listino valido',
-    'La pagina conserva la selezione precedente e Awin non consente di azzerarla',
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto'
@@ -387,7 +352,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v15');
+  console.log('Scarica listini Awin v16');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -411,57 +376,26 @@ async function main() {
       return;
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
-    let completed = 0;
-    let previousSelection = [];
-    let pending = active.map(name => ({ name, format: null }));
-    while (pending.length) {
-      const deferred = [];
-      const selected = new Set();
-      let format = null;
-      let selectionFailed = false;
-      let stage = 'Apertura di Create-a-Feed';
-      const setStage = value => { stage = value; };
+    let stage = 'Apertura di Create-a-Feed';
+    const setStage = value => { stage = value; };
+    let current = 'feed-completo';
+    try {
       await open(page, '/datafeed/step-one');
-
-      const oldCards = await Promise.all(previousSelection.map(name =>
-        page.getByText(name, { exact: false }).filter({ visible: true }).first().isVisible()
-      ));
-      const resetSelection = oldCards.some(Boolean);
-      if (previousSelection.length && !resetSelection) console.log('Step 1 già pulito: procedo con il nuovo formato');
-      for (const [index, entry] of pending.entries()) {
-        try {
-          const result = await addAdvertiser(page, entry.name, entry.format, format, resetSelection && index === 0, setStage);
-          deferred.push(...result.deferred.map(value => ({ name: entry.name, format: value })));
-          if (result.selected) {
-            format = result.format;
-            selected.add(entry.name);
-            console.log(entry.name + ' | selezionato | ' + result.selected + ' feed');
-          }
-        } catch (error) {
-          reportFailure(entry.name, stage, error);
-          selectionFailed = true;
-          break;
-        }
+      for (const name of active) {
+        current = name;
+        const count = await addAdvertiser(page, name, setStage);
+        console.log(name + ' | selezionato | ' + count + ' feed');
       }
-
-      if (selectionFailed || !selected.size) break;
-      const label = 'feed-' + format;
-      try {
-        setStage('Verifica della selezione salvata');
-        for (const name of selected) {
-          await verifySavedAdvertiser(page, name);
-        }
-        console.log('Download del gruppo ' + format + ': ' + [...selected].join(', '));
-        await downloadBatch(page, label, setStage);
-        completed++;
-      } catch (error) {
-        reportFailure(label, stage, error);
-      }
-      previousSelection = [...selected];
-      pending = deferred;
+      current = 'feed-completo';
+      setStage('Verifica della selezione salvata');
+      for (const name of active) await verifySavedAdvertiser(page, name);
+      console.log('Esportazione unica: ' + active.join(', '));
+      await downloadBatch(page, current, setStage);
+      console.log('Cartella dei listini: ' + output);
+    } catch (error) {
+      reportFailure(current, stage, error);
+      console.log('Nessun listino salvato.');
     }
-    if (completed) console.log('Cartella dei listini (' + completed + '): ' + output);
-    else console.log('Nessun listino salvato.');
   } finally {
     await browser.close();
   }
