@@ -257,7 +257,7 @@ function cheapestOffers(offers) {
     const withShipping = group.every(item => item.shipping !== null);
     const total = item => item.current + (withShipping ? item.shipping : 0);
     return group.reduce((best, item) => total(item) < total(best) ? item : best);
-  }).sort((a, b) => a.current - b.current || a.name.localeCompare(b.name, 'it'));
+  });
 }
 
 function editSite(index, worker) {
@@ -397,7 +397,10 @@ function main() {
       (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
   }
   const cheapest = cheapestOffers(allOffers);
-  const products = limitCatalogVariants(cheapest);
+  const products = limitCatalogVariants(cheapest)
+    .map(card => ({ card, rank: cardRank(card) }))
+    .sort((a, b) => a.rank.localeCompare(b.rank))
+    .map(entry => entry.card);
   console.log('Catalogo: ' + cheapest.length + ' offerte dopo il confronto, ' + products.length + ' dopo il limite di due varianti.');
   if (audit) {
     printGroupingAudit(allOffers, products);
