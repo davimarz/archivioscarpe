@@ -113,22 +113,55 @@ async function addAdvertiser(page, name, setStage) {
   await rows.first().waitFor({ timeout: 10000 });
 
   let selected = 0;
+  let unavailable = 0;
+  let unidentified = 0;
   setStage('Selezione del feed');
   for (const row of await rows.all()) {
-    const checkbox = row.getByRole('checkbox');
-    if (await checkbox.count() !== 1) continue;
-    if (!await checkbox.isChecked()) {
-      if (!await checkbox.isEnabled()) continue;
-      await checkbox.check();
+    const native = row.locator('input[type="checkbox"]');
+    const checkbox = await native.count() === 1 ? native : row.getByRole('checkbox');
+    if (await checkbox.count() !== 1) {
+      unidentified++;
+      continue;
     }
-    selected++;
+    if (!await checkbox.isChecked()) {
+      if (!await checkbox.isEnabled()) {
+        unavailable++;
+        continue;
+      }
+      try {
+        if (await checkbox.isVisible()) {
+          await checkbox.check({ timeout: 4000 });
+        } else {
+          const label = row.locator('label').filter({ visible: true });
+          if (await label.count() === 1) await label.click({ timeout: 4000 });
+        }
+      } catch {
+        // The checked state below determines whether the selection succeeded.
+      }
+    }
+    if (await checkbox.isChecked()) selected++;
   }
-  if (!selected) throw new Error('Nessun feed selezionabile per questo advertiser');
-  setStage('Salva');
-  await control(page, 'Salva').click();
+
+  if (!selected) {
+    console.log(name + ' | righe con casella disabilitata: ' + unavailable +
+      ' | righe senza casella riconosciuta: ' + unidentified);
+    const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
+    try {
+      const answer = await terminal.question(
+        'Prova a selezionare il feed di ' + name +
+        ' nella finestra Awin e premi Salva. Poi premi Invio qui (Q per fermarti): '
+      );
+      if (answer.trim().toLowerCase() === 'q') throw new Error('Operazione interrotta');
+    } finally {
+      terminal.close();
+    }
+  } else {
+    setStage('Salva');
+    await control(page, 'Salva').click();
+  }
   setStage('Verifica dopo Salva');
   await verifySavedAdvertiser(page, name);
-  return selected;
+  return selected || null;
 }
 
 async function generatedExportUrl(page) {
@@ -352,7 +385,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v16');
+  console.log('Scarica listini Awin v17');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -384,7 +417,7 @@ async function main() {
       for (const name of active) {
         current = name;
         const count = await addAdvertiser(page, name, setStage);
-        console.log(name + ' | selezionato | ' + count + ' feed');
+        console.log(name + (count === null ? ' | selezione manuale verificata' : ' | selezionato | ' + count + ' feed'));
       }
       current = 'feed-completo';
       setStage('Verifica della selezione salvata');
