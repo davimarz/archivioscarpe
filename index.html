@@ -2225,7 +2225,21 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const action = document.createElement('span');
         action.className = 'cisalfa-product-link';
         action.textContent = 'Vedi su ' + product.merchant;
-        card.append(img, merchant, name, price, action);
+        // data-awin-variant-note
+        const details = [];
+        if (product.color) details.push('Colore: ' + product.color);
+        if (product.size) details.push('Taglia: ' + product.size);
+        const options = [];
+        if (product.colorCount > 1) options.push(product.colorCount + ' colori');
+        if (product.sizeCount > 1) options.push(product.sizeCount + ' taglie');
+        card.append(img, merchant, name, price);
+        if (details.length || options.length) {
+          const note = document.createElement('small');
+          note.className = 'text-[11px]';
+          note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');
+          card.append(note);
+        }
+        card.append(action);
         return card;
       };
       const render = () => {
