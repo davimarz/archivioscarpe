@@ -682,29 +682,64 @@ async function readWindowsCredential() {
   return JSON.parse(Buffer.from(stdout.trim(), 'base64').toString('utf8'));
 }
 
+function isAwinLoginUrl(value) {
+  const url = new URL(value);
+  return url.origin === 'https://ui.awin.com' &&
+    /^\/(?:login(?:\/|$)|idp\/[^/]+\/awin\/login(?:\/|$))/i.test(url.pathname);
+}
+
+async function validateLoginAction(button, withPassword) {
+  return button.evaluate((element, protectedPassword) => {
+    const form = element.form ?? element.closest('form');
+    const action = new URL(element.getAttribute('formaction') || form?.getAttribute('action') ||
+      location.href, location.href);
+    if (action.origin !== 'https://ui.awin.com') return false;
+    if (!protectedPassword || !form || element.type === 'button') return true;
+    const method = element.getAttribute('formmethod') || form.getAttribute('method');
+    return method?.toLowerCase() === 'post';
+  }, withPassword);
+}
+
 async function submitSavedLogin(page) {
-  const awinOrigin = 'https://ui.awin.com';
-  if (new URL(page.url()).origin !== awinOrigin) return false;
-  const password = page.locator('input[type="password"]').filter({ visible: true });
-  if (await password.count() !== 1) return false;
-  const form = password.locator('xpath=ancestor::form[1]');
-  const email = form.locator('input[type="email"], input[autocomplete="username"], input[name="email"], input[name="username"]').filter({ visible: true });
-  const submit = form.getByRole('button', { name: /^(accedi|login|log in|sign in)$/i }).filter({ visible: true });
-  if (await email.count() !== 1 || await submit.count() !== 1) return false;
-
-  const action = await form.getAttribute('action');
-  const override = await submit.getAttribute('formaction');
-  const method = await submit.getAttribute('formmethod') || await form.getAttribute('method');
-  if (method?.toLowerCase() !== 'post' ||
-      new URL(override || action || page.url(), page.url()).origin !== awinOrigin) return false;
-
+  if (!isAwinLoginUrl(page.url())) return 'Pagina di accesso Awin non riconosciuta.';
   const credential = await readWindowsCredential();
-  if (!credential?.email || !credential?.password || new URL(page.url()).origin !== awinOrigin) return false;
-  await email.fill(credential.email);
+  if (!credential?.email || !credential?.password) return 'Credenziale Windows non configurata.';
+
+  const password = page.locator('input[type="password"]').filter({ visible: true });
+  const email = page.locator('input[type="email"], input[autocomplete="username"], input[name="email"], input[name="username"], input[name="identifier"]').filter({ visible: true });
+  const continueButton = page.getByRole('button', { name: /^(continua|continue|avanti|next)$/i }).filter({ visible: true });
+  const loginButton = page.getByRole('button', { name: /^(accedi|login|log in|sign in|entra)$/i }).filter({ visible: true });
+  await password.or(email).first().waitFor({ timeout: 8000 });
+
+  if (await password.count() === 0) {
+    await continueButton.first().waitFor({ timeout: 5000 });
+    if (await email.count() !== 1 || await continueButton.count() !== 1 ||
+        !isAwinLoginUrl(page.url()) || !await validateLoginAction(continueButton, false)) {
+      return 'Schermata email o pulsante Continua non riconosciuto.';
+    }
+    await email.fill(credential.email);
+    await continueButton.click();
+    console.log('Awin | email inserita, premuto Continua.');
+    try {
+      await password.first().waitFor({ timeout: 10000 });
+    } catch {
+      return 'Awin non ha mostrato il campo password dopo Continua.';
+    }
+  } else if (await email.count() === 1 && isAwinLoginUrl(page.url())) {
+    await email.fill(credential.email);
+  }
+
+  await loginButton.first().waitFor({ timeout: 5000 });
+  if (await password.count() !== 1 || await loginButton.count() !== 1 ||
+      !isAwinLoginUrl(page.url()) || !await validateLoginAction(loginButton, true)) {
+    return 'Schermata password o pulsante Accedi non riconosciuto.';
+  }
   await password.fill(credential.password);
-  if (new URL(page.url()).origin !== awinOrigin) return false;
-  await submit.click();
-  return true;
+  if (!isAwinLoginUrl(page.url()) || !await validateLoginAction(loginButton, true)) {
+    return 'Destinazione del login Awin non riconosciuta.';
+  }
+  await loginButton.click();
+  return null;
 }
 
 async function main() {
@@ -713,7 +748,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v25');
+  console.log('Scarica listini Awin v26');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -731,8 +766,11 @@ async function main() {
     const joinedTab = control(page, 'Iscritto');
     if (!await joinedTab.isVisible()) {
       try {
-        if (await submitSavedLogin(page)) {
-          console.log('Accesso Awin inviato con la credenziale locale.');
+        const loginIssue = await submitSavedLogin(page);
+        if (loginIssue) {
+          console.log('Awin | ' + loginIssue);
+        } else {
+          console.log('Awin | password inserita, premuto Accedi.');
           await joinedTab.waitFor({ timeout: 8000 }).catch(() => {});
           if (!await joinedTab.isVisible() && page.url().startsWith(account + '/')) {
             await open(page, '/merchant-directory/index/tab/active/page/1');
