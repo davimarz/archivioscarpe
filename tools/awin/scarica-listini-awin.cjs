@@ -106,7 +106,11 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   if (clearSelection) {
     setStage('Preparazione di un gruppo di formato diverso');
     const clear = control(page, 'Deseleziona tutto');
-    if (await clear.isVisible()) await clear.click();
+    try {
+      await clear.click({ timeout: 3500 });
+    } catch {
+      throw new Error('La pagina conserva la selezione precedente e Awin non consente di azzerarla');
+    }
   }
   setStage('Ricerca advertiser');
   await fillAdvertiserSearch(page, name);
@@ -153,11 +157,24 @@ async function addAdvertiser(page, name, requestedFormat, batchFormat, clearSele
   return { format, selected, deferred };
 }
 
-async function fetchGeneratedExport(page, name) {
-  const urls = await page.locator('textarea:visible, input:visible').evaluateAll(elements =>
-    elements.map(element => element.value.trim()).filter(value => value.startsWith('https://'))
-  );
-  const url = urls.find(value => {
+async function generatedExportUrl(page) {
+  const urls = await page.evaluate(() => {
+    const values = [];
+    const visible = element => element.getClientRects().length > 0 &&
+      getComputedStyle(element).visibility === 'visible';
+    for (const element of document.querySelectorAll('textarea, input, a[href]')) {
+      if (visible(element)) values.push(element.value || element.getAttribute('href') || '');
+    }
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (node.nodeValue.includes('productdata.awin.com') && visible(node.parentElement)) {
+        values.push(node.nodeValue);
+      }
+    }
+    return values.flatMap(value => value.match(/https:\/\/productdata\.awin\.com\/datafeed\/download\/[^\s"'<>]+/gi) || []);
+  }).catch(() => []);
+  return urls.find(value => {
     try {
       const parsed = new URL(value);
       return parsed.origin === 'https://productdata.awin.com' &&
@@ -166,6 +183,9 @@ async function fetchGeneratedExport(page, name) {
       return false;
     }
   });
+}
+
+async function fetchGeneratedExport(page, name, url) {
   if (!url) throw new Error('Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile');
   console.log(name + ' | uso il link di esportazione generato da Create-a-Feed');
   let bytes;
@@ -211,6 +231,7 @@ async function downloadBatch(page, name, setStage) {
 
   setStage('Scarica feed di prodotto');
   const button = control(page, 'Scarica feed di prodotto');
+  const exportUrl = await generatedExportUrl(page);
   const downloadEvent = page.waitForEvent('download', { timeout: 45000 }).catch(() => null);
   try {
     await button.click({ timeout: 12000 });
@@ -220,7 +241,7 @@ async function downloadBatch(page, name, setStage) {
   }
   setStage('Attesa del file');
   const download = await downloadEvent;
-  const exportFile = download ?? await fetchGeneratedExport(page, name);
+  const exportFile = download ?? await fetchGeneratedExport(page, name, await generatedExportUrl(page) || exportUrl);
   setStage('Verifica del nome del file');
   const original = path.basename(exportFile.suggestedFilename());
   if (!/\.(csv|tsv|gz|gzip|zip|jsonl?|xml)$/i.test(original)) {
@@ -312,6 +333,7 @@ function reportFailure(name, stage, error) {
     'Awin non ha abilitato la casella del feed per il formato richiesto',
     'Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile',
     'Awin non ha restituito un file di listino valido',
+    'La pagina conserva la selezione precedente e Awin non consente di azzerarla',
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto'
@@ -327,7 +349,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v13');
+  console.log('Scarica listini Awin v14');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -352,7 +374,7 @@ async function main() {
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
     let completed = 0;
-    let batchNumber = 0;
+    let previousSelection = [];
     let pending = active.map(name => ({ name, format: null }));
     while (pending.length) {
       const deferred = [];
@@ -363,7 +385,11 @@ async function main() {
       const setStage = value => { stage = value; };
       await open(page, '/datafeed/step-one');
 
-      const resetSelection = batchNumber++ > 0;
+      const oldCards = await Promise.all(previousSelection.map(name =>
+        page.getByText(name, { exact: false }).filter({ visible: true }).first().isVisible()
+      ));
+      const resetSelection = oldCards.some(Boolean);
+      if (previousSelection.length && !resetSelection) console.log('Step 1 già pulito: procedo con il nuovo formato');
       for (const [index, entry] of pending.entries()) {
         try {
           const result = await addAdvertiser(page, entry.name, entry.format, format, resetSelection && index === 0, setStage);
@@ -393,6 +419,7 @@ async function main() {
       } catch (error) {
         reportFailure(label, stage, error);
       }
+      previousSelection = [...selected];
       pending = deferred;
     }
     if (completed) console.log('Cartella dei listini (' + completed + '): ' + output);
