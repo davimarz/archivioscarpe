@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { gunzipSync } = require('node:zlib');
 const { execFileSync } = require('node:child_process');
+const { createHash } = require('node:crypto');
 
 const [repo, directory, publisher, ...options] = process.argv.slice(2);
 const catalogFile = 'catalogo-awin.json';
@@ -149,6 +150,75 @@ function trackingLink(record, merchant) {
   return link.href;
 }
 
+const catalogColor = /^(?:(?:bianc[oa]|ner[oa]|ross[oa]|verd[ei]|blu|azzurr[oa]|grigi[oa]|giall[oa]|arancione|rosa|viol[ao]|marrone|beige|bordeaux|celeste|argento|oro|navy|cream|black|white|red|green|blue|grey|gray|yellow|orange|pink|purple|brown)(?:\s+(?:chiaro|scuro|light|dark))?)(?:\s*[/+]\s*(?:bianc[oa]|ner[oa]|ross[oa]|verd[ei]|blu|azzurr[oa]|grigi[oa]|giall[oa]|arancione|rosa|viol[ao]|marrone|beige|black|white|red|green|blue|grey|gray))*$|^(?:color mix|multicolor(?:e)?|multicolour)$/i;
+
+function catalogVariant(record, name) {
+  const brand = pick(record.brand_name, record.brand);
+  const size = pick(record['fashion:size'], record.size);
+  const explicitColor = pick(record.colour, record.color);
+  const parts = name.split(/\s+[-–—|]\s+/);
+  const details = new Set([normalize(explicitColor), normalize(size), normalize('taglia ' + size), normalize('eu ' + size)]);
+  const colors = parts.slice(1).filter(part => catalogColor.test(normalize(part)));
+  const family = parts.filter((part, index) =>
+    index === 0 || (!catalogColor.test(normalize(part)) && !details.has(normalize(part)))
+  ).join(' - ');
+  const color = explicitColor || colors.join(' / ');
+  const modelWords = normalize(parts[0]).replace(normalize(brand), '').match(/[\p{L}\p{N}]+/gu) ?? [];
+  const model = pick(record.product_model, record.item_group_id);
+  const identified = brand && (model || modelWords.length >= 2);
+  return { color, size, family: identified ? JSON.stringify([normalize(brand), normalize(family)]) : null };
+}
+
+function cardRank(card) {
+  return createHash('sha256').update(card.url + '\0' + card.name + '\0' + card.color + '\0' + card.size)
+    .digest('hex').slice(0, 16);
+}
+
+function limitCatalogVariants(products) {
+  const groups = new Map();
+  for (const item of products) {
+    const key = item.family ? JSON.stringify([item.merchant, item.current, item.family]) : item;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+
+  const visible = [];
+  for (const group of groups.values()) {
+    const colors = new Set(group.map(item => normalize(item.color)).filter(Boolean));
+    const sizes = new Set(group.map(item => normalize(item.size)).filter(Boolean));
+    const ranked = group.length === 1 ? group : group.map(item => ({ item, rank: cardRank(item) }))
+      .sort((a, b) => a.rank.localeCompare(b.rank)).map(entry => entry.item);
+    const colorFrequency = new Map(), sizeFrequency = new Map(), pairFrequency = new Map();
+    let knownPairs = 0;
+    const increment = (map, key) => map.set(key, (map.get(key) || 0) + 1);
+    for (const item of ranked) {
+      if (!item.color || !item.size) continue;
+      const color = normalize(item.color), size = normalize(item.size);
+      increment(colorFrequency, color);
+      increment(sizeFrequency, size);
+      increment(pairFrequency, JSON.stringify([color, size]));
+      knownPairs++;
+    }
+    const first = ranked.find(item => {
+      if (!item.color || !item.size) return false;
+      const color = normalize(item.color), size = normalize(item.size);
+      return knownPairs - colorFrequency.get(color) - sizeFrequency.get(size) +
+        pairFrequency.get(JSON.stringify([color, size])) > 0;
+    }) || ranked[0];
+    const diversity = item => Number(Boolean(item.color && first.color && normalize(item.color) !== normalize(first.color))) +
+      Number(Boolean(item.size && first.size && normalize(item.size) !== normalize(first.size)));
+    const second = ranked.filter(item => item !== first).reduce((best, item) =>
+      !best || diversity(item) > diversity(best) ? item : best, null);
+    for (const item of second ? [first, second] : [first]) {
+      const { family, key, current, shipping, auditSignature, ...card } = item;
+      if (colors.size > 1) card.colorCount = colors.size;
+      if (sizes.size > 1) card.sizeCount = sizes.size;
+      visible.push(card);
+    }
+  }
+  return visible;
+}
+
 function offer(record, merchant) {
   const name = pick(record.product_name, record.title);
   const category = [record.merchant_category, record.merchant_product_category_path, record.category_name, record.product_type, record.google_product_category].map(clean).join(' ');
@@ -174,7 +244,7 @@ function offer(record, merchant) {
     : variant.every(Boolean) ? 'variant:' + JSON.stringify(variant) : 'offer:' + url;
   const shipping = cents(record.delivery_cost, currency);
   return { key, current, shipping, name, price: (current / 100).toFixed(2).replace('.', ','),
-    image: image.href, url, merchant };
+    image: image.href, url, merchant, ...catalogVariant(record, name) };
 }
 
 function cheapestOffers(offers) {
@@ -187,8 +257,7 @@ function cheapestOffers(offers) {
     const withShipping = group.every(item => item.shipping !== null);
     const total = item => item.current + (withShipping ? item.shipping : 0);
     return group.reduce((best, item) => total(item) < total(best) ? item : best);
-  }).sort((a, b) => a.current - b.current || a.name.localeCompare(b.name, 'it'))
-    .map(({ key, current, shipping, auditSignature, ...card }) => card);
+  }).sort((a, b) => a.current - b.current || a.name.localeCompare(b.name, 'it'));
 }
 
 function editSite(index, worker) {
@@ -221,6 +290,27 @@ function editSite(index, worker) {
     const original = 'if (!cacheable(request, url)) return;';
     if (!worker.includes(original)) throw new Error('gestione cache in sw.js non riconosciuta');
     worker = worker.replace(original, "if (request.cache === 'no-store' || !cacheable(request, url)) return;");
+  }
+  if (!index.includes('data-awin-variant-note')) {
+    const anchor = '        card.append(img, merchant, name, price, action);';
+    if (!index.includes(anchor)) throw new Error('Scheda offerte Awin non riconosciuta');
+    index = index.replace(anchor, [
+      '        // data-awin-variant-note',
+      '        const details = [];',
+      "        if (product.color) details.push('Colore: ' + product.color);",
+      "        if (product.size) details.push('Taglia: ' + product.size);",
+      '        const options = [];',
+      "        if (product.colorCount > 1) options.push(product.colorCount + ' colori');",
+      "        if (product.sizeCount > 1) options.push(product.sizeCount + ' taglie');",
+      '        card.append(img, merchant, name, price);',
+      '        if (details.length || options.length) {',
+      "          const note = document.createElement('small');",
+      "          note.className = 'text-[11px]';",
+      "          note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');",
+      '          card.append(note);',
+      '        }',
+      '        card.append(action);'
+    ].join('\n'));
   }
   return { index, worker };
 }
@@ -306,7 +396,9 @@ function main() {
     console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + (rowCount + skipped) + ' righe' +
       (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
   }
-  const products = cheapestOffers(allOffers);
+  const cheapest = cheapestOffers(allOffers);
+  const products = limitCatalogVariants(cheapest);
+  console.log('Catalogo: ' + cheapest.length + ' offerte dopo il confronto, ' + products.length + ' dopo il limite di due varianti.');
   if (audit) {
     printGroupingAudit(allOffers, products);
     return;
