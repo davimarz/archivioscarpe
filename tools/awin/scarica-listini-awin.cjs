@@ -172,8 +172,8 @@ async function addAdvertiser(page, name, setStage, clearPrevious) {
   return selected || null;
 }
 
-async function generatedExportUrl(page) {
-  const urls = await page.evaluate(() => {
+async function visibleAwinUrls(page) {
+  return page.evaluate(() => {
     const values = [];
     const visible = element => element.getClientRects().length > 0 &&
       getComputedStyle(element).visibility === 'visible';
@@ -189,7 +189,9 @@ async function generatedExportUrl(page) {
     }
     return values.flatMap(value => value.match(/https:\/\/(?:productdata|ui)\.awin\.com\/[^\s"'<>]+/gi) || []);
   }).catch(() => []);
-  return urls.find(value => {
+}
+
+function isExportUrl(value) {
     try {
       const parsed = new URL(value);
       if (parsed.origin === 'https://productdata.awin.com') {
@@ -202,7 +204,75 @@ async function generatedExportUrl(page) {
     } catch {
       return false;
     }
-  });
+}
+
+async function generatedExportUrl(page) {
+  return (await visibleAwinUrls(page)).find(isExportUrl);
+}
+
+function readCsvRows(csv) {
+  const rows = [];
+  let row = [], field = '', quoted = false;
+  for (let index = 0; index < csv.length; index++) {
+    const char = csv[index];
+    if (char === '"') {
+      if (quoted && csv[index + 1] === '"') {
+        field += '"';
+        index++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (!quoted && char === ',') {
+      row.push(field);
+      field = '';
+    } else if (!quoted && (char === '\r' || char === '\n')) {
+      if (char === '\r' && csv[index + 1] === '\n') index++;
+      rows.push([...row, field]);
+      row = [];
+      field = '';
+    } else {
+      field += char;
+    }
+  }
+  if (quoted) throw new Error('CSV della lista Awin non valido');
+  if (row.length || field) rows.push([...row, field]);
+  return rows;
+}
+
+async function findListedFeed(page, listUrl, name) {
+  if (!listUrl) throw new Error('Link Scarica lista Feed non trovato nella pagina Awin');
+  const response = await page.request.get(listUrl, { timeout: 45000, maxRedirects: 0 });
+  try {
+    if (!response.ok()) {
+      console.log(name + ' | lista feed Awin: HTTP ' + response.status());
+      throw new Error('Impossibile leggere la lista feed Awin');
+    }
+    const [header = [], ...rows] = readCsvRows(await response.text());
+    const columns = header.map(value => value.trim().toLowerCase());
+    const advertiser = columns.indexOf('advertiser name');
+    const membership = columns.indexOf('membership status');
+    const url = columns.indexOf('url');
+    if ([advertiser, membership, url].includes(-1)) {
+      throw new Error('Colonne della lista feed Awin non riconosciute');
+    }
+    const matches = rows.filter(row => row[advertiser]?.trim().toLowerCase() === name.toLowerCase() &&
+      row[membership]?.trim().toLowerCase() === 'active');
+    const links = [...new Set(matches.map(row => row[url]?.trim()).filter(Boolean))].filter(isExportUrl);
+    if (links.length !== 1) {
+      console.log(name + ' | righe attive nella lista: ' + matches.length + ' | link di download compatibili: ' + links.length);
+      throw new Error('La lista Awin non identifica un solo link di download per OneStreet');
+    }
+    return links[0];
+  } finally {
+    await response.dispose();
+  }
+}
+
+async function getFeedListUrl(page) {
+  const prefix = 'https://ui.awin.com/productdata-darwin-download/publisher/' + publisherId + '/';
+  return (await visibleAwinUrls(page)).find(value =>
+    value.startsWith(prefix) && /^[a-z0-9_-]+\/\d+\/feedList$/i.test(value.slice(prefix.length))
+  );
 }
 
 function exportExtension(bytes, type) {
@@ -213,7 +283,7 @@ function exportExtension(bytes, type) {
   if (firstLine.startsWith('{')) {
     try {
       const record = JSON.parse(firstLine);
-      const product = record.product ?? record;
+      const product = record.product_basic ?? record.product ?? record;
       if (product && (product.id || product.offerId || product.gtin || product.title || product.product_name)) {
         return 'jsonl';
       }
@@ -356,7 +426,7 @@ async function selectComparisonColumns(page, name) {
   if (skipped.length) console.log(name + ' | campi individuati ma non selezionati: ' + skipped.join(', '));
 }
 
-async function downloadBatch(page, name, setStage) {
+async function downloadBatch(page, name, setStage, listUrl) {
   setStage('Successivo');
   await control(page, 'Successivo').click();
   console.log(name + ' | premuto Successivo');
@@ -398,9 +468,22 @@ async function downloadBatch(page, name, setStage) {
       exportFile = await fetchGeneratedExport(page, name, url);
     } catch (error) {
       const enhancedUrl = enhancedUiExportUrl(url);
-      if (!enhancedUrl) throw error;
-      console.log(name + ' | provo il percorso Awin per i feed Enhanced');
-      exportFile = await fetchGeneratedExport(page, name, enhancedUrl);
+      if (enhancedUrl) {
+        try {
+          console.log(name + ' | provo il percorso Awin per i feed Enhanced');
+          exportFile = await fetchGeneratedExport(page, name, enhancedUrl);
+        } catch (enhancedError) {
+          if (name.toLowerCase() !== 'onestreet') throw enhancedError;
+        }
+      } else if (name.toLowerCase() !== 'onestreet') {
+        throw error;
+      }
+      if (!exportFile) {
+        setStage('Recupero tramite Scarica lista Feed');
+        console.log(name + ' | cerco il link nella lista ufficiale Awin');
+        const listedUrl = await findListedFeed(page, listUrl, name);
+        exportFile = await fetchGeneratedExport(page, name, enhancedUiExportUrl(listedUrl) || listedUrl);
+      }
     }
   }
   setStage('Verifica del nome del file');
@@ -497,7 +580,11 @@ function reportFailure(name, stage, error) {
     'Richiesta del file Awin non completata',
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
-    'File scaricato vuoto'
+    'File scaricato vuoto',
+    'Link Scarica lista Feed non trovato nella pagina Awin',
+    'Impossibile leggere la lista feed Awin',
+    'Colonne della lista feed Awin non riconosciute',
+    'La lista Awin non identifica un solo link di download per OneStreet'
   ];
   const message = safeErrors.includes(error.message) ? error.message : 'Passaggio non completato nella pagina Awin';
   console.log(name + ' | errore al passaggio «' + stage + '» | ' + message);
@@ -574,7 +661,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v23');
+  console.log('Scarica listini Awin v24');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -620,6 +707,7 @@ async function main() {
       const setStage = value => { stage = value; };
       try {
         await open(page, '/datafeed/step-one');
+        const listUrl = name.toLowerCase() === 'onestreet' ? await getFeedListUrl(page) : undefined;
         const others = active.filter(advertiser => advertiser !== name);
         const otherCards = () => Promise.all(others.map(advertiser =>
           page.getByText(advertiser, { exact: false }).filter({ visible: true }).first().isVisible()
@@ -631,7 +719,7 @@ async function main() {
           throw new Error('Step 1 contiene ancora altri advertiser');
         }
         console.log(name + (count === null ? ' | selezione manuale verificata' : ' | selezionato | ' + count + ' feed'));
-        await downloadBatch(page, name, setStage);
+        await downloadBatch(page, name, setStage, listUrl);
         completed++;
       } catch (error) {
         reportFailure(name, stage, error);
