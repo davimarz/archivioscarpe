@@ -212,9 +212,41 @@ async function fetchGeneratedExport(page, name, url) {
   };
 }
 
+function observeBrowserDownload(page) {
+  const context = page.context();
+  const watched = new Set();
+  let resolveDownload;
+  const received = new Promise(resolve => { resolveDownload = resolve; });
+  const onDownload = download => resolveDownload(download);
+  const watch = tab => {
+    if (watched.has(tab)) return;
+    watched.add(tab);
+    tab.on('download', onDownload);
+  };
+  context.on('page', watch);
+  context.pages().forEach(watch);
+  return {
+    async wait(milliseconds) {
+      let timer;
+      try {
+        return await Promise.race([received, new Promise(resolve => {
+          timer = setTimeout(() => resolve(null), milliseconds);
+        })]);
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    stop() {
+      context.off('page', watch);
+      for (const tab of watched) tab.off('download', onDownload);
+    }
+  };
+}
+
 async function downloadBatch(page, name, setStage) {
   setStage('Successivo');
   await control(page, 'Successivo').click();
+  console.log(name + ' | premuto Successivo');
 
   setStage('Selezione delle colonne');
   const columns = page.getByRole('checkbox', { name: 'Seleziona tutti', exact: true })
@@ -232,15 +264,21 @@ async function downloadBatch(page, name, setStage) {
   setStage('Scarica feed di prodotto');
   const button = control(page, 'Scarica feed di prodotto');
   const exportUrl = await generatedExportUrl(page);
-  const downloadEvent = page.waitForEvent('download', { timeout: 45000 }).catch(() => null);
+  const observer = observeBrowserDownload(page);
+  let download;
   try {
-    await button.click({ timeout: 12000 });
-    console.log(name + ' | clic su Scarica feed di prodotto');
-  } catch {
-    console.log(name + ' | pulsante di download non azionabile');
+    try {
+      await button.click({ timeout: 12000 });
+      console.log(name + ' | clic su Scarica feed di prodotto');
+    } catch {
+      console.log(name + ' | pulsante di download non azionabile');
+    }
+    setStage('Attesa del file');
+    console.log(name + ' | attendo il file da Awin, anche se si apre una nuova scheda');
+    download = await observer.wait(45000);
+  } finally {
+    observer.stop();
   }
-  setStage('Attesa del file');
-  const download = await downloadEvent;
   const exportFile = download ?? await fetchGeneratedExport(page, name, await generatedExportUrl(page) || exportUrl);
   setStage('Verifica del nome del file');
   const original = path.basename(exportFile.suggestedFilename());
@@ -349,7 +387,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v14');
+  console.log('Scarica listini Awin v15');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
