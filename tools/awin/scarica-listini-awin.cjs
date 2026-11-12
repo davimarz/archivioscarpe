@@ -100,7 +100,7 @@ async function verifySavedAdvertiser(page, name) {
   }
 }
 
-async function addAdvertiser(page, name, setStage) {
+async function addAdvertiser(page, name, setStage, savedNames, retry = true) {
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
   setStage('Ricerca advertiser');
@@ -145,6 +145,16 @@ async function addAdvertiser(page, name, setStage) {
   if (!selected) {
     console.log(name + ' | righe con casella disabilitata: ' + unavailable +
       ' | righe senza casella riconosciuta: ' + unidentified);
+    if (unavailable && savedNames.length && retry) {
+      setStage('Ritorno alla selezione tramite Successivo e Precedente');
+      await control(page, 'Salva').click();
+      await pickerSearch(page).waitFor({ state: 'hidden' });
+      await control(page, 'Successivo').click();
+      await control(page, 'Precedente').click();
+      for (const savedName of savedNames) await verifySavedAdvertiser(page, savedName);
+      console.log(name + ' | torno a Step 1 e riprovo la casella');
+      return addAdvertiser(page, name, setStage, savedNames, false);
+    }
     const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
     try {
       const answer = await terminal.question(
@@ -385,7 +395,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v17');
+  console.log('Scarica listini Awin v18');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -414,9 +424,11 @@ async function main() {
     let current = 'feed-completo';
     try {
       await open(page, '/datafeed/step-one');
+      const savedNames = [];
       for (const name of active) {
         current = name;
-        const count = await addAdvertiser(page, name, setStage);
+        const count = await addAdvertiser(page, name, setStage, savedNames);
+        savedNames.push(name);
         console.log(name + (count === null ? ' | selezione manuale verificata' : ' | selezionato | ' + count + ' feed'));
       }
       current = 'feed-completo';
