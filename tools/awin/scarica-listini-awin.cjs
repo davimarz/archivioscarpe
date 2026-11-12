@@ -660,6 +660,9 @@ async function readWindowsCredential() {
 
 function isAwinLoginUrl(value) {
   const url = new URL(value);
+  if (url.origin === 'https://id.awin.com') {
+    return /^\/u\/login(?:\/|$)/i.test(url.pathname);
+  }
   return url.origin === 'https://ui.awin.com' &&
     /^\/(?:login(?:\/|$)|idp\/[^/]+\/awin\/login(?:\/|$))/i.test(url.pathname);
 }
@@ -669,7 +672,8 @@ async function validateLoginAction(button, withPassword) {
     const form = element.form ?? element.closest('form');
     const action = new URL(element.getAttribute('formaction') || form?.getAttribute('action') ||
       location.href, location.href);
-    if (action.origin !== 'https://ui.awin.com') return false;
+    const allowedOrigins = ['https://ui.awin.com', 'https://id.awin.com'];
+    if (!allowedOrigins.includes(location.origin) || action.origin !== location.origin) return false;
     if (!protectedPassword || !form || element.type === 'button') return true;
     const method = element.getAttribute('formmethod') || form.getAttribute('method');
     return method?.toLowerCase() === 'post';
@@ -684,7 +688,7 @@ async function submitSavedLogin(page) {
   const password = page.locator('input[type="password"]').filter({ visible: true });
   const email = page.locator('input[type="email"], input[autocomplete="username"], input[name="email"], input[name="username"], input[name="identifier"]').filter({ visible: true });
   const continueButton = page.getByRole('button', { name: /^(continua|continue|avanti|next)$/i }).filter({ visible: true });
-  const loginButton = page.getByRole('button', { name: /^(accedi|login|log in|sign in|entra)$/i }).filter({ visible: true });
+  const loginButtons = page.getByRole('button', { name: /^(accedi|login|log in|sign in|entra)$/i }).filter({ visible: true });
   await password.or(email).first().waitFor({ timeout: 8000 });
 
   if (await password.count() === 0) {
@@ -705,7 +709,8 @@ async function submitSavedLogin(page) {
     await email.fill(credential.email);
   }
 
-  await loginButton.first().waitFor({ timeout: 5000 });
+  await loginButtons.or(continueButton).first().waitFor({ timeout: 5000 });
+  const loginButton = await loginButtons.count() ? loginButtons : continueButton;
   if (await password.count() !== 1 || await loginButton.count() !== 1 ||
       !isAwinLoginUrl(page.url()) || !await validateLoginAction(loginButton, true)) {
     return 'Schermata password o pulsante Accedi non riconosciuto.';
@@ -724,7 +729,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v28');
+  console.log('Scarica listini Awin v29');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -748,6 +753,7 @@ async function main() {
       ]).catch(() => {});
     }
     if (isAwinLoginUrl(page.url())) {
+      console.log('Awin | pagina di autenticazione riconosciuta su ' + new URL(page.url()).hostname + '.');
       const loginIssue = await submitSavedLogin(page).catch(() => 'Accesso automatico non completato.');
       if (loginIssue) {
         console.error('Awin | ' + loginIssue);
