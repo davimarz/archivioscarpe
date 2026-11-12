@@ -188,7 +188,7 @@ function cheapestOffers(offers) {
     const total = item => item.current + (withShipping ? item.shipping : 0);
     return group.reduce((best, item) => total(item) < total(best) ? item : best);
   }).sort((a, b) => a.current - b.current || a.name.localeCompare(b.name, 'it'))
-    .map(({ key, current, shipping, ...card }) => card);
+    .map(({ key, current, shipping, auditSignature, ...card }) => card);
 }
 
 function editSite(index, worker) {
@@ -225,12 +225,45 @@ function editSite(index, worker) {
   return { index, worker };
 }
 
+function printGroupingAudit(offers, products) {
+  const merchants = new Map();
+  const retained = new Map();
+  for (const product of products) retained.set(product.merchant, (retained.get(product.merchant) || 0) + 1);
+  for (const offer of offers) {
+    if (!merchants.has(offer.merchant)) merchants.set(offer.merchant, new Map());
+    const keys = merchants.get(offer.merchant);
+    if (!keys.has(offer.key)) keys.set(offer.key, { count: 0, signatures: new Set() });
+    const group = keys.get(offer.key);
+    group.count++;
+    group.signatures.add(offer.auditSignature);
+  }
+  for (const [merchant, keys] of merchants) {
+    console.log(merchant + ' | chiavi proprie: ' + keys.size + ' | rimaste nel catalogo: ' + (retained.get(merchant) || 0));
+    const types = new Map();
+    for (const [key, group] of keys) {
+      const type = key.slice(0, key.indexOf(':'));
+      if (!types.has(type)) types.set(type, { rows: 0, keys: 0, mixed: 0, max: 0 });
+      const stats = types.get(type);
+      stats.rows += group.count;
+      stats.keys++;
+      if (group.signatures.size > 1) stats.mixed++;
+      stats.max = Math.max(stats.max, group.signatures.size);
+    }
+    for (const [type, stats] of types) {
+      console.log('  ' + type + ' | righe: ' + stats.rows + ' | chiavi: ' + stats.keys +
+        ' | chiavi con nome, colore o taglia diversi: ' + stats.mixed +
+        ' | massimo combinazioni per chiave: ' + stats.max);
+    }
+  }
+}
+
 function main() {
-  if (!repo || !directory || !/^\d+$/.test(publisher || '') || options.some(option => option !== '--pubblica')) {
-    throw new Error('Uso: node importa-listini-awin.cjs <repo> <LISTINI> <publisher-id> [--pubblica]');
+  if (!repo || !directory || !/^\d+$/.test(publisher || '') || options.some(option => !['--pubblica', '--analizza'].includes(option)) || options.length > 1) {
+    throw new Error('Uso: node importa-listini-awin.cjs <repo> <LISTINI> <publisher-id> [--pubblica|--analizza]');
   }
   const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim();
   const publish = options.includes('--pubblica');
+  const audit = options.includes('--analizza');
   if (publish) {
     const origin = git('remote', 'get-url', 'origin');
     if (!/^(?:https:\/\/github\.com\/|git@github\.com:)davimarz\/archivioscarpe(?:\.git)?$/i.test(origin) || git('branch', '--show-current') !== 'main') {
@@ -260,6 +293,9 @@ function main() {
         rowCount++;
         const item = offer(record, merchant);
         if (!item) continue;
+        if (audit) item.auditSignature = JSON.stringify([
+          item.name, pick(record.colour, record.color), pick(record['fashion:size'], record.size)
+        ].map(normalize));
         allOffers.push(item);
         offerCount++;
       }
@@ -271,6 +307,10 @@ function main() {
       (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
   }
   const products = cheapestOffers(allOffers);
+  if (audit) {
+    printGroupingAudit(allOffers, products);
+    return;
+  }
   const content = JSON.stringify(products) + '\n';
   if (Buffer.byteLength(content) > 95 * 1024 * 1024) throw new Error('Catalogo troppo grande per un singolo file GitHub');
   const indexPath = path.join(repo, 'index.html'), workerPath = path.join(repo, 'sw.js');
