@@ -195,38 +195,60 @@ async function generatedExportUrl(page) {
       if (parsed.origin !== 'https://ui.awin.com') return false;
       const prefix = '/productdata-darwin-download/publisher/' + publisherId + '/';
       return parsed.pathname.startsWith(prefix) &&
-        /^[^/]+\/\d+\/feed\/[A-Z0-9,]+\.(?:csv(?:\.gz)?|zip)$/i.test(parsed.pathname.slice(prefix.length));
+        /^[^/]+\/\d+\/feed\/[A-Z0-9,]+\.(?:(?:csv|jsonl|ndjson)(?:\.gz)?|zip)$/i.test(parsed.pathname.slice(prefix.length));
     } catch {
       return false;
     }
   });
 }
 
+function exportExtension(bytes, type) {
+  if (bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]))) return 'zip';
+  if (bytes[0] === 0x1f && bytes[1] === 0x8b) return 'gz';
+  const firstLine = bytes.subarray(0, 262144).toString('utf8').trimStart().split(/\r?\n/, 1)[0];
+  if (/^</.test(firstLine)) return null;
+  if (firstLine.startsWith('{')) {
+    try {
+      const record = JSON.parse(firstLine);
+      const product = record.product ?? record;
+      if (product && (product.id || product.offerId || product.gtin || product.title || product.product_name)) {
+        return 'jsonl';
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+  const isFeedHeader = /(?:^|[,;|\t])"?(?:id|product_name|aw_product_id|title)"?(?:[,;|\t]|$)/i.test(firstLine) &&
+    /(?:^|[,;|\t])"?(?:price|search_price|store_price|link|aw_deep_link|availability)"?(?:[,;|\t]|$)/i.test(firstLine);
+  return firstLine && (/^text\/csv\b/i.test(type) || isFeedHeader) ? 'csv' : null;
+}
+
 async function fetchGeneratedExport(page, name, url) {
   if (!url) throw new Error('Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile');
   console.log(name + ' | uso il link di esportazione generato da Create-a-Feed');
-  let bytes;
-  let type;
+  let response;
   try {
-    const response = await page.request.get(url, { timeout: 120000, maxRedirects: 0 });
-    try {
-      if (!response.ok()) throw new Error();
-      type = response.headers()['content-type'] ?? '';
-      bytes = await response.body();
-    } finally {
-      await response.dispose();
-    }
+    response = await page.request.get(url, { timeout: 120000, maxRedirects: 5 });
   } catch {
-    throw new Error('Awin non ha restituito un file di listino valido');
+    throw new Error('Richiesta del file Awin non completata');
   }
-  const extension = bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4b, 0x03, 0x04])) ? 'zip'
-    : bytes[0] === 0x1f && bytes[1] === 0x8b ? 'gz'
-    : /^text\/csv\b/i.test(type) && bytes.length ? 'csv' : null;
-  if (!extension) throw new Error('Awin non ha restituito un file di listino valido');
-  return {
-    suggestedFilename: () => 'listino.' + extension,
-    saveAs: filename => fs.writeFile(filename, bytes)
-  };
+  try {
+    if (!response.ok()) {
+      console.log(name + ' | risposta del server Awin: HTTP ' + response.status());
+      throw new Error('Awin non ha restituito un file di listino valido');
+    }
+    const bytes = await response.body();
+    const type = response.headers()['content-type'] ?? '';
+    const extension = exportExtension(bytes, type);
+    if (!extension) throw new Error('Awin non ha restituito un file di listino valido');
+    return {
+      suggestedFilename: () => 'listino.' + extension,
+      saveAs: filename => fs.writeFile(filename, bytes)
+    };
+  } finally {
+    await response.dispose();
+  }
 }
 
 function observeBrowserDownload(page) {
@@ -241,7 +263,7 @@ function observeBrowserDownload(page) {
     tab.on('download', onDownload);
   };
   context.on('page', watch);
-  context.pages().forEach(watch);
+  watch(page);
   return {
     async wait(milliseconds) {
       let timer;
@@ -253,6 +275,7 @@ function observeBrowserDownload(page) {
         clearTimeout(timer);
       }
     },
+    tabs: () => [...watched],
     stop() {
       context.off('page', watch);
       for (const tab of watched) tab.off('download', onDownload);
@@ -321,7 +344,15 @@ async function downloadBatch(page, name, setStage) {
   } finally {
     observer.stop();
   }
-  const exportFile = download ?? await fetchGeneratedExport(page, name, await generatedExportUrl(page) || exportUrl);
+  let exportFile = download;
+  if (!exportFile) {
+    let url = exportUrl;
+    for (const tab of observer.tabs()) {
+      url = (await generatedExportUrl(tab)) || url;
+      if (url) break;
+    }
+    exportFile = await fetchGeneratedExport(page, name, url);
+  }
   setStage('Verifica del nome del file');
   const original = path.basename(exportFile.suggestedFilename());
   if (!/\.(csv|tsv|gz|gzip|zip|jsonl?|xml)$/i.test(original)) {
@@ -413,6 +444,7 @@ function reportFailure(name, stage, error) {
     'Nessun feed selezionabile per questo advertiser',
     'Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile',
     'Awin non ha restituito un file di listino valido',
+    'Richiesta del file Awin non completata',
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto'
@@ -428,7 +460,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v19');
+  console.log('Scarica listini Awin v20');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -452,8 +484,15 @@ async function main() {
       return;
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
+    const requested = process.argv.slice(3).map(name => name.trim().toLowerCase());
+    const targets = requested.length ? active.filter(name => requested.includes(name.toLowerCase())) : active;
+    if (requested.some(name => !targets.some(target => target.toLowerCase() === name))) {
+      console.error('Almeno un advertiser richiesto non compare in Advertiser personali.');
+      process.exitCode = 1;
+      return;
+    }
     let completed = 0;
-    for (const name of active) {
+    for (const name of targets) {
       let stage = 'Apertura di Create-a-Feed';
       const setStage = value => { stage = value; };
       try {
@@ -476,7 +515,7 @@ async function main() {
         if (error.message === 'Operazione interrotta') break;
       }
     }
-    console.log('Listini salvati: ' + completed + ' di ' + active.length);
+    console.log('Listini salvati: ' + completed + ' di ' + targets.length);
     if (completed) console.log('Cartella dei listini: ' + output);
   } finally {
     await browser.close();
