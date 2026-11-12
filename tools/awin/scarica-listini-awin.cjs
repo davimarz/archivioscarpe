@@ -12,7 +12,7 @@ const { randomUUID } = require('node:crypto');
 const publisherId = process.argv[2] || '';
 const account = 'https://ui.awin.com/awin/affiliate/' + publisherId;
 const profile = path.join(__dirname, '.awin-profile');
-const output = path.join(__dirname, 'LISTINI');
+const output = process.env.AWIN_LISTINI_DIR ? path.resolve(process.env.AWIN_LISTINI_DIR) : path.join(__dirname, 'LISTINI');
 
 function control(page, name) {
   return page.getByRole('button', { name, exact: true })
@@ -550,20 +550,32 @@ function inspectPersonalAdvertisers(waitForRows) {
   return { names: [...new Set(names)], total: count ? Number(count[1]) : null };
 }
 
-async function readJoinedAdvertisers(page) {
+async function readAdvertiserPage(page) {
   try {
     const ready = await page.waitForFunction(inspectPersonalAdvertisers, true, { timeout: 30000, polling: 250 });
-    const result = await ready.jsonValue();
-    if (result.total > result.names.length) {
-      console.log('Advertiser personali: ' + result.names.length + ' nomi visibili su ' + result.total + '. Questa esecuzione legge la pagina corrente.');
-    }
-    return result.names;
+    return await ready.jsonValue();
   } catch {
     const result = await page.evaluate(inspectPersonalAdvertisers, false);
-    if (result.names?.length) return result.names;
+    if (result.names?.length) return result;
     console.error(result.issue);
-    return [];
+    return { names: [], total: null };
   }
+}
+
+async function readJoinedAdvertisers(page) {
+  const first = await readAdvertiserPage(page);
+  const names = new Set(first.names);
+  for (let pageNumber = 2; names.size && first.total > names.size; pageNumber++) {
+    await open(page, '/merchant-directory/index/tab/active/page/' + pageNumber);
+    const current = await readAdvertiserPage(page);
+    const before = names.size;
+    for (const name of current.names) names.add(name);
+    if (names.size === before) {
+      console.error('Impossibile leggere tutti gli advertiser: ' + names.size + ' di ' + first.total + '.');
+      return [];
+    }
+  }
+  return [...names];
 }
 
 function reportFailure(name, stage, error) {
@@ -752,7 +764,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v30');
+  console.log('Scarica listini Awin v31');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
