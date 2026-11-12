@@ -7,11 +7,12 @@ const { Readable } = require('node:stream');
 const { pipeline } = require('node:stream/promises');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { randomUUID } = require('node:crypto');
 
 const publisherId = process.argv[2] || '';
 const account = 'https://ui.awin.com/awin/affiliate/' + publisherId;
 const profile = path.join(__dirname, '.awin-profile');
-const output = path.join(__dirname, 'listini-' + new Date().toISOString().replace(/[:.]/g, '-'));
+const output = path.join(__dirname, 'LISTINI');
 
 function control(page, name) {
   return page.getByRole('button', { name, exact: true })
@@ -405,6 +406,32 @@ async function selectComparisonColumns(page, name) {
   if (skipped.length) console.log(name + ' | campi individuati ma non selezionati: ' + skipped.join(', '));
 }
 
+const feedExtensions = ['.csv.gz', '.tsv.gz', '.jsonl.gz', '.ndjson.gz', '.xml.gz',
+  '.csv', '.tsv', '.jsonl', '.ndjson', '.json', '.xml', '.gz', '.gzip', '.zip'];
+
+function advertiserFilename(name) {
+  let filename = name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim().replace(/[. ]+$/, '');
+  if (!filename) throw new Error('Nome advertiser non valido per il salvataggio');
+  if (/^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(filename)) filename = '_' + filename;
+  return filename;
+}
+
+async function storeAdvertiserFeed(temporary, name, extension) {
+  const basename = advertiserFilename(name);
+  const filename = basename + extension;
+  await fs.mkdir(output, { recursive: true });
+  await fs.rename(temporary, path.join(output, filename));
+  for (const oldExtension of feedExtensions) {
+    if (oldExtension === extension) continue;
+    try {
+      await fs.rm(path.join(output, basename + oldExtension), { force: true });
+    } catch {
+      console.warn(name + ' | un precedente file con estensione ' + oldExtension + ' non è stato rimosso');
+    }
+  }
+  return filename;
+}
+
 async function downloadBatch(page, name, setStage, listUrl) {
   setStage('Successivo');
   await control(page, 'Successivo').click();
@@ -466,27 +493,20 @@ async function downloadBatch(page, name, setStage, listUrl) {
     }
   }
   setStage('Verifica del nome del file');
-  const original = path.basename(exportFile.suggestedFilename());
-  if (!/\.(csv|tsv|gz|gzip|zip|jsonl?|xml)$/i.test(original)) {
-    throw new Error('Formato del download da verificare');
-  }
-  const filename = name.replace(/[^a-z0-9]+/gi, '-') + '-' + original.replace(/[^a-z0-9._-]/gi, '_');
-  const destination = path.join(output, filename);
+  const original = path.basename(exportFile.suggestedFilename()).toLowerCase();
+  const extension = feedExtensions.find(value => original.endsWith(value));
+  if (!extension) throw new Error('Formato del download da verificare');
   setStage('Salvataggio del file');
-  const temporary = path.join(__dirname, path.basename(output) + '-' + filename + '.part');
-  let file;
+  const temporary = path.join(__dirname, 'awin-' + randomUUID() + '.part');
   try {
     await exportFile.saveAs(temporary);
-    file = await fs.stat(temporary);
+    const file = await fs.stat(temporary);
     if (!file.size) throw new Error('File scaricato vuoto');
-    await fs.mkdir(output, { recursive: true });
-    await fs.rename(temporary, destination);
-  } catch (error) {
+    const filename = await storeAdvertiserFeed(temporary, name, extension);
+    console.log(name + ' | scaricato | ' + file.size + ' byte | ' + filename);
+  } finally {
     await fs.rm(temporary, { force: true }).catch(() => {});
-    await fs.rmdir(output).catch(() => {});
-    throw error;
   }
-  console.log(name + ' | scaricato | ' + file.size + ' byte | ' + filename);
 }
 
 function inspectPersonalAdvertisers(waitForRows) {
@@ -559,6 +579,7 @@ function reportFailure(name, stage, error) {
     'Il nome non compare nel riepilogo Step 1 dopo Salva',
     'Formato del download da verificare',
     'File scaricato vuoto',
+    'Nome advertiser non valido per il salvataggio',
     'Link Scarica lista Feed non trovato nella pagina Awin',
     'Impossibile leggere la lista feed Awin',
     'Colonne della lista feed Awin non riconosciute',
@@ -572,6 +593,7 @@ function reportFailure(name, stage, error) {
 async function validateEnhancedFile(filename, advertiserId) {
   const lines = readline.createInterface({ input: createReadStream(filename), crlfDelay: Infinity });
   let products = 0;
+  let advertiserName;
   try {
     for await (const line of lines) {
       if (!line.trim()) continue;
@@ -582,13 +604,15 @@ async function validateEnhancedFile(filename, advertiserId) {
       if (record.meta?.advertiser_id != null && String(record.meta.advertiser_id) !== advertiserId) {
         throw new Error('Il listino appartiene a un altro advertiser');
       }
+      if (record.meta?.advertiser_name) advertiserName ??= record.meta.advertiser_name;
       if (record.product_basic?.id || record.product_details || record.id) products++;
     }
   } finally {
     lines.close();
   }
   if (!products) throw new Error('Nessun prodotto nel listino JSONL');
-  return products;
+  if (!advertiserName) throw new Error('Nome advertiser assente dal listino Enhanced');
+  return { products, advertiserName };
 }
 
 async function downloadEnhanced(targets) {
@@ -602,7 +626,7 @@ async function downloadEnhanced(targets) {
   for (const target of new Set(targets)) {
     const [id, locale] = target.split(':');
     const filename = id + '-retail-' + locale + '.jsonl';
-    const temporary = path.join(__dirname, path.basename(output) + '-' + filename + '.part');
+    const temporary = path.join(__dirname, 'awin-' + randomUUID() + '.part');
     try {
       const url = 'https://api.awin.com/publishers/' + publisherId + '/awinfeeds/download/' + filename;
       const response = await fetch(url, {
@@ -617,10 +641,9 @@ async function downloadEnhanced(targets) {
         continue;
       }
       await pipeline(Readable.fromWeb(response.body), createWriteStream(temporary, { flags: 'wx' }));
-      const products = await validateEnhancedFile(temporary, id);
-      await fs.mkdir(output, { recursive: true });
-      await fs.rename(temporary, path.join(output, filename));
-      console.log(target + ' | salvato | ' + products + ' prodotti | ' + filename);
+      const { products, advertiserName } = await validateEnhancedFile(temporary, id);
+      const savedFilename = await storeAdvertiserFeed(temporary, advertiserName, '.jsonl');
+      console.log(target + ' | salvato | ' + products + ' prodotti | ' + savedFilename);
       saved++;
     } catch {
       console.log(target + ' | download interrotto o listino JSONL non valido');
@@ -729,7 +752,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v29');
+  console.log('Scarica listini Awin v30');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
