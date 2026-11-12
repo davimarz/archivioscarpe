@@ -23,8 +23,14 @@ function* csvRows(text, separator) {
     const quoteStart = skipPadding(start);
     if (text[quoteStart] === '"') {
       let quoteEnd = text.indexOf('"', quoteStart + 1);
-      while (quoteEnd !== -1 && text[quoteEnd + 1] === '"') {
-        quoteEnd = text.indexOf('"', quoteEnd + 2);
+      while (quoteEnd !== -1) {
+        if (text[quoteEnd + 1] === '"') {
+          quoteEnd = text.indexOf('"', quoteEnd + 2);
+          continue;
+        }
+        if (isBoundary(text[skipPadding(quoteEnd + 1)])) break;
+        // An unescaped quote followed by text is part of the field.
+        quoteEnd = text.indexOf('"', quoteEnd + 1);
       }
       if (quoteEnd === -1) throw new Error('record CSV ' + record + ': virgolette non chiuse');
       row.push(text.slice(quoteStart + 1, quoteEnd).replaceAll('""', '"'));
