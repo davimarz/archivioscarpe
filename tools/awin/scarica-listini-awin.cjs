@@ -2,6 +2,9 @@ const { chromium } = require('playwright');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const readline = require('node:readline/promises');
+const { createReadStream, createWriteStream } = require('node:fs');
+const { Readable } = require('node:stream');
+const { pipeline } = require('node:stream/promises');
 
 const publisherId = process.argv[2] || '';
 const account = 'https://ui.awin.com/awin/affiliate/' + publisherId;
@@ -454,13 +457,86 @@ function reportFailure(name, stage, error) {
   process.exitCode = 1;
 }
 
+async function validateEnhancedFile(filename, advertiserId) {
+  const lines = readline.createInterface({ input: createReadStream(filename), crlfDelay: Infinity });
+  let products = 0;
+  try {
+    for await (const line of lines) {
+      if (!line.trim()) continue;
+      const record = JSON.parse(line);
+      if (!record || typeof record !== 'object' || record.error) {
+        throw new Error('Awin ha segnalato un errore nel listino');
+      }
+      if (record.meta?.advertiser_id != null && String(record.meta.advertiser_id) !== advertiserId) {
+        throw new Error('Il listino appartiene a un altro advertiser');
+      }
+      if (record.product_basic?.id || record.product_details || record.id) products++;
+    }
+  } finally {
+    lines.close();
+  }
+  if (!products) throw new Error('Nessun prodotto nel listino JSONL');
+  return products;
+}
+
+async function downloadEnhanced(targets) {
+  const token = process.env.AWIN_API_TOKEN?.trim();
+  delete process.env.AWIN_API_TOKEN;
+  if (!token) throw new Error('Imposta AWIN_API_TOKEN per usare il download Enhanced');
+  if (!targets.length || targets.length > 5 || targets.some(value => !/^\d+:[a-z]{2}_[A-Z]{2}$/.test(value))) {
+    throw new Error('Usa da uno a cinque argomenti nel formato ID_ADVERTISER:lingua_PAESE');
+  }
+  let saved = 0;
+  for (const target of new Set(targets)) {
+    const [id, locale] = target.split(':');
+    const filename = id + '-retail-' + locale + '.jsonl';
+    const temporary = path.join(__dirname, path.basename(output) + '-' + filename + '.part');
+    try {
+      const url = 'https://api.awin.com/publishers/' + publisherId + '/awinfeeds/download/' + filename;
+      const response = await fetch(url, {
+        headers: { Authorization: 'Bearer ' + token },
+        redirect: 'error',
+        signal: AbortSignal.timeout(180000)
+      });
+      if (!response.ok || !response.body) {
+        await response.body?.cancel();
+        console.log(target + ' | API Awin: HTTP ' + response.status);
+        process.exitCode = 1;
+        continue;
+      }
+      await pipeline(Readable.fromWeb(response.body), createWriteStream(temporary, { flags: 'wx' }));
+      const products = await validateEnhancedFile(temporary, id);
+      await fs.mkdir(output, { recursive: true });
+      await fs.rename(temporary, path.join(output, filename));
+      console.log(target + ' | salvato | ' + products + ' prodotti | ' + filename);
+      saved++;
+    } catch {
+      console.log(target + ' | download interrotto o listino JSONL non valido');
+      process.exitCode = 1;
+    } finally {
+      await fs.rm(temporary, { force: true });
+    }
+  }
+  console.log('Listini Enhanced salvati: ' + saved + ' di ' + new Set(targets).size);
+  if (saved) console.log('Cartella dei listini: ' + output);
+}
+
 async function main() {
   if (!/^\d+$/.test(publisherId)) {
     console.error('Uso: node scarica-listini-awin.cjs <publisher-id>');
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v20');
+  console.log('Scarica listini Awin v21');
+  if (process.argv[3] === '--enhanced') {
+    try {
+      await downloadEnhanced(process.argv.slice(4));
+    } catch (error) {
+      console.error(error.message);
+      process.exitCode = 1;
+    }
+    return;
+  }
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
