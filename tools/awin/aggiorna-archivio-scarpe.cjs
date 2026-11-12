@@ -92,7 +92,7 @@ async function main() {
   let phase = 'Preparazione';
   try {
     fs.mkdirSync(staging);
-    await downloadScript('0f89cb915e069189ff6a2ee98a29e5a57a8468f3', 'scarica-listini-awin.cjs', downloadPath);
+    await downloadScript('a4bf3cc0ebecadc7450c6180d42a2d2af6407bc2', 'scarica-listini-awin.cjs', downloadPath);
     await downloadScript('8a42cd4e42b624770ce33dc19e6e0df9480c7cfb', 'importa-listini-awin.cjs', importPath);
 
     phase = '1/3 Scaricamento listini';
