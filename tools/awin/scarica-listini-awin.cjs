@@ -49,19 +49,6 @@ async function openAdvertiserPicker(page) {
     await search.waitFor({ timeout: 5000 });
     return;
   } catch {
-    // The user can open the picker if the current Awin layout differs.
-  }
-
-  const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await terminal.question('Nella finestra Awin, clicca il pulsante centrale Seleziona advertiser. Quando vedi Ricerca advertiser, premi Invio qui (Q per fermarti): ');
-    if (answer.trim().toLowerCase() === 'q') throw new Error('Operazione interrotta');
-  } finally {
-    terminal.close();
-  }
-  try {
-    await search.waitFor({ timeout: 12000 });
-  } catch {
     throw new Error('Dopo il clic non compare la finestra con Ricerca advertiser');
   }
 }
@@ -155,23 +142,13 @@ async function addAdvertiser(page, name, setStage, clearPrevious) {
   if (!selected) {
     console.log(name + ' | righe con casella disabilitata: ' + unavailable +
       ' | righe senza casella riconosciuta: ' + unidentified);
-    const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
-    try {
-      const answer = await terminal.question(
-        'Prova a selezionare il feed di ' + name +
-        ' nella finestra Awin e premi Salva. Poi premi Invio qui (Q per fermarti): '
-      );
-      if (answer.trim().toLowerCase() === 'q') throw new Error('Operazione interrotta');
-    } finally {
-      terminal.close();
-    }
-  } else {
-    setStage('Salva');
-    await control(page, 'Salva').click();
+    throw new Error('Nessun feed selezionabile per questo advertiser');
   }
+  setStage('Salva');
+  await control(page, 'Salva').click();
   setStage('Verifica dopo Salva');
   await verifySavedAdvertiser(page, name);
-  return selected || null;
+  return selected;
 }
 
 async function visibleAwinUrls(page) {
@@ -573,7 +550,6 @@ function reportFailure(name, stage, error) {
   const safeErrors = [
     'Pagina Awin non disponibile',
     'Campo Ricerca advertiser da identificare',
-    'Operazione interrotta',
     'Step 1 contiene ancora altri advertiser',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
@@ -748,7 +724,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v26');
+  console.log('Scarica listini Awin v27');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -764,32 +740,36 @@ async function main() {
     page.setDefaultTimeout(12000);
     await open(page, '/merchant-directory/index/tab/active/page/1');
     const joinedTab = control(page, 'Iscritto');
+    if (!await joinedTab.isVisible() && !isAwinLoginUrl(page.url())) {
+      await Promise.any([
+        joinedTab.waitFor({ timeout: 8000 }),
+        page.waitForURL(url => isAwinLoginUrl(url.href), { timeout: 8000 })
+      ]).catch(() => {});
+    }
     if (!await joinedTab.isVisible()) {
+      let loginIssue;
       try {
-        const loginIssue = await submitSavedLogin(page);
-        if (loginIssue) {
-          console.log('Awin | ' + loginIssue);
-        } else {
+        loginIssue = await submitSavedLogin(page);
+        if (!loginIssue) {
           console.log('Awin | password inserita, premuto Accedi.');
-          await joinedTab.waitFor({ timeout: 8000 }).catch(() => {});
+          await Promise.any([
+            joinedTab.waitFor({ timeout: 15000 }),
+            page.waitForURL(url => url.href.startsWith(account + '/'), { timeout: 15000 })
+          ]).catch(() => {});
           if (!await joinedTab.isVisible() && page.url().startsWith(account + '/')) {
             await open(page, '/merchant-directory/index/tab/active/page/1');
+            await joinedTab.waitFor({ timeout: 8000 }).catch(() => {});
           }
         }
       } catch {
-        console.log('Accesso automatico non completato.');
+        loginIssue = 'Accesso automatico non completato.';
+      }
+      if (!await joinedTab.isVisible()) {
+        console.error('Awin | ' + (loginIssue || 'Accesso non confermato. Controlla se Awin chiede una verifica aggiuntiva.'));
+        process.exitCode = 1;
+        return;
       }
     }
-    if (!await joinedTab.isVisible()) {
-      const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
-      try {
-        await terminal.question('Completa l’accesso o la verifica Awin nella finestra aperta, poi premi Invio qui: ');
-      } finally {
-        terminal.close();
-      }
-      await open(page, '/merchant-directory/index/tab/active/page/1');
-    }
-    await joinedTab.waitFor();
     const active = await readJoinedAdvertisers(page);
     if (!active.length) {
       console.error('Nessun download eseguito.');
@@ -821,12 +801,11 @@ async function main() {
         if ((await otherCards()).some(Boolean)) {
           throw new Error('Step 1 contiene ancora altri advertiser');
         }
-        console.log(name + (count === null ? ' | selezione manuale verificata' : ' | selezionato | ' + count + ' feed'));
+        console.log(name + ' | selezionato | ' + count + ' feed');
         await downloadBatch(page, name, setStage, listUrl);
         completed++;
       } catch (error) {
         reportFailure(name, stage, error);
-        if (error.message === 'Operazione interrotta') break;
       }
     }
     console.log('Listini salvati: ' + completed + ' di ' + targets.length);
