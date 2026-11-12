@@ -12,16 +12,25 @@ const shoeTerms = /\b(?:scarpe|scarpa|calzature|sneakers?|shoes?|footwear|basket
 function* csvRows(text, separator) {
   let row = [];
   let start = 0;
+  let record = 1;
+  const isBoundary = c => c === separator || c === '\r' || c === '\n' || c === undefined;
+  const skipPadding = position => {
+    while (text[position] === ' ' || (separator !== '\t' && text[position] === '\t')) position++;
+    return position;
+  };
   while (start < text.length) {
     let end = start;
-    if (text[start] === '"') {
-      end = text.indexOf('"', start + 1);
-      while (end !== -1 && text[end + 1] === '"') end = text.indexOf('"', end + 2);
-      if (end === -1) throw new Error('virgolette CSV non chiuse');
-      row.push(text.slice(start + 1, end).replaceAll('""', '"'));
-      end++;
+    const quoteStart = skipPadding(start);
+    if (text[quoteStart] === '"') {
+      let quoteEnd = text.indexOf('"', quoteStart + 1);
+      while (quoteEnd !== -1 && text[quoteEnd + 1] === '"') {
+        quoteEnd = text.indexOf('"', quoteEnd + 2);
+      }
+      if (quoteEnd === -1) throw new Error('record CSV ' + record + ': virgolette non chiuse');
+      row.push(text.slice(quoteStart + 1, quoteEnd).replaceAll('""', '"'));
+      end = skipPadding(quoteEnd + 1);
     } else {
-      while (end < text.length && text[end] !== separator && text[end] !== '\r' && text[end] !== '\n') end++;
+      while (!isBoundary(text[end])) end++;
       row.push(text.slice(start, end));
     }
     if (text[end] === separator) {
@@ -29,20 +38,38 @@ function* csvRows(text, separator) {
       if (start === text.length) row.push('');
       continue;
     }
-    if (end < text.length && text[end] !== '\r' && text[end] !== '\n') {
-      throw new Error('separatore CSV non riconosciuto');
+    if (!isBoundary(text[end])) {
+      throw new Error('record CSV ' + record + ': carattere inatteso dopo le virgolette');
     }
     if (row.some(Boolean)) yield row;
+    record++;
     row = [];
     start = end + (text[end] === '\r' && text[end + 1] === '\n' ? 2 : 1);
   }
   if (row.some(Boolean)) yield row;
 }
 
+function detectCsvSeparator(header) {
+  for (const separator of [',', ';', '|', '\t']) {
+    try {
+      const fields = csvRows(header, separator).next().value ?? [];
+      const normalized = fields.map(field => field.trim().toLowerCase());
+      if (normalized.some(field => field === 'product_name' || field === 'title') &&
+          normalized.some(field => ['search_price', 'store_price', 'price', 'display_price', 'sale_price'].includes(field))) {
+        return separator;
+      }
+    } catch {
+      // Other delimiters can make a quoted header appear invalid.
+    }
+  }
+  throw new Error('intestazione CSV prodotti non riconosciuta');
+}
+
 function* records(filename) {
   let bytes = fs.readFileSync(filename);
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) bytes = gunzipSync(bytes);
-  const text = bytes.toString('utf8').trimStart();
+  const encoding = bytes[0] === 0xff && bytes[1] === 0xfe ? 'utf16le' : 'utf8';
+  const text = bytes.toString(encoding).trimStart().replace(/^sep=[,;|\t]\r?\n/i, '');
   if (text.startsWith('{')) {
     for (let start = 0; start < text.length;) {
       const nextLine = text.indexOf('\n', start);
@@ -57,14 +84,16 @@ function* records(filename) {
     return;
   }
   const firstLine = text.split(/\r?\n/, 1)[0];
-  const separator = [',', ';', '|', '\t'].sort((a, b) => firstLine.split(b).length - firstLine.split(a).length)[0];
+  const separator = detectCsvSeparator(firstLine);
   const rows = csvRows(text, separator);
   const headers = (rows.next().value ?? []).map(field => field.trim().toLowerCase());
   if (headers.length < 2 || !headers.some(field => /^(product_name|title)$/.test(field))) {
     throw new Error('intestazione CSV prodotti non riconosciuta');
   }
+  let record = 1;
   for (const row of rows) {
-    if (row.length !== headers.length) throw new Error('numero di colonne CSV incoerente');
+    record++;
+    if (row.length !== headers.length) throw new Error('record CSV ' + record + ': ' + row.length + ' colonne, attese ' + headers.length);
     yield Object.fromEntries(headers.map((field, index) => [field, row[index]]));
   }
 }
@@ -212,12 +241,16 @@ function main() {
   for (const { name } of feeds) {
     const merchant = name.replace(sourceExtension, '');
     let rowCount = 0, offerCount = 0;
-    for (const record of records(path.join(directory, name))) {
-      rowCount++;
-      const item = offer(record, merchant);
-      if (!item) continue;
-      allOffers.push(item);
-      offerCount++;
+    try {
+      for (const record of records(path.join(directory, name))) {
+        rowCount++;
+        const item = offer(record, merchant);
+        if (!item) continue;
+        allOffers.push(item);
+        offerCount++;
+      }
+    } catch (error) {
+      throw new Error(name + ': ' + error.message);
     }
     if (!offerCount) throw new Error(merchant + ': nessuna calzatura in EUR con prezzo, immagine e link affiliato utilizzabile');
     console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + rowCount + ' righe');
