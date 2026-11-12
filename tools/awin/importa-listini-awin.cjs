@@ -71,7 +71,7 @@ function detectCsvSeparator(header) {
   throw new Error('intestazione CSV prodotti non riconosciuta');
 }
 
-function* records(filename) {
+function* records(filename, reportInvalid) {
   let bytes = fs.readFileSync(filename);
   if (bytes[0] === 0x1f && bytes[1] === 0x8b) bytes = gunzipSync(bytes);
   const encoding = bytes[0] === 0xff && bytes[1] === 0xfe ? 'utf16le' : 'utf8';
@@ -99,7 +99,10 @@ function* records(filename) {
   let record = 1;
   for (const row of rows) {
     record++;
-    if (row.length !== headers.length) throw new Error('record CSV ' + record + ': ' + row.length + ' colonne, attese ' + headers.length);
+    if (row.length !== headers.length) {
+      reportInvalid(record, row.length, headers.length);
+      continue;
+    }
     yield Object.fromEntries(headers.map((field, index) => [field, row[index]]));
   }
 }
@@ -246,9 +249,14 @@ function main() {
   const allOffers = [];
   for (const { name } of feeds) {
     const merchant = name.replace(sourceExtension, '');
-    let rowCount = 0, offerCount = 0;
+    let rowCount = 0, offerCount = 0, skipped = 0;
+    const reportInvalid = (record, columns, expected) => {
+      skipped++;
+      if (skipped <= 5) console.warn(name + ' | record CSV ' + record +
+        ' saltato: ' + columns + ' colonne, attese ' + expected);
+    };
     try {
-      for (const record of records(path.join(directory, name))) {
+      for (const record of records(path.join(directory, name), reportInvalid)) {
         rowCount++;
         const item = offer(record, merchant);
         if (!item) continue;
@@ -259,7 +267,8 @@ function main() {
       throw new Error(name + ': ' + error.message);
     }
     if (!offerCount) throw new Error(merchant + ': nessuna calzatura in EUR con prezzo, immagine e link affiliato utilizzabile');
-    console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + rowCount + ' righe');
+    console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + (rowCount + skipped) + ' righe' +
+      (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
   }
   const products = cheapestOffers(allOffers);
   const content = JSON.stringify(products) + '\n';
