@@ -219,6 +219,10 @@ function readCsvRows(csv) {
   return rows;
 }
 
+function usesListedFeedFallback(name) {
+  return ['onestreet', 'voghion global'].includes(name.trim().toLowerCase());
+}
+
 async function findListedFeed(page, listUrl, name) {
   if (!listUrl) throw new Error('Link Scarica lista Feed non trovato nella pagina Awin');
   const response = await page.request.get(listUrl, { timeout: 45000, maxRedirects: 0 });
@@ -240,7 +244,7 @@ async function findListedFeed(page, listUrl, name) {
     const links = [...new Set(matches.map(row => row[url]?.trim()).filter(Boolean))].filter(isExportUrl);
     if (links.length !== 1) {
       console.log(name + ' | righe attive nella lista: ' + matches.length + ' | link di download compatibili: ' + links.length);
-      throw new Error('La lista Awin non identifica un solo link di download per OneStreet');
+      throw new Error('La lista Awin non identifica un solo link di download per questo advertiser');
     }
     return links[0];
   } finally {
@@ -479,9 +483,9 @@ async function downloadBatch(page, name, setStage, listUrl) {
           console.log(name + ' | provo il percorso Awin per i feed Enhanced');
           exportFile = await fetchGeneratedExport(page, name, enhancedUrl);
         } catch (enhancedError) {
-          if (name.toLowerCase() !== 'onestreet') throw enhancedError;
+          if (!usesListedFeedFallback(name)) throw enhancedError;
         }
-      } else if (name.toLowerCase() !== 'onestreet') {
+      } else if (!usesListedFeedFallback(name)) {
         throw error;
       }
       if (!exportFile) {
@@ -595,7 +599,7 @@ function reportFailure(name, stage, error) {
     'Link Scarica lista Feed non trovato nella pagina Awin',
     'Impossibile leggere la lista feed Awin',
     'Colonne della lista feed Awin non riconosciute',
-    'La lista Awin non identifica un solo link di download per OneStreet'
+    'La lista Awin non identifica un solo link di download per questo advertiser'
   ];
   const message = safeErrors.includes(error.message) ? error.message : 'Passaggio non completato nella pagina Awin';
   console.log(name + ' | errore al passaggio «' + stage + '» | ' + message);
@@ -764,7 +768,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v31');
+  console.log('Scarica listini Awin v32');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -817,7 +821,7 @@ async function main() {
       const setStage = value => { stage = value; };
       try {
         await open(page, '/datafeed/step-one');
-        const listUrl = name.toLowerCase() === 'onestreet' ? await getFeedListUrl(page) : undefined;
+        const listUrl = usesListedFeedFallback(name) ? await getFeedListUrl(page) : undefined;
         const others = active.filter(advertiser => advertiser !== name);
         const otherCards = () => Promise.all(others.map(advertiser =>
           page.getByText(advertiser, { exact: false }).filter({ visible: true }).first().isVisible()
