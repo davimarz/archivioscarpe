@@ -724,7 +724,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v27');
+  console.log('Scarica listini Awin v28');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -739,36 +739,22 @@ async function main() {
     const page = browser.pages()[0] ?? await browser.newPage();
     page.setDefaultTimeout(12000);
     await open(page, '/merchant-directory/index/tab/active/page/1');
-    const joinedTab = control(page, 'Iscritto');
-    if (!await joinedTab.isVisible() && !isAwinLoginUrl(page.url())) {
+    if (!isAwinLoginUrl(page.url())) {
+      const personalHeading = page.getByText(/^Advertiser personali(?:\s*\(\s*\d+\s*\))?$/i)
+        .filter({ visible: true }).first();
       await Promise.any([
-        joinedTab.waitFor({ timeout: 8000 }),
+        personalHeading.waitFor({ timeout: 8000 }),
         page.waitForURL(url => isAwinLoginUrl(url.href), { timeout: 8000 })
       ]).catch(() => {});
     }
-    if (!await joinedTab.isVisible()) {
-      let loginIssue;
-      try {
-        loginIssue = await submitSavedLogin(page);
-        if (!loginIssue) {
-          console.log('Awin | password inserita, premuto Accedi.');
-          await Promise.any([
-            joinedTab.waitFor({ timeout: 15000 }),
-            page.waitForURL(url => url.href.startsWith(account + '/'), { timeout: 15000 })
-          ]).catch(() => {});
-          if (!await joinedTab.isVisible() && page.url().startsWith(account + '/')) {
-            await open(page, '/merchant-directory/index/tab/active/page/1');
-            await joinedTab.waitFor({ timeout: 8000 }).catch(() => {});
-          }
-        }
-      } catch {
-        loginIssue = 'Accesso automatico non completato.';
-      }
-      if (!await joinedTab.isVisible()) {
-        console.error('Awin | ' + (loginIssue || 'Accesso non confermato. Controlla se Awin chiede una verifica aggiuntiva.'));
+    if (isAwinLoginUrl(page.url())) {
+      const loginIssue = await submitSavedLogin(page).catch(() => 'Accesso automatico non completato.');
+      if (loginIssue) {
+        console.error('Awin | ' + loginIssue);
         process.exitCode = 1;
         return;
       }
+      console.log('Awin | password inserita, premuto Accedi. Attendo la tabella Advertiser personali.');
     }
     const active = await readJoinedAdvertisers(page);
     if (!active.length) {
