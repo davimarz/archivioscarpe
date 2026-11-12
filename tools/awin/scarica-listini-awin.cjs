@@ -5,6 +5,8 @@ const readline = require('node:readline/promises');
 const { createReadStream, createWriteStream } = require('node:fs');
 const { Readable } = require('node:stream');
 const { pipeline } = require('node:stream/promises');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
 
 const publisherId = process.argv[2] || '';
 const account = 'https://ui.awin.com/awin/affiliate/' + publisherId;
@@ -655,13 +657,63 @@ async function downloadEnhanced(targets) {
   if (saved) console.log('Cartella dei listini: ' + output);
 }
 
+async function readWindowsCredential() {
+  if (process.platform !== 'win32' || !process.env.LOCALAPPDATA) return null;
+  const credentialPath = path.join(process.env.LOCALAPPDATA, 'AwinPlaywright', 'login.xml');
+  try {
+    await fs.access(credentialPath);
+  } catch {
+    return null;
+  }
+  const command = [
+    "$ErrorActionPreference = 'Stop'",
+    "$file = Join-Path $env:LOCALAPPDATA 'AwinPlaywright\\login.xml'",
+    "$credential = Import-Clixml -LiteralPath $file",
+    "if ($credential -isnot [System.Management.Automation.PSCredential]) { throw 'Credenziale non valida' }",
+    "$json = @{ email = $credential.UserName; password = $credential.GetNetworkCredential().Password } | ConvertTo-Json -Compress",
+    "[Console]::Write([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json)))"
+  ].join('; ');
+  const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const { stdout } = await promisify(execFile)(powershell, ['-NoProfile', '-NonInteractive', '-Command', command], {
+    windowsHide: true,
+    timeout: 10000,
+    maxBuffer: 16384
+  });
+  return JSON.parse(Buffer.from(stdout.trim(), 'base64').toString('utf8'));
+}
+
+async function submitSavedLogin(page) {
+  const awinOrigin = 'https://ui.awin.com';
+  if (new URL(page.url()).origin !== awinOrigin) return false;
+  const password = page.locator('input[type="password"]').filter({ visible: true });
+  if (await password.count() !== 1) return false;
+  const form = password.locator('xpath=ancestor::form[1]');
+  const email = form.locator('input[type="email"], input[autocomplete="username"], input[name="email"], input[name="username"]').filter({ visible: true });
+  const submit = form.getByRole('button', { name: /^(accedi|login|log in|sign in)$/i }).filter({ visible: true });
+  if (await email.count() !== 1 || await submit.count() !== 1) return false;
+
+  const action = await form.getAttribute('action');
+  const override = await submit.getAttribute('formaction');
+  const method = await submit.getAttribute('formmethod') || await form.getAttribute('method');
+  if (method?.toLowerCase() !== 'post' ||
+      new URL(override || action || page.url(), page.url()).origin !== awinOrigin) return false;
+
+  const credential = await readWindowsCredential();
+  if (!credential?.email || !credential?.password || new URL(page.url()).origin !== awinOrigin) return false;
+  await email.fill(credential.email);
+  await password.fill(credential.password);
+  if (new URL(page.url()).origin !== awinOrigin) return false;
+  await submit.click();
+  return true;
+}
+
 async function main() {
   if (!/^\d+$/.test(publisherId)) {
     console.error('Uso: node scarica-listini-awin.cjs <publisher-id>');
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v24');
+  console.log('Scarica listini Awin v25');
   if (process.argv[3] === '--enhanced') {
     try {
       await downloadEnhanced(process.argv.slice(4));
@@ -678,9 +730,22 @@ async function main() {
     await open(page, '/merchant-directory/index/tab/active/page/1');
     const joinedTab = control(page, 'Iscritto');
     if (!await joinedTab.isVisible()) {
+      try {
+        if (await submitSavedLogin(page)) {
+          console.log('Accesso Awin inviato con la credenziale locale.');
+          await joinedTab.waitFor({ timeout: 8000 }).catch(() => {});
+          if (!await joinedTab.isVisible() && page.url().startsWith(account + '/')) {
+            await open(page, '/merchant-directory/index/tab/active/page/1');
+          }
+        }
+      } catch {
+        console.log('Accesso automatico non completato.');
+      }
+    }
+    if (!await joinedTab.isVisible()) {
       const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
       try {
-        await terminal.question('Accedi ad Awin nella finestra aperta, poi premi Invio qui: ');
+        await terminal.question('Completa l’accesso o la verifica Awin nella finestra aperta, poi premi Invio qui: ');
       } finally {
         terminal.close();
       }
