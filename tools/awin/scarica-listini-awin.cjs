@@ -100,9 +100,14 @@ async function verifySavedAdvertiser(page, name) {
   }
 }
 
-async function addAdvertiser(page, name, setStage, savedNames, retry = true) {
+async function addAdvertiser(page, name, setStage, clearPrevious) {
   setStage('Apertura di Seleziona advertiser');
   await openAdvertiserPicker(page);
+  if (clearPrevious) {
+    setStage('Azzera selezione precedente');
+    const clear = page.getByText('Deseleziona tutto', { exact: true }).filter({ visible: true }).last();
+    await clear.click({ timeout: 6000 });
+  }
   setStage('Ricerca advertiser');
   await fillAdvertiserSearch(page, name);
   console.log(name + ' | scritto in Ricerca advertiser');
@@ -145,16 +150,6 @@ async function addAdvertiser(page, name, setStage, savedNames, retry = true) {
   if (!selected) {
     console.log(name + ' | righe con casella disabilitata: ' + unavailable +
       ' | righe senza casella riconosciuta: ' + unidentified);
-    if (unavailable && savedNames.length && retry) {
-      setStage('Ritorno alla selezione tramite Successivo e Precedente');
-      await control(page, 'Salva').click();
-      await pickerSearch(page).waitFor({ state: 'hidden' });
-      await control(page, 'Successivo').click();
-      await control(page, 'Precedente').click();
-      for (const savedName of savedNames) await verifySavedAdvertiser(page, savedName);
-      console.log(name + ' | torno a Step 1 e riprovo la casella');
-      return addAdvertiser(page, name, setStage, savedNames, false);
-    }
     const terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
     try {
       const answer = await terminal.question(
@@ -265,14 +260,51 @@ function observeBrowserDownload(page) {
   };
 }
 
+const comparisonColumns = [
+  'aw_deep_link', 'merchant_deep_link', 'product_name', 'description', 'merchant_name',
+  'merchant_id', 'data_feed_id', 'aw_product_id', 'merchant_product_id', 'parent_product_id',
+  'product_GTIN', 'ean', 'upc', 'mpn', 'brand_name', 'product_model', 'model_number',
+  'colour', 'size', 'category', 'category_name', 'merchant_category',
+  'merchant_product_category_path', 'product_type', 'search_price', 'store_price',
+  'display_price', 'product_price_old', 'rrp_price', 'saving', 'savings_percent',
+  'currency', 'delivery_cost', 'in_stock', 'stock_status', 'size_stock_status',
+  'merchant_image_url', 'aw_image_url', 'last_updated', 'commission_group'
+];
+
+async function selectComparisonColumns(page, name) {
+  let included = 0;
+  const skipped = [];
+  for (const field of comparisonColumns) {
+    const checkbox = page.getByRole('checkbox', { name: field, exact: true })
+      .or(page.getByLabel(field, { exact: true }))
+      .filter({ visible: true });
+    if (await checkbox.count() !== 1) continue;
+    try {
+      if (!await checkbox.isChecked() && await checkbox.isEnabled()) {
+        await checkbox.check({ timeout: 2500 });
+      }
+      if (await checkbox.isChecked()) included++;
+      else skipped.push(field);
+    } catch {
+      skipped.push(field);
+    }
+  }
+  console.log(name + (included ? ' | colonne di confronto incluse: ' + included :
+    ' | colonne non configurabili: uso il tracciato fornito da Awin'));
+  if (skipped.length) console.log(name + ' | campi individuati ma non selezionati: ' + skipped.join(', '));
+}
+
 async function downloadBatch(page, name, setStage) {
   setStage('Successivo');
   await control(page, 'Successivo').click();
   console.log(name + ' | premuto Successivo');
 
-  setStage('Scarica feed di prodotto');
+  setStage('Attesa della pagina di esportazione');
   const button = control(page, 'Scarica feed di prodotto');
   await button.waitFor({ state: 'visible' });
+  setStage('Selezione delle colonne di confronto');
+  await selectComparisonColumns(page, name);
+  setStage('Scarica feed di prodotto');
   const exportUrl = await generatedExportUrl(page);
   const observer = observeBrowserDownload(page);
   let download;
@@ -376,6 +408,7 @@ function reportFailure(name, stage, error) {
     'Pagina Awin non disponibile',
     'Campo Ricerca advertiser da identificare',
     'Operazione interrotta',
+    'Step 1 contiene ancora altri advertiser',
     'Dopo il clic non compare la finestra con Ricerca advertiser',
     'Nessun feed selezionabile per questo advertiser',
     'Awin non ha avviato il download e non mostra un URL di esportazione utilizzabile',
@@ -395,7 +428,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('Scarica listini Awin v18');
+  console.log('Scarica listini Awin v19');
   const browser = await chromium.launchPersistentContext(profile, { headless: false, acceptDownloads: true });
   try {
     const page = browser.pages()[0] ?? await browser.newPage();
@@ -419,28 +452,32 @@ async function main() {
       return;
     }
     console.log('Advertiser personali rilevati: ' + active.join(', '));
-    let stage = 'Apertura di Create-a-Feed';
-    const setStage = value => { stage = value; };
-    let current = 'feed-completo';
-    try {
-      await open(page, '/datafeed/step-one');
-      const savedNames = [];
-      for (const name of active) {
-        current = name;
-        const count = await addAdvertiser(page, name, setStage, savedNames);
-        savedNames.push(name);
+    let completed = 0;
+    for (const name of active) {
+      let stage = 'Apertura di Create-a-Feed';
+      const setStage = value => { stage = value; };
+      try {
+        await open(page, '/datafeed/step-one');
+        const others = active.filter(advertiser => advertiser !== name);
+        const otherCards = () => Promise.all(others.map(advertiser =>
+          page.getByText(advertiser, { exact: false }).filter({ visible: true }).first().isVisible()
+        ));
+        const clearPrevious = (await otherCards()).some(Boolean);
+        const count = await addAdvertiser(page, name, setStage, clearPrevious);
+        setStage('Verifica della selezione singola');
+        if ((await otherCards()).some(Boolean)) {
+          throw new Error('Step 1 contiene ancora altri advertiser');
+        }
         console.log(name + (count === null ? ' | selezione manuale verificata' : ' | selezionato | ' + count + ' feed'));
+        await downloadBatch(page, name, setStage);
+        completed++;
+      } catch (error) {
+        reportFailure(name, stage, error);
+        if (error.message === 'Operazione interrotta') break;
       }
-      current = 'feed-completo';
-      setStage('Verifica della selezione salvata');
-      for (const name of active) await verifySavedAdvertiser(page, name);
-      console.log('Esportazione unica: ' + active.join(', '));
-      await downloadBatch(page, current, setStage);
-      console.log('Cartella dei listini: ' + output);
-    } catch (error) {
-      reportFailure(current, stage, error);
-      console.log('Nessun listino salvato.');
     }
+    console.log('Listini salvati: ' + completed + ' di ' + active.length);
+    if (completed) console.log('Cartella dei listini: ' + output);
   } finally {
     await browser.close();
   }
