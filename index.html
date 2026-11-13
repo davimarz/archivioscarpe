@@ -2296,12 +2296,42 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
         return nextProducts.length;
       };
-      const openPromotions = () => {
-        promotionProducts = [...products];
-        for (let i = promotionProducts.length - 1; i > 0; i--) {
+      const shuffle = items => {
+        for (let i = items.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [promotionProducts[i], promotionProducts[j]] = [promotionProducts[j], promotionProducts[i]];
+          [items[i], items[j]] = [items[j], items[i]];
         }
+        return items;
+      };
+      const arrangePromotions = catalog => {
+        const bands = [[], [], []];
+        const unpriced = [];
+        for (const product of catalog) {
+          const price = numericPrice(product);
+          if (!Number.isFinite(price)) {
+            unpriced.push(product);
+            continue;
+          }
+          bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
+        }
+        bands.forEach(shuffle);
+        const ordered = [];
+        while (bands.every(band => band.length >= 2)) {
+          ordered.push(...shuffle(bands.flatMap(band => band.splice(-2))));
+        }
+
+        while (bands.some(band => band.length)) {
+          const group = bands.flatMap(band => band.splice(Math.max(0, band.length - 2)));
+          for (const band of shuffle([...bands])) {
+            while (band.length && group.length < pageSize) group.push(band.pop());
+          }
+          while (unpriced.length && group.length < pageSize) group.push(unpriced.pop());
+          ordered.push(...shuffle(group));
+        }
+        return ordered.concat(shuffle(unpriced));
+      };
+      const openPromotions = () => {
+        promotionProducts = arrangePromotions(products);
         visibleCount = 0;
         grid.replaceChildren();
         showMore();
