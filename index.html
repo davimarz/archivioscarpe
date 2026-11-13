@@ -147,11 +147,17 @@
     #archiveFiltersDetails button:not(.cat-pill){background:#e5f3fa!important;color:#17617b!important;border:1px solid #cbdfe9!important}
     #archiveFiltersDetails #activeFiltersBadge{color:#17617b!important}
 
-    #affiliateAdSlot .cisalfa-product-card{display:flex;flex-direction:column;min-width:0;padding:8px;border:1px solid #d5e9f4;border-radius:14px;background:#fff;text-decoration:none;color:#21475b;gap:5px}
-    #affiliateAdSlot .cisalfa-product-card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f5f8fa;border-radius:10px}
-    #affiliateAdSlot .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-    #affiliateAdSlot .cisalfa-product-price{font-size:15px;color:#124f65}
-    #affiliateAdSlot .cisalfa-product-link{font-size:11px;font-weight:700;background:#dff4fa;color:#086d8a;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
+    #affiliateAdSlot .cisalfa-product-card, #promotionsGrid .cisalfa-product-card{display:flex;flex-direction:column;min-width:0;padding:8px;border:1px solid #d5e9f4;border-radius:14px;background:#fff;text-decoration:none;color:#21475b;gap:5px}
+    #affiliateAdSlot .cisalfa-product-card img, #promotionsGrid .cisalfa-product-card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f5f8fa;border-radius:10px}
+    #affiliateAdSlot .cisalfa-product-name, #promotionsGrid .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    #affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price{font-size:15px;color:#124f65}
+    #affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link{font-size:11px;font-weight:700;background:#dff4fa;color:#086d8a;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
+    #cisalfaProducts{touch-action:pan-y}
+    #promotionsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media(min-width:640px){#promotionsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    #view-promotions h2{color:#16465d}
+    #view-promotions button{min-height:44px;background:#e9f7fc;color:#086d8a}
+    nav[aria-label="Navigazione principale"] button{min-width:0}
     #affiliateAdSlot button{color:#12566e;border-color:#badce7;background:#fff}
   </style>
 </head>
@@ -179,7 +185,7 @@
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
       <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
-      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati Cisalfa Sport" class="rounded-xl px-3 py-3">
+      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="rounded-xl px-3 py-3">
         <div class="flex items-center justify-between gap-2 mb-3">
           <div><p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p><h3 class="text-sm font-bold">Offerte scarpe dai negozi partner</h3></div>
           <div class="flex gap-2"><button type="button" id="cisalfaPrev" aria-label="Prodotti precedenti" class="rounded-lg border px-3 py-2">‹</button><button type="button" id="cisalfaNext" aria-label="Prodotti successivi" class="rounded-lg border px-3 py-2">›</button></div>
@@ -468,6 +474,15 @@
       </div>
     </section>
 
+    <section id="view-promotions" class="hidden space-y-4" aria-labelledby="promotionsHeading">
+      <div>
+        <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
+        <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
+      </div>
+      <p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p>
+      <div id="promotionsGrid"></div>
+      <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
+    </section>
   </main>
 
   <!-- Modifica scarpa archiviata -->
@@ -546,7 +561,7 @@
   <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
 
   <!-- Bottom Navigation Bar -->
-  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-3 gap-1 items-center">
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
       <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
     </button>
@@ -557,6 +572,9 @@
       <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
     </button>
 
+    <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition">
+      <i class="fa-solid fa-tags text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Promozioni</span>
+    </button>
   </nav>
 
 
@@ -808,8 +826,8 @@
       }
     }
     function switchTab(tabId) {
-      if (!['archive', 'check', 'add', 'settings'].includes(tabId)) tabId = 'archive';
-      ['archive', 'check', 'add', 'settings'].forEach(t => {
+      if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'archive';
+      ['archive', 'check', 'add', 'settings', 'promotions'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
         const btn = document.getElementById('tab-' + t);
         if (btn) {
@@ -2187,7 +2205,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       if (!slot || !products.length) return;
       const pageCount = Math.ceil(products.length / 2);
       let page = 0;
-      const failedImages = new Set();
       const createCard = (product) => {
         const card = document.createElement('a');
         card.href = product.url;
@@ -2200,18 +2217,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         img.alt = product.name;
         img.loading = 'lazy';
         img.decoding = 'async';
-        // Se il negozio rimuove o sposta una fotografia, evita la scheda con immagine rotta.
         img.addEventListener('error', () => {
-          card.remove();
-          const fallback = products.find(candidate =>
-            candidate !== product && !failedImages.has(candidate.image) &&
-            !slot.querySelector('[data-product-url="' + CSS.escape(candidate.url) + '"]')
-          );
-          failedImages.add(product.image);
-          if (fallback) {
-            const replacement = createCard(fallback);
-            slot.appendChild(replacement);
-          }
+          const placeholder = document.createElement('div');
+          placeholder.className = 'aspect-square rounded-xl bg-slate-100 grid place-items-center p-2 text-center text-xs text-slate-600';
+          placeholder.textContent = 'Foto non disponibile';
+          img.replaceWith(placeholder);
         }, { once: true });
         const name = document.createElement('span');
         name.className = 'cisalfa-product-name';
@@ -2246,12 +2256,49 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const start = (page * 2) % products.length;
         slot.replaceChildren(...products.slice(start, start + 2).map(createCard));
       };
-      document.getElementById('cisalfaPrev')?.addEventListener('click', () => { page = (page - 1 + pageCount) % (pageCount); render(); });
-      document.getElementById('cisalfaNext')?.addEventListener('click', () => { page = (page + 1) % (pageCount); render(); });
+      const moveBanner = direction => {
+        page = (page + direction + pageCount) % pageCount;
+        render();
+      };
+      document.getElementById('cisalfaPrev').addEventListener('click', () => moveBanner(-1));
+      document.getElementById('cisalfaNext').addEventListener('click', () => moveBanner(1));
+      let touchStart;
+      slot.addEventListener('touchstart', event => {
+        touchStart = event.touches.length === 1 ? event.touches[0] : null;
+      }, { passive: true });
+      slot.addEventListener('touchcancel', () => { touchStart = null; });
+      slot.addEventListener('touchend', event => {
+        const start = touchStart;
+        touchStart = null;
+        const end = event.changedTouches[0];
+        if (!start || !end || start.identifier !== end.identifier || event.touches.length) return;
+        const dx = end.clientX - start.clientX;
+        const dy = end.clientY - start.clientY;
+        if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          event.preventDefault();
+          moveBanner(dx < 0 ? 1 : -1);
+        }
+      }, { passive: false });
       render();
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        setInterval(() => { if (!document.hidden && slot.getClientRects().length) { page = (page + 1) % (pageCount); render(); } }, 9000);
-      }
+
+      const grid = document.getElementById('promotionsGrid');
+      const status = document.getElementById('promotionsStatus');
+      const more = document.getElementById('promotionsMore');
+      const pageSize = 6;
+      let visibleCount = 0;
+      const showMore = () => {
+        const nextProducts = products.slice(visibleCount, visibleCount + pageSize);
+        grid.append(...nextProducts.map(createCard));
+        visibleCount += nextProducts.length;
+        status.textContent = visibleCount + ' di ' + products.length + ' prodotti';
+        more.classList.toggle('hidden', visibleCount >= products.length);
+        return nextProducts.length;
+      };
+      more.addEventListener('click', () => {
+        const firstAdded = visibleCount;
+        if (showMore()) grid.children[firstAdded].focus();
+      });
+      showMore();
     })();
   </script>
 </body>
