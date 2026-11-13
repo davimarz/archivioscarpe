@@ -838,6 +838,7 @@
       });
       if (tabId === 'check') setCheckMode('photo');
       if (tabId === 'archive') updateQuickSearchResults();
+      if (tabId === 'promotions') document.dispatchEvent(new Event('promotions-open'));
       updatePhotoAiStatus();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2285,20 +2286,32 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const status = document.getElementById('promotionsStatus');
       const more = document.getElementById('promotionsMore');
       const pageSize = 6;
+      let promotionProducts = [];
       let visibleCount = 0;
       const showMore = () => {
-        const nextProducts = products.slice(visibleCount, visibleCount + pageSize);
+        const nextProducts = promotionProducts.slice(visibleCount, visibleCount + pageSize);
         grid.append(...nextProducts.map(createCard));
         visibleCount += nextProducts.length;
-        status.textContent = visibleCount + ' di ' + products.length + ' prodotti';
-        more.classList.toggle('hidden', visibleCount >= products.length);
+        status.textContent = visibleCount + ' di ' + promotionProducts.length + ' prodotti';
+        more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
         return nextProducts.length;
+      };
+      const openPromotions = () => {
+        promotionProducts = [...products];
+        for (let i = promotionProducts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [promotionProducts[i], promotionProducts[j]] = [promotionProducts[j], promotionProducts[i]];
+        }
+        visibleCount = 0;
+        grid.replaceChildren();
+        showMore();
       };
       more.addEventListener('click', () => {
         const firstAdded = visibleCount;
         if (showMore()) grid.children[firstAdded].focus();
       });
-      showMore();
+      document.addEventListener('promotions-open', openPromotions);
+      if (!document.getElementById('view-promotions').classList.contains('hidden')) openPromotions();
     })();
   </script>
 </body>
