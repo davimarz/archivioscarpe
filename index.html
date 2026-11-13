@@ -2203,6 +2203,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const imported = await response.json();
         if (Array.isArray(imported) && imported.length) products = imported;
       } catch (error) { console.warn('Catalogo Awin di riserva.', error); }
+      // Esclude i listini disattivati anche dopo un nuovo aggiornamento del catalogo Awin.
+      const disabledMerchants = new Set(['voghion global', 'goicon global']);
+      products = products.filter(product =>
+        !disabledMerchants.has(String(product.merchant ?? '').trim().toLowerCase().replace(/\s+/g, ' '))
+      );
       const shuffle = items => {
         for (let i = items.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
