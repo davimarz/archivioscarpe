@@ -2202,9 +2202,26 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const imported = await response.json();
         if (Array.isArray(imported) && imported.length) products = imported;
       } catch (error) { console.warn('Catalogo Awin di riserva.', error); }
+      const shuffle = items => {
+        for (let i = items.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [items[i], items[j]] = [items[j], items[i]];
+        }
+        return items;
+      };
       const slot = document.getElementById('cisalfaProducts');
       if (!slot || !products.length) return;
-      const pageCount = Math.ceil(products.length / 2);
+      const bannerBands = [
+        shuffle(products.filter(product => numericPrice(product) < 50)),
+        shuffle(products.filter(product => {
+          const price = numericPrice(product);
+          return Number.isFinite(price) && price > 50;
+        }))
+      ];
+      const pageCount = Math.max(1, ...bannerBands.map(band => band.length));
+      const bannerProducts = pageIndex => bannerBands
+        .filter(band => band.length)
+        .map(band => band[pageIndex % band.length]);
       let page = 0;
       const createCard = (product) => {
         const card = document.createElement('a');
@@ -2254,8 +2271,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return card;
       };
       const render = () => {
-        const start = (page * 2) % products.length;
-        slot.replaceChildren(...products.slice(start, start + 2).map(createCard));
+        slot.replaceChildren(...bannerProducts(page).map(createCard));
       };
       const moveBanner = direction => {
         page = (page + direction + pageCount) % pageCount;
@@ -2295,13 +2311,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         status.textContent = visibleCount + ' di ' + promotionProducts.length + ' prodotti';
         more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
         return nextProducts.length;
-      };
-      const shuffle = items => {
-        for (let i = items.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [items[i], items[j]] = [items[j], items[i]];
-        }
-        return items;
       };
       const arrangePromotions = catalog => {
         const bands = [[], [], []];
