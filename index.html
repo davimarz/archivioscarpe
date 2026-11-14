@@ -602,18 +602,8 @@
       return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
     }
 
-    const DEFAULT_SHOES = [
-      {
-        id: '1',
-        brand: 'Asics',
-        model: 'Novablast 6',
-        category: 'Sport / Running',
-        colors: ['Nero', 'Azzurro Artico'],
-        notes: 'Intersuola FF Turbo²',
-        image: createShoeSvgBase64('Asics', 'Novablast 6', '#0f172a'),
-        dateAdded: '2026-10-22'
-      }
-    ];
+    // Un nuovo utente parte con l'armadio vuoto: nessuna scarpa dimostrativa.
+    const DEFAULT_SHOES = [];
 
     // Conserva il dato originale anche quando il JSON locale non è leggibile.
     function readShoeArchive() {
@@ -2213,8 +2203,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         .replace(/[\u0300-\u036f]/g, '').toLowerCase()
         .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
       const productKey = product => {
+        // Identificativi della variante commerciale; SKU del rivenditore non è globale.
         const id = normalize(product.gtin || product.ean || product.globalId);
-        return id ? 'id:' + id : 'name:' + normalize(product.name);
+        const color = normalize(product.color || product.colour || '');
+        const size = normalize(product.size || '');
+        const variant = color || size ? '|color:' + color + '|size:' + size : '';
+        return id ? 'id:' + id + variant : 'name:' + normalize(product.name) + variant;
       };
       const numericPrice = product => {
         const raw = String(product.price || '').replace(/[^\d,.]/g, '');
@@ -2257,7 +2251,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return items;
       };
       const slot = document.getElementById('cisalfaProducts');
-      if (!slot || !products.length) return;
+      if (!slot) return;
+      if (!products.length) {
+        const ad = document.getElementById('affiliateAdSlot');
+        if (ad) ad.classList.add('hidden');
+        const promotionsStatus = document.getElementById('promotionsStatus');
+        if (promotionsStatus) promotionsStatus.textContent = 'Nessuna promozione disponibile.';
+        return;
+      }
       const bannerBands = [
         shuffle(products.filter(product => numericPrice(product) < 50)),
         shuffle(products.filter(product => {
@@ -2265,7 +2266,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           return Number.isFinite(price) && price >= 50;
         }))
       ];
-      const pageCount = Math.max(1, ...bannerBands.map(band => band.length));
+      const pageCount = bannerBands.every(band => band.length)
+        ? Math.max(...bannerBands.map(band => band.length)) : 1;
       const bannerProducts = pageIndex => bannerBands
         .filter(band => band.length)
         .map(band => band[pageIndex % band.length]);
@@ -2364,30 +2366,23 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       const arrangePromotions = catalog => {
         const bands = [[], [], []];
-        const unpriced = [];
         for (const product of catalog) {
           const price = numericPrice(product);
-          if (!Number.isFinite(price)) {
-            unpriced.push(product);
-            continue;
-          }
+          if (!Number.isFinite(price)) continue;
           bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
         }
         bands.forEach(shuffle);
         const ordered = [];
+        // Blocchi completi: due offerte per fascia, senza ripetizioni.
         while (bands.every(band => band.length >= 2)) {
-          ordered.push(...shuffle(bands.flatMap(band => band.splice(-2))));
-        }
-
-        while (bands.some(band => band.length)) {
-          const group = bands.flatMap(band => band.splice(Math.max(0, band.length - 2)));
-          for (const band of shuffle([...bands])) {
-            while (band.length && group.length < pageSize) group.push(band.pop());
-          }
-          while (unpriced.length && group.length < pageSize) group.push(unpriced.pop());
+          const group = bands.flatMap(band => band.splice(0, 2));
           ordered.push(...shuffle(group));
         }
-        return ordered.concat(shuffle(unpriced));
+        // Se una fascia si esaurisce, usa solo prodotti realmente disponibili:
+        // nessun articolo fittizio e nessuna ripetizione per riempire sei posti.
+        const remaining = shuffle(bands.flat());
+        while (remaining.length) ordered.push(...remaining.splice(0, pageSize));
+        return ordered;
       };
       const openPromotions = () => {
         promotionProducts = arrangePromotions(products);
