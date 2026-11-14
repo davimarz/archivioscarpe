@@ -729,8 +729,13 @@
     }
 
     // Le raccolte personali precedenti non fanno più parte dell'archivio.
-    // Mantiene inalterati i dati delle scarpe, comprese le loro categorie.
+    // Non riscrivere dati non leggibili: potrebbero essere recuperabili manualmente.
     function removeLegacyPersonalCollections() {
+      const raw = localStorage.getItem('kicks_archive_v17');
+      if (raw) {
+        try { if (!Array.isArray(JSON.parse(raw))) return; }
+        catch (error) { console.warn('Migrazione raccolte sospesa: archivio da recuperare.', error); return; }
+      }
       if (localStorage.getItem('kicks_archive_collections_removed_v1') === '1') return;
       collectionNames = [];
       shoes.forEach(shoe => { delete shoe.collections; });
