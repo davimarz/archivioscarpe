@@ -1,5 +1,5 @@
-/* Scava dei Turchi - service worker v4 */
-const CACHE = 'scava-dei-turchi-shell-v4';
+/* scaladeiturchi - service worker v4 */
+const CACHE = 'scava-dei-turchi-shell-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html'];
 const EXTERNAL = [
   'https://cdn.tailwindcss.com',
