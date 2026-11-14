@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scava dei Turchi - Il tuo Guardaroba Scarpe</title>
+  <title>scaladeiturchi - Il tuo Guardaroba Scarpe</title>
   <meta name="theme-color" content="#f8fbfd">
-  <meta name="application-name" content="Scava dei Turchi">
+  <meta name="application-name" content="scaladeiturchi">
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
   <script>try { localStorage.removeItem('scava_gemini_api_key'); } catch (_) {} </script>
@@ -54,7 +54,7 @@
     .spin-slow { animation: spin 3s linear infinite; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
-    /* Tema chiaro Scava dei Turchi */
+    /* Tema chiaro scaladeiturchi */
     :root{color-scheme:light;--surface:#fff;--line:#dfe8ee;--gold:#06a8c5}
     html,body,body.bg-slate-950{background:#f8fbfd!important;color:#1b2b39!important}
     body::before{display:none}
@@ -174,7 +174,7 @@
         <i class="fa-solid fa-shoe-prints text-white text-sm"></i>
       </div>
       <div class="truncate">
-        <h1 class="font-bold text-base leading-tight tracking-tight text-white">Scava dei Turchi</h1>
+        <h1 class="font-bold text-base leading-tight tracking-tight text-white">scaladeiturchi</h1>
         <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
         <p class="text-[11px] text-slate-400">realizzato da Davide Marziano</p>
       </div>
@@ -450,7 +450,7 @@
         <div>
           <p class="text-xs uppercase tracking-wide text-amber-400 font-semibold">Ideazione e realizzazione</p>
           <p class="text-lg font-bold text-white mt-1">Davide Marziano</p>
-          <p class="text-xs text-slate-400 mt-1">Autore di Scava dei Turchi</p>
+          <p class="text-xs text-slate-400 mt-1">Autore di scaladeiturchi</p>
         </div>
         <div class="space-y-2">
           <a href="mailto:davimarz.app@gmail.com" class="flex items-center gap-3 min-h-11 rounded-xl bg-slate-800 border border-slate-700 px-3 text-sm text-slate-100 break-all"><i class="fa-solid fa-envelope text-amber-400" aria-hidden="true"></i><span>davimarz.app@gmail.com</span></a>
@@ -2224,7 +2224,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       let products = catalogProducts;
       try {
-        const response = await fetch('./catalogo-scava.json', { cache: 'no-store' });
+        const response = await fetch('./catalogo-scaladeiturchi.json', { cache: 'no-store' });
         if (!response.ok) throw new Error('Catalogo non disponibile');
         const imported = await response.json();
         if (Array.isArray(imported) && imported.length) {
