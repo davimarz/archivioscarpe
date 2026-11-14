@@ -1,6 +1,6 @@
 {
-  "name": "Scava dei Turchi",
-  "short_name": "Scava dei Turchi",
+  "name": "scaladeiturchi",
+  "short_name": "scaladeiturchi",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
