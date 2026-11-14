@@ -1,0 +1,2429 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scava dei Turchi - Il tuo Guardaroba Scarpe</title>
+  <meta name="theme-color" content="#f8fbfd">
+  <meta name="application-name" content="Scava dei Turchi">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
+  <script>try { localStorage.removeItem('scava_gemini_api_key'); } catch (_) {} </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+
+    :root { color-scheme: dark; --surface:#111b2d; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
+    html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
+    body { background:radial-gradient(ellipse 90% 28% at 50% -4%,rgba(79,70,229,.16),transparent 70%),#080e1c; letter-spacing:.005em; }
+    body::before { content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(circle at 95% 65%,rgba(245,158,11,.035),transparent 38%); }
+    header { background:rgba(15,23,42,.94)!important;backdrop-filter:blur(18px);box-shadow:0 8px 30px rgba(0,0,0,.16); }
+    main { padding-top:22px!important; }
+    main > section > div.bg-slate-900, main > section > div[class*="bg-slate-900"] { box-shadow:0 16px 50px rgba(0,0,0,.17); }
+    #view-add > div:first-child,#view-check > div:first-child { background:linear-gradient(155deg,#15213a 0%,#111827 65%,#101726 100%);border-color:rgba(148,163,184,.19);border-radius:24px; }
+    #view-add h2,#view-check h2 { font-size:1.2rem;line-height:1.35;letter-spacing:-.025em; }
+    #addDropZone,#checkDropZone { background:linear-gradient(145deg,#0b1222,#0a1020);border-color:rgba(148,163,184,.3);border-radius:20px; }
+    #shoesGrid > div { border-color:var(--line);background:linear-gradient(160deg,#172136,#111a2b);box-shadow:0 8px 26px rgba(0,0,0,.2);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease; }
+    #shoesGrid > div:hover { transform:translateY(-2px);border-color:rgba(251,191,36,.42);box-shadow:0 16px 30px rgba(0,0,0,.28); }
+    #shoesGrid img { transition:transform .25s ease; }
+    #shoesGrid > div:hover img { transform:scale(1.025); }
+    input:not([type=file]),select,textarea { min-height:44px; }
+    button { -webkit-tap-highlight-color:transparent;touch-action:manipulation; }
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible { outline:2px solid #fbbf24!important;outline-offset:3px; }
+    #view-add button,#view-check button,.cat-pill { min-height:44px; }
+    #shoesGrid button { min-width:40px;min-height:40px; }
+    .cat-pill { padding-left:16px;padding-right:16px; }
+    nav { padding-bottom:max(10px,env(safe-area-inset-bottom))!important;box-shadow:0 -10px 35px rgba(0,0,0,.22); }
+    nav button { min-width:72px;min-height:48px; }
+    #apiKeyModal > div { box-shadow:0 25px 80px rgba(0,0,0,.65); }
+    #aiTestResult { overflow-wrap:anywhere;line-height:1.65; }
+    @media(min-width:768px) { main,header,nav { max-width:1080px!important; } #shoesGrid { grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); } #shoesGrid:has(> :only-child) { grid-template-columns:minmax(220px,420px); } }
+    @media(min-width:640px) and (max-width:767px) { main,header,nav { max-width:640px!important; } #shoesGrid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+    main { padding-bottom:calc(125px + env(safe-area-inset-bottom))!important; }
+    .cat-pill[aria-pressed="true"] { box-shadow:0 0 0 2px rgba(251,191,36,.4); }
+    .help-text { font-size:12px!important;color:#cbd5e1!important;line-height:1.5; }
+    .mode-panel[hidden] { display:none!important; }
+    @media(max-width:639px) { #emptyArchiveMsg:not(.hidden) { padding-bottom:105px; } #emptyArchiveMsg:not(.hidden) #emptyArchiveAction { position:fixed;bottom:calc(91px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:35;min-height:48px;white-space:nowrap;box-shadow:0 12px 35px rgba(0,0,0,.6); } }
+    @media(max-width:639px) { .category-pills { display:flex;flex-wrap:wrap;overflow:visible; } .category-pills .cat-pill { flex:1 1 auto; } }
+    @media(max-width:359px) { #view-add .grid-cols-2,#view-check .grid-cols-2 { gap:7px; } #view-add button,#view-check button { font-size:11px; } }
+    @media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important; } }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .scanner-line { animation: scan 1.6s linear infinite alternate; }
+    @keyframes scan { 0% { top: 5%; } 100% { top: 95%; } }
+    .spin-slow { animation: spin 3s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    /* Tema chiaro Scava dei Turchi */
+    :root{color-scheme:light;--surface:#fff;--line:#dfe8ee;--gold:#06a8c5}
+    html,body,body.bg-slate-950{background:#f8fbfd!important;color:#1b2b39!important}
+    body::before{display:none}
+    header{background:#fff!important;border-color:#e3eaf0!important;box-shadow:0 2px 14px #15354d0a!important}
+    header h1{color:#172735!important}header p{color:#657988!important}
+    header .bg-gradient-to-tr{background:linear-gradient(135deg,#00bbd4,#1483b4)!important}
+    #headerSettingsButton{background:#f0f7fa!important;color:#203b4d!important;border-color:#e0e8ee!important}
+    main{padding-top:16px!important}main section{color:#243848}
+    main section h2,main section h3{color:#172b3b!important}
+    main .text-white,main .text-slate-100,main .text-slate-200,main .text-slate-300{color:#253c4c!important}
+    main .text-slate-400,main .text-slate-500{color:#657a89!important}
+    main .text-amber-400,main .text-indigo-300{color:#008bab!important}
+    main .bg-slate-950,main .bg-slate-900,main .bg-slate-800{background:#fff!important}
+    main .border-slate-800,main .border-slate-700,main .border-slate-600{border-color:#dfe8ee!important}
+    main .bg-amber-500,main .bg-indigo-600{background:#06b1cd!important;color:white!important}
+    input:not([type=file]),select,textarea{background:#fff!important;color:#203848!important;border-color:#dce6ec!important;border-radius:12px}
+    input::placeholder,textarea::placeholder{color:#8194a1!important}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #00a9c8!important}
+    #archiveSearchPanel input{background:#f2f8fb!important;border-radius:999px!important;box-shadow:0 4px 12px #163f5b0d}
+    #usageGuideButton{background:#005f2d;border:2px solid #39ff14;color:#fff;box-shadow:0 0 8px #39ff1466;font-size:.875rem}
+    #usageGuideButton:hover{background:#006b31;color:#fff}
+    #shoesCountBadge{background:#e8f7fb!important;color:#087e9b!important;border-color:#d5ecf3!important}
+    #archiveFiltersDetails{background:#fff!important;border:1px solid #e0e9ef!important}
+    #archiveFiltersDetails summary{color:#253c4c!important}
+    .cat-pill{background:#f0f5f8!important;color:#425a69!important;border:1px solid #e0e8ee!important}
+    .cat-pill[aria-pressed=true]{background:#ddf4fa!important;color:#087e9b!important;border-color:#91d8e8!important;box-shadow:none}
+    #affiliateAdSlot{background:linear-gradient(110deg,#f1faff,#e4f3fc)!important;border:1px solid #d5e9f4!important;padding:18px!important;border-radius:20px}
+    #affiliateAdSlot p{color:#2d576d!important}
+    #shoesGrid{grid-template-columns:1fr!important;gap:12px}
+    #shoesGrid>div{background:#fff!important;border:1px solid #e0e8ef!important;border-radius:18px!important;box-shadow:0 2px 9px #163e570a!important;display:grid!important;grid-template-columns:128px minmax(0,1fr);min-height:142px;overflow:hidden}
+    #shoesGrid>div:hover{transform:none;border-color:#98dce9!important;box-shadow:0 5px 16px #153c5114!important}
+    #shoesGrid>div>div:first-child{aspect-ratio:auto!important;height:100%;min-height:142px;background:#f0f5f8!important}
+    #shoesGrid>div>div:last-child{padding:13px!important;min-width:0}
+    #shoesGrid h3{font-size:15px!important;line-height:1.35;white-space:normal}
+    #shoesGrid .bg-slate-800{background:#e7f5fb!important;border-color:#d8edf5!important}
+    #shoesGrid .absolute.top-2.left-2{background:#fff!important;color:#344d5d!important;border-color:#dce6eb!important}
+    #shoesGrid .absolute.bottom-2.right-2{right:4px;bottom:4px;gap:3px}
+    #shoesGrid .absolute.bottom-2.right-2 button{width:31px;height:31px;min-width:31px;min-height:31px}
+    #shoesGrid button[data-view-shoe-photos]{background:#fff!important;color:#28485b!important;border-color:#dce6eb!important}
+    #view-add>div:first-child,#view-check>div:first-child{background:#fff!important;border-color:#e0e8ef!important}
+    #addDropZone,#checkDropZone{background:#f1f8fb!important;border-color:#bcdce7!important}
+    .help-text{color:#607786!important}
+    nav{background:#fff!important;border-color:#dfe9ee!important;box-shadow:0 -4px 20px #142f440d!important}
+    nav button{color:#617787!important}
+    nav button.text-amber-400{color:#008bb1!important;background:#e9f7fc!important}
+    nav button.text-slate-400{color:#617787!important}
+    #quickAddButton{position:fixed;right:max(18px,calc((100vw - 1080px)/2 + 20px));bottom:calc(94px + env(safe-area-inset-bottom));z-index:39;width:60px;height:60px;border-radius:50%;background:#06b5d1;color:#fff;box-shadow:0 8px 24px #0092b942;font-size:29px;display:flex;align-items:center;justify-content:center}
+    #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction{position:static;transform:none;box-shadow:none}
+    @media(min-width:640px){#shoesGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#shoesGrid>div{grid-template-columns:116px minmax(0,1fr)}}
+    @media(max-width:359px){#shoesGrid>div{grid-template-columns:108px minmax(0,1fr)}#shoesGrid>div>div:last-child{padding:9px!important}header p{font-size:10px!important}}
+
+    /* Contrasto coerente anche nelle sezioni secondarie */
+    #view-settings .bg-slate-900, #view-settings .bg-slate-800, #view-settings .bg-slate-950,
+    #view-add .bg-slate-900, #view-add .bg-slate-800, #view-add .bg-slate-950,
+    #view-check .bg-slate-900, #view-check .bg-slate-800, #view-check .bg-slate-950,
+    #view-settings [class*="bg-slate-900/"], #view-add [class*="bg-slate-950/70"], #view-check [class*="bg-slate-950/70"] {
+      background:#fff!important;border-color:#dce6ec!important;
+    }
+    #view-settings .text-slate-100,#view-settings .text-slate-200,#view-settings .text-slate-300,
+    #view-add .text-slate-100,#view-add .text-slate-200,#view-add .text-slate-300,
+    #view-check .text-slate-100,#view-check .text-slate-200,#view-check .text-slate-300,
+    #view-settings details,#view-add details,#view-check details {color:#243b4b!important}
+    #view-settings .text-slate-400,#view-add .text-slate-400,#view-check .text-slate-400 {color:#566e7f!important}
+    #view-settings .border-slate-700,#view-add .border-slate-700,#view-check .border-slate-700 {border-color:#dce6ec!important}
+    #view-settings .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500 {background:#08aec9!important;color:#fff!important}
+    #view-settings button.bg-slate-800,#view-add button.bg-slate-800,#view-check button.bg-slate-800 {background:#edf6fa!important;color:#17617b!important}
+    #view-settings .bg-slate-900\/80,#view-add .bg-slate-900\/80 {background:#fff!important}
+    #view-settings .help-text,#view-add .help-text,#view-check .help-text {color:#536b7d!important}
+    #view-settings summary,#view-add summary,#view-check summary {color:#243b4b!important}
+    #view-settings input[type=file],#view-add input[type=file],#view-check input[type=file] {color:#243b4b!important}
+    #view-add #addErrorOverlay,#view-check #checkErrorOverlay {background:rgba(19,39,53,.95)!important;color:#fff!important}
+    #view-add #addErrorOverlay .text-slate-200,#view-check #checkErrorOverlay .text-slate-200 {color:#fff!important}
+    #view-archive #emptyArchiveMsg:not(.hidden) #emptyArchiveAction {position:static!important;left:auto!important;bottom:auto!important;transform:none!important}
+
+    /* Scheda: foto 50% più larga rispetto ai 128px precedenti, comandi a destra. */
+    #shoesGrid > .shoe-card {display:grid!important;grid-template-columns:192px minmax(0,1fr)!important;min-height:190px}
+    #shoesGrid > .shoe-card > .shoe-card-photo {width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:1 / 1!important;align-self:start}
+    #shoesGrid > .shoe-card > .shoe-card-photo img {display:block;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center}
+    #shoesGrid > .shoe-card > .shoe-card-info {padding:12px!important;min-width:0}
+    #shoesGrid .shoe-card-actions button {width:36px!important;height:36px!important;min-width:36px!important;min-height:36px!important;flex-shrink:0}
+    #shoesGrid .shoe-card-actions button:first-child {color:#1c7189!important;background:#e8f5fa!important}
+    #shoesGrid .shoe-card-actions button:nth-child(2) {color:#087c9c!important;background:#e8f5fa!important}
+    #shoesGrid .shoe-card-actions button:last-child {color:#c52d42!important;background:#fff0f1!important}
+    @media(max-width:410px){#shoesGrid > .shoe-card {grid-template-columns:45% minmax(0,1fr)!important}#shoesGrid .shoe-card-actions{gap:5px!important}#shoesGrid .shoe-card-actions button{width:33px!important;height:33px!important;min-width:33px!important;min-height:33px!important}}
+    @media(min-width:640px){#shoesGrid > .shoe-card{grid-template-columns:45% minmax(0,1fr)!important}}
+
+    /* Filtri con la stessa palette chiara dello spazio pubblicitario. */
+    #archiveFiltersDetails{background:linear-gradient(110deg,#f1faff,#e4f3fc)!important;border:1px solid #d5e9f4!important;border-radius:20px!important;color:#2d576d!important}
+    #archiveFiltersDetails summary,#archiveFiltersDetails label,#archiveFiltersDetails #archiveResultCount{color:#2d576d!important}
+    #archiveFiltersDetails > div{background:transparent!important;border-color:#d5e9f4!important}
+    #archiveFiltersDetails select{background:#fff!important;color:#23485d!important;border:1px solid #cbdfe9!important;min-height:42px}
+    #archiveFiltersDetails select option,#archiveFiltersDetails select optgroup{background:#fff;color:#23485d}
+    #archiveFiltersDetails button:not(.cat-pill){background:#e5f3fa!important;color:#17617b!important;border:1px solid #cbdfe9!important}
+    #archiveFiltersDetails #activeFiltersBadge{color:#17617b!important}
+
+    #affiliateAdSlot .cisalfa-product-card, #promotionsGrid .cisalfa-product-card{display:flex;flex-direction:column;min-width:0;padding:8px;border:1px solid #d5e9f4;border-radius:14px;background:#fff;text-decoration:none;color:#21475b;gap:5px}
+    #affiliateAdSlot .cisalfa-product-card img, #promotionsGrid .cisalfa-product-card img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f5f8fa;border-radius:10px}
+    #affiliateAdSlot .cisalfa-product-name, #promotionsGrid .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    #affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price{font-size:15px;color:#124f65}
+    #affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link{font-size:11px;font-weight:700;background:#dff4fa;color:#086d8a;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
+    #cisalfaProducts{touch-action:pan-y pinch-zoom}
+    #cisalfaProducts:focus-visible{outline:2px solid #008bb1;outline-offset:4px;border-radius:10px}
+    @media(max-width:359px){nav[aria-label="Navigazione principale"] button span{font-size:10px}}
+    #promotionsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media(min-width:640px){#promotionsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    #view-promotions h2{color:#16465d}
+    #view-promotions button{min-height:44px;background:#e9f7fc;color:#086d8a}
+    nav[aria-label="Navigazione principale"] button{min-width:0}
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40 w-full max-w-5xl mx-auto">
+    <div class="flex items-center space-x-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+        <i class="fa-solid fa-shoe-prints text-white text-sm"></i>
+      </div>
+      <div class="truncate">
+        <h1 class="font-bold text-base leading-tight tracking-tight text-white">Scava dei Turchi</h1>
+        <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
+        <p class="text-[11px] text-slate-400">realizzato da Davide Marziano</p>
+      </div>
+    </div>
+
+
+    <button id="headerSettingsButton" type="button" onclick="switchTab('settings')" aria-label="Apri impostazioni" title="Impostazioni" class="absolute right-4 top-2 w-11 h-11 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300"><i class="fa-solid fa-gear"></i></button>
+  </header>
+
+  <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4">
+
+    <!-- VIEW 1: ARCHIVIO SCARPE -->
+    <section id="view-archive" class="space-y-4">
+      <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
+      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="rounded-xl px-3 py-3">
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div><p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p><h3 class="text-sm font-bold">Offerte scarpe dai negozi partner</h3></div>
+        </div>
+        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
+        <button type="button" id="bannerRotationButton" class="mt-2 min-h-11 rounded-lg px-2 text-xs font-semibold text-sky-800" hidden>Pausa rotazione</button>
+        <p class="text-[11px] mt-3">Prezzi dai listini Awin. Verifica disponibilità e spese di spedizione sul sito del venditore.</p>
+      </aside>
+      <div class="flex items-center justify-between gap-2">
+        <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
+
+        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
+      </div>
+      <div id="archiveSearchPanel" class="mode-panel space-y-2">
+        
+        <label for="searchInput" class="sr-only">Cerca le tue scarpe</label>
+        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
+        <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
+      </div>
+      <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
+        <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e tipologie <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
+      <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
+        <div>
+          <label for="brandFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Marca</label>
+          <select id="brandFilter" onchange="filterArchive()" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+            <option value="">Tutte le marche</option>
+          </select>
+        </div>
+        <div>
+          <label for="colorFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Colore</label>
+          <select id="colorFilter" onchange="filterArchive()" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100">
+            <option value="">Tutti i colori</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <select id="collectionFilter" onchange="filterArchive()" aria-label="Filtra raccolta" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-slate-100"><option value="">Tutte le tipologie</option></select>
+        </div>
+        <div class="col-span-2 flex items-center justify-between gap-2">
+          <span id="archiveResultCount" class="text-xs text-slate-400" aria-live="polite">Tutte le scarpe</span>
+          <button type="button" onclick="resetArchiveFilters()" class="text-xs font-semibold text-amber-400 px-3 py-2 rounded-lg border border-slate-700">Azzera filtri</button>
+        </div>
+      </div>
+
+
+
+      </details>
+      <div id="shoesGrid" class="grid grid-cols-2 gap-2.5" aria-live="polite"></div>
+
+      <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
+        <div class="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h3 id="emptyArchiveTitle" class="text-base font-semibold text-slate-300">Nessuna scarpa archiviata</h3>
+        <p id="emptyArchiveDescription" class="help-text max-w-xs mx-auto">Scatta una foto o caricala per archiviare il tuo primo paio.</p>
+        <button id="emptyArchiveAction" onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
+          <i class="fa-solid fa-plus"></i> Aggiungi ora
+        </button>
+      </div>
+    </section>
+
+    <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
+    <section id="view-check" class="hidden space-y-4">
+      <h2 class="text-lg font-bold">Hai già questa scarpa?</h2>
+      <p class="help-text">Scatta una foto della scarpa che vuoi comprare. Vedrai se ne hai già una uguale o simile.</p>
+      <div class="hidden grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
+        <button type="button" id="checkModeText" onclick="setCheckMode('text')" aria-pressed="true" class="min-h-12 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Cerca per nome</button>
+        <button type="button" id="checkModePhoto" onclick="setCheckMode('photo')" aria-pressed="false" class="min-h-12 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-sm">Verifica con foto</button>
+      </div>
+      <div id="checkPhotoPanel" class="mode-panel space-y-3" hidden>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+        <div>
+          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
+            Radar acquisti
+          </span>
+          <h2 class="text-base font-bold text-slate-100">Fotografa la scarpa</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
+        </div>
+
+        <p id="checkAiStatus" class="help-text text-left" role="status">Verifica lo stato del riconoscimento automatico.</p>
+        <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+            <i class="fa-solid fa-camera"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('checkGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
+          </button>
+        </div></div>
+
+        <div id="checkDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+          <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
+          
+          <div id="checkPlaceholder" class="p-6 text-center space-y-2">
+            <i class="fa-solid fa-radar text-4xl text-indigo-400"></i>
+            <p class="text-xs font-semibold text-slate-300">Carica la scarpa da verificare</p>
+            <span class="help-text block">Fotocamera o galleria</span>
+          </div>
+
+          <!-- Animazione Scanner -->
+          <div id="checkScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="absolute w-full h-0.5 bg-indigo-500 shadow-[0_0_15px_#6366f1] scanner-line"></div>
+            <i class="fa-solid fa-compass text-indigo-400 text-3xl animate-spin mb-2"></i>
+            <span id="checkScanStatus" class="text-xs font-semibold text-indigo-300">Confronto con le scarpe già comprate...</span>
+          </div>
+
+          <!-- Overlay di Errore con Pulsante Riprova -->
+          <div id="checkErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
+            <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
+            <p id="checkErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
+            <button type="button" onclick="retryAnalysis('check')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
+              <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
+            </button>
+          </div>
+        </div>
+
+        <details class="hidden" aria-hidden="true"><div class="p-2">        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+          <div class="flex justify-between items-center gap-2">
+            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
+            <button type="button" id="checkOcrButton" onclick="runShoeOCR('check')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
+          </div>
+          <p id="checkOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+          <textarea id="checkOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+          <div id="checkOcrSkuPanel" class="hidden flex gap-2 items-center">
+            <input id="checkOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
+            <button type="button" onclick="applyOcrSku('check')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
+          </div>
+        </div>
+</div></details>
+        <input type="file" id="checkCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'check')">
+        <input type="file" id="checkGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'check')">
+
+        
+      </div>
+
+      <details class="rounded-xl border border-slate-700 bg-slate-900"><summary class="cursor-pointer px-3 py-3 text-xs text-slate-300">Mostra confronto fotografico dettagliato</summary>      <div class="rounded-2xl bg-slate-900 border border-indigo-500/30 p-4 space-y-3">
+        <h3 class="font-bold text-slate-100 text-sm"><i class="fa-solid fa-images text-indigo-400 mr-2"></i>Confronto fotografico</h3>
+        <p id="visualSearchStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+        <div id="visualSearchResults" class="space-y-2"></div>
+      </div>
+</details>
+      <p id="recognitionProgress" class="text-xs text-slate-300" role="status" aria-live="polite"></p>
+      <div id="checkResultContainer" class="hidden space-y-4"></div>
+      </div>
+    </section>
+
+    <section id="view-add" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-100">Aggiungi una scarpa</h2>
+          <p class="text-xs text-slate-400 mt-1">Controlla i dati della scarpa e salvala nell’armadio. La foto del confronto viene riutilizzata.</p>
+        </div>
+
+        <p id="addAiStatus" class="help-text text-left" role="status">Puoi inserire i dati anche manualmente.</p>
+        <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="document.getElementById('addCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
+            <i class="fa-solid fa-camera text-sm"></i> Scatta Foto
+          </button>
+          <button type="button" onclick="document.getElementById('addGalleryInput').click()" class="min-h-14 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 flex items-center justify-center gap-2 active:scale-95 transition">
+            <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
+          </button>
+        </div></div>
+
+        <div id="addDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
+          <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
+          
+          <div id="addPlaceholder" class="p-6 text-center space-y-2">
+            <i class="fa-solid fa-camera-retro text-4xl text-slate-500"></i>
+            <p class="text-xs font-semibold text-slate-300">Inquadra la scarpa o l'etichetta</p>
+            <span class="help-text block">Scegli tra Fotocamera o Galleria</span>
+          </div>
+
+          <!-- Animazione Scanner -->
+          <div id="addScanningAnim" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+            <div class="absolute w-full h-0.5 bg-amber-500 shadow-[0_0_15px_#f59e0b] scanner-line"></div>
+            <i class="fa-solid fa-brain text-amber-400 text-3xl animate-bounce mb-2"></i>
+            <span id="addScanStatus" class="text-xs font-semibold text-amber-300">Analisi con Gemini AI...</span>
+            <span class="text-[10px] text-slate-400 mt-1">Riconoscimento marca, modello e colori</span>
+          </div>
+
+          <!-- Overlay di Errore con Pulsante Riprova -->
+          <div id="addErrorOverlay" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center z-30 p-4 text-center">
+            <i class="fa-solid fa-circle-exclamation text-red-500 text-4xl mb-3"></i>
+            <p id="addErrorText" class="text-xs font-semibold text-slate-200 mb-3 px-2">Server AI temporaneamente sovraccarico.</p>
+            <button type="button" onclick="retryAnalysis('add')" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl flex items-center gap-2 active:scale-95 transition shadow-lg shadow-amber-500/20">
+              <i class="fa-solid fa-rotate-right"></i> Riprova Analisi
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-slate-900 border border-slate-700 p-3 space-y-2 text-left">
+          <div class="flex justify-between items-center gap-2">
+            <div><p class="text-xs font-bold text-slate-200">OCR etichetta (complementare)</p><p class="text-[10px] text-slate-400">Legge il testo della foto senza usare Gemini. Richiede Internet al primo caricamento.</p></div>
+            <button type="button" id="addOcrButton" onclick="runShoeOCR('add')" class="shrink-0 rounded-xl bg-slate-800 border border-slate-600 px-3 py-2 text-xs font-bold text-amber-400">Leggi testo</button>
+          </div>
+          <p id="addOcrStatus" class="text-xs text-slate-400" aria-live="polite"></p>
+          <textarea id="addOcrText" rows="4" readonly placeholder="Il testo riconosciuto comparirà qui. Verifica sempre codici e lettere." class="hidden w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-200"></textarea>
+          <div id="addOcrSkuPanel" class="hidden flex gap-2 items-center">
+            <input id="addOcrSku" aria-label="SKU suggerito dall'OCR" class="min-w-0 flex-1 rounded-lg bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-white" placeholder="SKU da verificare">
+            <button type="button" onclick="applyOcrSku('add')" class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-bold text-slate-950">Usa SKU</button>
+          </div>
+        </div>
+        <input type="file" id="addCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(this, 'add')">
+        <input type="file" id="addGalleryInput" accept="image/*" class="hidden" onchange="handleImageSelected(this, 'add')">
+
+        
+
+        <details class="rounded-xl border border-slate-700 bg-slate-950/70 p-3 space-y-2 text-left"><summary class="text-xs font-semibold cursor-pointer py-2">Fotografie aggiuntive (facoltative)</summary>
+          <p class="text-xs font-bold text-slate-200">Foto aggiuntive (massimo 4)</p>
+          <p class="text-[11px] text-slate-400">La prima foto rimane quella analizzata da Gemini. Puoi aggiungere altre inquadrature senza ripetere l'analisi.</p>
+          <input type="file" id="addExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'add')">
+          <div id="addExtraPhotosPreview" class="flex flex-wrap gap-2"></div>
+        </details>
+        <form id="addShoeForm" oninput="updateAddDuplicateNotice()" onsubmit="saveShoe(event)" class="space-y-3 text-left pt-2 border-t border-slate-800">
+          <p class="help-text">* Campi obbligatori. La foto è facoltativa: puoi inserire i dati manualmente.</p>
+          <div>
+            <label for="addBrand" class="text-xs font-semibold text-slate-300 block mb-1">Marca <span aria-hidden="true">*</span></label>
+            <input type="text" id="addBrand" required placeholder="es. Asics, Nike, New Balance..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label for="addModel" class="text-xs font-semibold text-slate-300 block mb-1">Modello <span aria-hidden="true">*</span></label>
+            <input type="text" id="addModel" required placeholder="es. Novablast 6, Gel-Kayano, Dunk..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="addCategory" class="text-xs font-semibold text-slate-300 block mb-1">Categoria</label>
+              <select id="addCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                <option value="Sport / Running">Sport / Running</option>
+                <option value="Sneakers">Sneakers</option>
+                <option value="Eleganti">Eleganti</option>
+                <option value="Stivali">Stivali</option>
+                <option value="Casual / Altro">Casual / Altro</option>
+              </select>
+            </div>
+            <div>
+              <label for="addColors" class="text-xs font-semibold text-slate-300 block mb-1">Colori <span aria-hidden="true">*</span></label>
+              <input type="text" id="addColors" required placeholder="es. Nero, Azzurro Artico" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            </div>
+          </div>
+          <details class="rounded-xl border border-slate-700 p-3"><summary class="text-xs cursor-pointer font-semibold">Dati acquisto (facoltativi)</summary><div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs">Taglia EU<input id="addShoeSize" type="text" maxlength="20" placeholder="42,5" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Prezzo €<input id="addShoePrice" type="number" min="0" step="0.01" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Data acquisto<input id="addPurchaseDate" type="date" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Negozio<input id="addShoeStore" type="text" maxlength="120" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label></div></details>
+<div id="addDuplicateNotice" class="hidden rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-200 space-y-2" role="status"></div>
+<details class="rounded-xl border border-slate-700 p-3"><summary class="cursor-pointer text-xs font-semibold text-slate-300 py-2">Altri dettagli (facoltativi)</summary><div class="space-y-3 pt-3"><div><label for="addSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="addSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
+          <div>
+            <label for="addNotes" class="text-xs font-semibold text-slate-300 block mb-1">Note & Dettagli particolari</label>
+            <input type="text" id="addNotes" placeholder="es. Intersuola FF Turbo2" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+
+          </div></details>
+          
+          <button type="submit" class="w-full min-h-12 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-amber-500/20 active:scale-95 transition flex items-center justify-center gap-2 mt-2">
+            <i class="fa-solid fa-floppy-disk"></i> Salva nel Guardaroba
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VIEW 4: SISTEMA E BACKUP -->
+    <section id="view-settings" class="hidden space-y-4">
+      <h2 class="text-lg font-bold">Impostazioni</h2>
+      <div class="rounded-2xl border border-amber-500/30 bg-slate-900 p-4 space-y-3" aria-label="Autore e contatti">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-amber-400 font-semibold">Ideazione e realizzazione</p>
+          <p class="text-lg font-bold text-white mt-1">Davide Marziano</p>
+          <p class="text-xs text-slate-400 mt-1">Autore di Scava dei Turchi</p>
+        </div>
+        <div class="space-y-2">
+          <a href="mailto:davimarz.app@gmail.com" class="flex items-center gap-3 min-h-11 rounded-xl bg-slate-800 border border-slate-700 px-3 text-sm text-slate-100 break-all"><i class="fa-solid fa-envelope text-amber-400" aria-hidden="true"></i><span>davimarz.app@gmail.com</span></a>
+          <a href="tel:+393295363457" class="flex items-center gap-3 min-h-11 rounded-xl bg-slate-800 border border-slate-700 px-3 text-sm text-slate-100"><i class="fa-solid fa-phone text-amber-400" aria-hidden="true"></i><span>329 5363457</span></a>
+        </div>
+      </div>
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between gap-3">
+        <div><p class="font-semibold text-slate-100 text-sm">Intelligenza artificiale</p><p class="text-xs text-slate-400 mt-1">Stato e configurazione Gemini</p></div>
+    <button onclick="openApiKeyModal()" id="keyStatusBtn" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-amber-400 flex items-center gap-1.5 active:scale-95 transition shadow-sm">
+      <i class="fa-solid fa-bolt text-xs"></i>
+      <span id="keyLabel">Imposta AI</span>
+    </button>
+      </div>
+      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div><p class="text-sm font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>Backup scarpiera</p><p class="text-[11px] text-slate-400 mt-1">Esporta o ripristina scarpe, dati e fotografie.</p></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="exportShoeBackup()" class="min-h-11 px-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"><i class="fa-solid fa-download mr-1"></i>Esporta backup</button>
+          <button type="button" onclick="document.getElementById('shoeBackupInput').click()" class="min-h-11 px-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold"><i class="fa-solid fa-upload mr-1"></i>Ripristina backup</button>
+        </div>
+        <p class="help-text">Le scarpe sono salvate su questo dispositivo. Esporta periodicamente un backup. Attenzione: il ripristino sostituisce l'archivio attuale.</p>
+        <input type="file" id="shoeBackupInput" accept=".json,application/json" class="hidden" onchange="importShoeBackup(this)">
+        <p id="backupFeedback" role="status" aria-live="polite" class="text-xs text-slate-400"></p>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2"><p class="text-sm font-semibold">Backup automatico locale</p><p class="help-text">Una copia viene aggiornata dopo le modifiche nello stesso browser. Non protegge dalla perdita del dispositivo o dalla cancellazione dei dati del browser.</p><p id="autoBackupStatus" class="help-text" role="status">Stato non disponibile</p><button type="button" onclick="restoreAutomaticSnapshot()" class="rounded-lg bg-slate-800 border border-slate-600 p-2 text-xs">Ripristina ultima copia locale</button></div>
+      </div>
+    </section>
+
+    <section id="view-promotions" class="hidden space-y-4" aria-labelledby="promotionsHeading">
+      <div>
+        <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
+        <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
+      </div>
+      <p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p>
+      <div id="promotionsGrid"></div>
+      <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
+    </section>
+  </main>
+  <footer class="max-w-5xl w-full mx-auto px-4 py-5 mb-20 text-center text-xs text-slate-400 border-t border-slate-800" aria-label="Informazioni legali">
+    <p>© 2026 Davide Marziano · Tutti i diritti riservati</p>
+    <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2">
+      <a class="underline hover:text-amber-300" href="https://github.com/davimarz/archivioscarpe/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licenza e copyright</a>
+      <a class="underline hover:text-amber-300" href="./privacy.html">Privacy</a>
+      <a class="underline hover:text-amber-300" href="./cookie.html">Cookie e tecnologie locali</a>
+    </div>
+    <p class="mt-2">Alcuni link commerciali sono affiliati: un acquisto può generare una commissione senza costi aggiuntivi.</p>
+  </footer>
+
+
+  <!-- Modifica scarpa archiviata -->
+  <div id="editShoeModal" role="dialog" aria-modal="true" aria-labelledby="editShoeTitle" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl" style="max-height:calc(100dvh - 2rem);overflow-y:auto;overscroll-behavior:contain">
+      <div class="flex items-center justify-between gap-3">
+        <h3 id="editShoeTitle" class="font-bold text-lg text-white"><i class="fa-solid fa-pen text-amber-400 mr-2"></i>Modifica scarpa</h3>
+        <button type="button" onclick="closeEditShoeModal()" aria-label="Chiudi modifica" class="w-10 h-10 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="editShoeForm" onsubmit="saveEditedShoe(event)" class="space-y-3">
+        <input type="hidden" id="editShoeId">
+        <div><label for="editShoeBrand" class="block text-sm text-slate-300 mb-1">Marca</label><input id="editShoeBrand" required maxlength="100" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
+        <div><label for="editShoeModel" class="block text-sm text-slate-300 mb-1">Modello</label><input id="editShoeModel" required maxlength="150" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></div>
+        <div class="grid grid-cols-2 gap-2"><label class="text-xs">Taglia EU<input id="editShoeSize" maxlength="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Prezzo €<input id="editShoePrice" type="number" min="0" step="0.01" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Data acquisto<input id="editPurchaseDate" type="date" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label><label class="text-xs">Negozio<input id="editShoeStore" maxlength="120" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2"></label></div>
+        <div><label for="editShoeColors" class="block text-sm text-slate-300 mb-1">Colore o colori</label><input id="editShoeColors" required maxlength="200" placeholder="Es. Nero, Bianco" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><p class="text-xs text-slate-400 mt-1">Separa più colori con una virgola.</p></div>
+<div><label for="editShoeSku" class="block text-xs text-slate-300 mb-1">Codice articolo / SKU (facoltativo)</label><input id="editShoeSku" type="text" maxlength="80" placeholder="Es. U9060GRY" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100"></div>
+        <div><label for="editShoeCategory" class="block text-xs text-slate-300 mb-1">Categoria</label><select id="editShoeCategory" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"><option>Sport / Running</option><option>Sneakers</option><option>Eleganti</option><option>Stivali</option><option>Casual / Altro</option></select></div>
+        <div><label for="editShoeNotes" class="block text-xs text-slate-300 mb-1">Note e dettagli</label><textarea id="editShoeNotes" rows="3" maxlength="1000" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white"></textarea></div>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2">
+          <label for="editShoeCollections" class="text-xs text-slate-300">Raccolte (separate da virgola)</label>
+          <input id="editShoeCollections" type="text" maxlength="300" placeholder="Es. Running, Da collezione" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100">
+        </div>
+        <div class="rounded-xl border border-slate-700 p-3 space-y-2">
+          <p class="text-xs font-semibold text-slate-300">Fotografie della scarpa (massimo 5)</p>
+          <div id="editShoePhotosPreview" class="flex flex-wrap gap-2"></div>
+          <input type="file" id="editExtraPhotosInput" accept="image/*" multiple class="w-full text-xs text-slate-300" onchange="addExtraPhotos(this, 'edit')">
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button type="button" onclick="closeEditShoeModal()" class="rounded-xl bg-slate-800 text-white py-3 font-semibold">Annulla</button>
+          <button type="submit" class="rounded-xl bg-amber-500 text-slate-950 py-3 font-bold"><i class="fa-solid fa-check mr-1"></i>Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="shoeGalleryModal" role="dialog" aria-modal="true" class="hidden fixed inset-0 z-[60] bg-black/90 p-4 overflow-y-auto">
+    <div class="max-w-5xl mx-auto space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <h3 id="shoeGalleryTitle" class="text-sm font-bold text-white"></h3>
+        <button type="button" onclick="document.getElementById('shoeGalleryModal').classList.add('hidden')" class="w-11 h-11 rounded-xl bg-slate-800 text-white" aria-label="Chiudi galleria"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="shoeGalleryPhotos" class="space-y-3"></div>
+    </div>
+  </div>
+  <!-- Modale API Key -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-key text-amber-400"></i> Chiave Google AI Studio
+        </h3>
+        <button onclick="closeApiKeyModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="rounded-xl border border-emerald-600/40 bg-emerald-950/30 p-3 space-y-2">
+        <p class="text-xs font-bold text-emerald-300">Gemini gratuito con il tuo account</p>
+        <p class="text-xs text-slate-300 leading-relaxed">Puoi usare il riconoscimento AI gratuitamente entro i limiti previsti da Google. Crea una chiave API personale su Google AI Studio e inseriscila qui. Non devi fornire la password Google.</p>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-emerald-300 underline">Crea la tua chiave Gemini gratuita</a>
+      </div>
+      <label for="apiKeyInput" class="block text-xs font-semibold text-slate-300">Chiave API Gemini</label>
+      <div class="flex items-center gap-2">
+        <input type="password" id="apiKeyInput" autocomplete="off" spellcheck="false" placeholder="AIzaSy..." class="min-w-0 flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+        <button type="button" id="toggleApiKeyBtn" onclick="toggleApiKeyVisibility()" aria-label="Mostra chiave API" aria-pressed="false" class="shrink-0 w-11 h-11 rounded-xl border border-slate-700 bg-slate-800 text-slate-200 flex items-center justify-center"><i id="apiKeyEyeIcon" class="fa-solid fa-eye"></i></button>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveApiKey()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Salva e Attiva</button>
+        <button onclick="clearApiKey()" class="py-2 px-3 bg-slate-800 text-slate-400 text-xs rounded-xl hover:text-red-400">Rimuovi</button>
+      </div>
+      <button type="button" id="testAiBtn" onclick="testAiConnection()" class="w-full py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl">Test connessione AI</button>
+      <div id="aiTestResult" role="status" aria-live="polite" class="hidden max-h-60 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap break-words bg-slate-950 rounded-xl p-3 text-slate-200"></div>
+      <div class="hidden">
+      </div>
+    </div>
+  </div>
+
+  <div id="offlineStatus" class="hidden fixed top-2 right-2 z-50 rounded-lg bg-amber-500 text-slate-950 px-3 py-1 text-xs font-bold" role="status">Offline · archivio locale disponibile</div>
+  <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
+    <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
+      <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
+    </button>
+    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa nuova">
+      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
+    </button>
+    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
+      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
+    </button>
+
+    <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition">
+      <i class="fa-solid fa-tags text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Promozioni</span>
+    </button>
+  </nav>
+
+
+  <script>
+    function createShoeSvgBase64(brand, model, bgHex) {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+        <rect width="300" height="300" fill="${bgHex}"/>
+        <circle cx="150" cy="130" r="70" fill="rgba(255,255,255,0.05)"/>
+        <path d="M45 195 Q70 155 120 150 Q180 145 205 110 Q235 105 250 135 Q265 165 255 195 Z" fill="#ffffff" opacity="0.95"/>
+        <path d="M40 195 L260 195 L255 215 L35 215 Z" fill="#0f172a"/>
+        <text x="150" y="255" font-family="system-ui, sans-serif" font-size="15" font-weight="bold" fill="#f8fafc" text-anchor="middle">${brand}</text>
+        <text x="150" y="275" font-family="system-ui, sans-serif" font-size="12" fill="#94a3b8" text-anchor="middle">${model}</text>
+      </svg>`;
+      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    }
+
+    // Un nuovo utente parte con l'armadio vuoto: nessuna scarpa dimostrativa.
+    const DEFAULT_SHOES = [];
+
+    // Conserva il dato originale anche quando il JSON locale non è leggibile.
+    function readShoeArchive() {
+      try {
+        const raw = localStorage.getItem('scava_archive_v17');
+        if (!raw) return DEFAULT_SHOES;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error('Formato archivio non valido');
+        return parsed;
+      } catch (error) {
+        console.error('Archivio locale non leggibile; dati originali conservati.', error);
+        return [];
+      }
+    }
+    let shoes = readShoeArchive();
+    let selectedImageBase64 = null;
+    let addExtraImages = [];
+    let editingImages = [];
+    const imagesByMode = { add: null, check: null };
+    let currentCategory = 'all';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      try { if (!localStorage.getItem('scava_archive_v17')) saveToStorage(); }
+      catch (error) { console.warn('Salvataggio iniziale non disponibile:', error); }
+      renderArchive();
+      updateKeyUI();
+      initLocalBackupStatus();
+      updateOfflineStatus();
+      localStorage.removeItem("scava_google_oauth_client_id_v1");
+    });
+
+
+    function createShoeBackupFile() {
+      const backup = { format: 'kicksarchive-backup', version: 1, exportedAt: new Date().toISOString(), shoes, collections: collectionNames };
+      const filename = 'archivio scarpe ' + new Date().toLocaleDateString('it-IT').split('/').reverse().join('-') + ' N.' + shoes.length + '.json';
+      return new File([JSON.stringify(backup, null, 2)], filename, { type: 'application/json' });
+    }
+
+    function downloadShoeBackup(file) {
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+
+    function exportShoeBackup() {
+      const feedback = document.getElementById('backupFeedback');
+      try {
+        downloadShoeBackup(createShoeBackupFile());
+        feedback.textContent = 'Download del backup avviato. Conserva il file JSON in un luogo sicuro.';
+      } catch (error) {
+        feedback.textContent = 'Impossibile esportare: ' + error.message;
+      }
+    }
+
+    async function importShoeBackup(input) {
+      const feedback = document.getElementById('backupFeedback');
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return false;
+      try {
+        if (file.size > 100 * 1024 * 1024) throw new Error('File troppo grande (massimo 100 MB).');
+        const parsed = JSON.parse(await file.text());
+        if (!parsed || parsed.format !== 'kicksarchive-backup' || parsed.version !== 1 || !Array.isArray(parsed.shoes)) {
+          throw new Error('Il file non è un backup KicksArchive valido.');
+        }
+        if (parsed.shoes.length > 10000 || !parsed.shoes.every(item =>
+          item && typeof item === 'object' && !Array.isArray(item) &&
+          (typeof item.id === 'string' || typeof item.id === 'number') &&
+          typeof item.brand === 'string' && typeof item.model === 'string' &&
+          (Array.isArray(item.colors) ? item.colors.every(c => typeof c === 'string') : typeof item.colors === 'string') &&
+          (!item.image || isSafeShoeImageUrl(item.image)) &&
+          (!item.images || (Array.isArray(item.images) && item.images.every(isSafeShoeImageUrl)))
+        )) throw new Error('Il backup contiene dati non validi.');
+        const ids = parsed.shoes.map(item => String(item.id));
+        if (new Set(ids).size !== ids.length) throw new Error('Il backup contiene identificativi duplicati.');
+        if (!confirm('Ripristinare ' + parsed.shoes.length + (parsed.shoes.length === 1 ? ' paio' : ' paia') + '? Le ' + shoes.length + ' scarpe attualmente nell’archivio saranno sostituite. Esporta prima un backup se vuoi conservarle.')) {
+          feedback.textContent = 'Ripristino annullato.';
+          return false;
+        }
+        const serialized = JSON.stringify(parsed.shoes);
+        saveAutomaticSnapshot(JSON.stringify(shoes));
+        const restoredCollections = Array.isArray(parsed.collections) ? parsed.collections.filter(v => typeof v === 'string').map(v => v.trim()).filter(Boolean) : [...new Set(parsed.shoes.flatMap(shoe => Array.isArray(shoe.collections) ? shoe.collections.filter(v => typeof v === 'string') : []))];
+        // Prima si scrive il nuovo archivio: se lo spazio è insufficiente, quello corrente rimane intatto.
+        localStorage.setItem('scava_archive_v17', serialized);
+        shoes = parsed.shoes;
+        collectionNames = restoredCollections;
+        saveCollectionNames();
+        resetArchiveFilters();
+        feedback.textContent = 'Ripristino completato: ' + shoes.length + (shoes.length === 1 ? ' paio recuperato.' : ' paia recuperate.');
+        return true;
+      } catch (error) {
+        feedback.textContent = 'Ripristino non eseguito: ' + error.message;
+        return false;
+      }
+    }
+
+    let collectionNames = (() => {
+      try { const saved = JSON.parse(localStorage.getItem('scava_archive_collections_v1') || '[]'); return Array.isArray(saved) ? saved.filter(v => typeof v === 'string') : []; }
+      catch { return []; }
+    })();
+
+    function parseCollectionNames(value) {
+      return [...new Set(String(value || '').split(',').map(v => v.trim().slice(0, 60)).filter(Boolean))].slice(0, 20);
+    }
+
+    function saveCollectionNames() {
+      localStorage.setItem('scava_archive_collections_v1', JSON.stringify(collectionNames));
+    }
+
+    // Le raccolte personali precedenti non fanno più parte dell'archivio.
+    // Non riscrivere dati non leggibili: potrebbero essere recuperabili manualmente.
+    function removeLegacyPersonalCollections() {
+      const raw = localStorage.getItem('scava_archive_v17');
+      if (raw) {
+        try { if (!Array.isArray(JSON.parse(raw))) return; }
+        catch (error) { console.warn('Migrazione raccolte sospesa: archivio da recuperare.', error); return; }
+      }
+      if (localStorage.getItem('scava_archive_collections_removed_v1') === '1') return;
+      collectionNames = [];
+      shoes.forEach(shoe => { delete shoe.collections; });
+      localStorage.removeItem('scava_archive_collections_v1');
+      localStorage.setItem('scava_archive_v17', JSON.stringify(shoes));
+      localStorage.setItem('scava_archive_collections_removed_v1', '1');
+    }
+    removeLegacyPersonalCollections();
+
+    function updateCollectionOptions() {
+      const select = document.getElementById('collectionFilter');
+      const selected = select.value;
+      const categories = [...new Set(shoes.map(shoe => String(shoe.category || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'it'));
+      select.replaceChildren(new Option('Tutte le tipologie', ''));
+      categories.forEach(name => select.add(new Option(name, 'category:' + name)));
+      select.value = categories.some(name => 'category:' + name === selected) ? selected : '';
+    }
+
+    function createCollection() {
+      const value = prompt('Nome della nuova raccolta (es. Running, Preferite, Vintage):');
+      if (value === null) return;
+      const name = value.trim().slice(0, 60);
+      if (!name || name.includes(',')) { alert('Inserisci un nome valido, senza virgole.'); return; }
+      if (!collectionNames.includes(name)) {
+        collectionNames.push(name);
+        saveCollectionNames();
+      }
+      updateCollectionOptions();
+      alert('Raccolta pronta. Per assegnare una scarpa, apri la sua modifica e inserisci il nome nel campo Raccolte.');
+    }
+
+    function updateOfflineStatus(){const el=document.getElementById('offlineStatus');if(el)el.classList.toggle('hidden',navigator.onLine);}
+    window.addEventListener('online',updateOfflineStatus);window.addEventListener('offline',updateOfflineStatus);
+    // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js?v=4', { scope: './', updateViaCache: 'none' })
+          .catch(error => console.warn('Cache offline non disponibile:', error));
+      });
+    }
+
+
+    function initLocalBackupStatus() {
+      const snapshot=localStorage.getItem('scava_archive_snapshot_v1');
+      if(snapshot){try{const v=JSON.parse(snapshot);document.getElementById('autoBackupStatus').textContent='Ultima copia locale: '+new Date(v.exportedAt).toLocaleString('it-IT');}catch{}}
+    }
+    function saveToStorage() {
+      const previous=localStorage.getItem('scava_archive_v17');
+      const current=JSON.stringify(shoes);
+      if(previous!==current&&previous){try{localStorage.setItem('scava_archive_previous_v1',previous);}catch{}}
+      try {
+        localStorage.setItem('scava_archive_v17',current);
+      } catch (error) {
+        alert('Spazio locale insufficiente: le modifiche potrebbero non essere salvate. Esporta un backup e libera spazio nel browser.');
+        console.error('Salvataggio archivio non riuscito', error);
+        return false;
+      }
+      if(previous!==current)saveAutomaticSnapshot(current);
+      renderArchive();
+      return true;
+    }
+    function isValidShoeArchive(items){
+      return Array.isArray(items)&&items.length<=10000&&items.every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&(typeof item.id==='string'||typeof item.id==='number')&&typeof item.brand==='string'&&typeof item.model==='string'&&(Array.isArray(item.colors)?item.colors.every(c=>typeof c==='string'):typeof item.colors==='string')&&(!item.image||isSafeShoeImageUrl(item.image))&&(!item.images||(Array.isArray(item.images)&&item.images.every(isSafeShoeImageUrl))))&&new Set(items.map(item=>String(item.id))).size===items.length;
+    }
+    function saveAutomaticSnapshot(serialized) {
+      try {
+        const snapshot={format:'kicksarchive-backup',version:1,exportedAt:new Date().toISOString(),shoes:JSON.parse(serialized),collections:collectionNames};
+        localStorage.setItem('scava_archive_snapshot_v1',JSON.stringify(snapshot));
+        const el=document.getElementById('autoBackupStatus');if(el)el.textContent='Ultima copia locale: '+new Date().toLocaleString('it-IT');
+        return true;
+      }catch(e){const el=document.getElementById('autoBackupStatus');if(el)el.textContent='Copia locale non disponibile: '+e.message;return false;}
+    }
+    function restoreAutomaticSnapshot() {
+      try {
+        const raw=localStorage.getItem('scava_archive_previous_v1')||localStorage.getItem('scava_archive_snapshot_v1');
+        if(!raw){alert('Nessuna copia locale disponibile.');return;}
+        const snapshot=JSON.parse(raw);
+        const restored=Array.isArray(snapshot)?snapshot:snapshot.shoes;
+        if(!isValidShoeArchive(restored))throw Error('Copia non valida');
+        if(!confirm('Ripristinare la copia locale? L’archivio corrente sarà sostituito.'))return;
+        const before=JSON.stringify(shoes);
+        localStorage.setItem('scava_archive_v17',JSON.stringify(restored));
+        shoes=restored;collectionNames=Array.isArray(snapshot.collections)?snapshot.collections:collectionNames;
+        saveCollectionNames();try{localStorage.setItem('scava_archive_previous_v1',before);}catch{}saveAutomaticSnapshot(JSON.stringify(shoes));resetArchiveFilters();showToast('Copia locale ripristinata.');
+      }catch(e){alert('Ripristino non riuscito: '+e.message);}
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      const el = document.getElementById('appToast');
+      el.textContent = message;
+      el.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
+    }
+
+    function setCheckMode(mode) {
+      const photo = mode === 'photo';
+      const textPanel = document.getElementById('checkTextPanel');
+      if (textPanel) textPanel.hidden = photo;
+      document.getElementById('checkPhotoPanel').hidden = !photo;
+      for (const [name,active] of [['Text',!photo],['Photo',photo]]) {
+        const btn = document.getElementById('checkMode' + name);
+        btn.setAttribute('aria-pressed',String(active));
+        btn.classList.toggle('bg-indigo-600',active);
+        btn.classList.toggle('text-white',active);
+        btn.classList.toggle('bg-slate-800',!active);
+      }
+    }
+    function updatePhotoAiStatus() {
+      const ready = Boolean(sessionStorage.getItem('scava_gemini_api_key'));
+      for (const mode of ['add','check']) {
+        const el = document.getElementById(mode + 'AiStatus');
+        if (!el) continue;
+        el.replaceChildren();
+        el.append(document.createTextNode(ready ? 'Riconoscimento AI configurato (non ancora verificato). ' : 'Riconoscimento AI da configurare. '));
+        if (!ready) {
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'underline font-semibold text-amber-300';
+          button.textContent = 'Configura Gemini'; button.onclick = openApiKeyModal;
+          el.appendChild(button);
+        }
+        if (mode === 'add') el.append(document.createTextNode(' Puoi inserire i dati anche manualmente.'));
+      }
+    }
+    function switchTab(tabId) {
+      if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'archive';
+      const promotionsWasOpen = !document.getElementById('view-promotions').classList.contains('hidden');
+      ['archive', 'check', 'add', 'settings', 'promotions'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
+        const btn = document.getElementById('tab-' + t);
+        if (btn) {
+          btn.classList.toggle('text-amber-400', t === tabId);
+          btn.classList.toggle('text-slate-400', t !== tabId);
+          btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
+        }
+      });
+      if (tabId === 'check') setCheckMode('photo');
+      if (tabId === 'archive') updateQuickSearchResults();
+      if (tabId === 'promotions' && !promotionsWasOpen) document.dispatchEvent(new Event('promotions-open'));
+      updatePhotoAiStatus();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    // Accetta solo URL di immagini compatibili con le fotografie archiviate.
+    function isSafeShoeImageUrl(value) {
+      if (typeof value !== 'string' || value.length > 12000000) return false;
+      return /^data:image\/(?:jpeg|jpg|png|webp|gif|svg\+xml);base64,[a-z0-9+/=]+$/i.test(value) ||
+        /^https:\/\/[^\s<>"']+$/i.test(value);
+    }
+    function safeShoeImageUrl(value) {
+      return isSafeShoeImageUrl(value) ? escapeHtml(value) : '';
+    }
+
+    // Raggruppa varianti cromatiche senza modificare i colori originali archiviati.
+    function normalizeColorGroup(value) {
+      const text = String(value || '').toLocaleLowerCase('it').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+      const groups = [
+        ['Nero', /\b(nero|nera|neri|nere|black|noir)\b/],
+        ['Bianco', /\b(bianco|bianca|bianchi|bianche|white|avorio|ivory|panna|crema)\b/],
+        ['Grigio', /\b(grigio|grigia|grigi|grigie|grey|gray|antracite|silver|argento)\b/],
+        ['Giallo', /\b(giallo|gialla|gialli|gialle|yellow|ocra|senape|mustard|oro|gold)\b/],
+        ['Rosso', /\b(rosso|rossa|rossi|rosse|red|bordeaux|burgundy|vinaccia|amaranto)\b/],
+        ['Blu', /\b(blu|blue|navy|azzurro|azzurra|azzurri|azzurre|celeste|cobalto)\b/],
+        ['Verde', /\b(verde|verdi|green|oliva|olive|smeraldo|menta|militare|khaki)\b/],
+        ['Rosa', /\b(rosa|pink|fucsia|fuchsia|magenta)\b/],
+        ['Viola', /\b(viola|purple|lilla|lavanda|violet)\b/],
+        ['Arancione', /\b(arancione|arancio|orange|corallo|coral)\b/],
+        ['Marrone', /\b(marrone|marroni|brown|cuoio|testa di moro|caffe|cioccolato|tan)\b/],
+        ['Beige', /\b(beige|sabbia|sand|nude|tortora|taupe|ecru)\b/]
+      ];
+      const found = groups.find(([, pattern]) => pattern.test(text));
+      return found ? found[0] : (text ? text.charAt(0).toLocaleUpperCase('it') + text.slice(1) : '');
+    }
+
+    function updateArchiveFilterOptions() {
+      const brandSelect = document.getElementById('brandFilter');
+      const colorSelect = document.getElementById('colorFilter');
+      if (!brandSelect || !colorSelect) return;
+      const normalize = value => String(value || '').trim().toLocaleLowerCase('it');
+      const brands = new Map();
+      const colors = new Map();
+      shoes.forEach(shoe => {
+        const brand = String(shoe.brand || '').trim();
+        if (brand && !brands.has(normalize(brand))) brands.set(normalize(brand), brand);
+        const parts = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
+        parts.forEach(part => {
+          const color = normalizeColorGroup(part);
+          if (color && !colors.has(normalize(color))) colors.set(normalize(color), color);
+        });
+      });
+      [[brandSelect, brands, 'Tutte le marche'], [colorSelect, colors, 'Tutti i colori']].forEach(([select, values, allLabel]) => {
+        const selected = select.value;
+        select.replaceChildren(new Option(allLabel, ''));
+        [...values.entries()].sort((a,b) => a[1].localeCompare(b[1], 'it')).forEach(([key, label]) => select.add(new Option(label, key)));
+        select.value = values.has(selected) ? selected : '';
+      });
+    }
+
+    function resetArchiveFilters() {
+      document.getElementById('collectionFilter').value = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('brandFilter').value = '';
+      document.getElementById('colorFilter').value = '';
+      setCategoryFilter('all');
+    }
+
+    // Ricerca locale: sinonimi di marche, modelli e colori, senza chiamate API.
+    function normalizeSku(value) { return String(value || '').trim().toUpperCase().replace(/\s+/g, '').replace(/[‐‑–—]/g, '-'); }
+
+    function normalizeShoeText(value) {
+      return String(value || '').toLocaleLowerCase('it').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+    }
+
+    function canonicalShoeBrand(value) {
+      const text = normalizeShoeText(value);
+      if (/^(nb|new balance)$/.test(text)) return 'new balance';
+      if (/^(nike|nike inc)$/.test(text)) return 'nike';
+      if (/^(adidas|adi das)$/.test(text)) return 'adidas';
+      if (/^(asics|asics tiger)$/.test(text)) return 'asics';
+      if (/^(hoka|hoka one one)$/.test(text)) return 'hoka';
+      if (/^(converse|converse all star)$/.test(text)) return 'converse';
+      return text;
+    }
+
+    function canonicalShoeModel(value) {
+      return normalizeShoeText(value)
+        .replace(/\bnew balance\b|\bnb\b/g, ' ')
+        .replace(/\bhoka one one\b|\bhoka\b/g, ' ')
+        .replace(/\bnike\b|\badidas\b|\basics\b|\basics tiger\b|\bconverse\b/g, ' ')
+        .replace(/\s+/g, ' ').trim();
+    }
+
+    function canonicalShoeColor(value) {
+      const text = normalizeShoeText(value);
+      const equivalents = [
+        [/\b(nero|nera|neri|nere|black|noir)\b/g, 'nero'],
+        [/\b(bianco|bianca|bianchi|bianche|white)\b/g, 'bianco'],
+        [/\b(grigio|grigia|grigi|grigie|grey|gray)\b/g, 'grigio'],
+        [/\b(blu|blue)\b/g, 'blu'],
+        [/\b(rosso|rossa|rossi|rosse|red)\b/g, 'rosso'],
+        [/\b(verde|verdi|green)\b/g, 'verde'],
+        [/\b(giallo|gialla|yellow)\b/g, 'giallo'],
+        [/\b(rosa|pink)\b/g, 'rosa'],
+        [/\b(marrone|brown)\b/g, 'marrone'],
+        [/\b(viola|purple)\b/g, 'viola'],
+        [/\b(arancione|arancio|orange)\b/g, 'arancione']
+      ];
+      return equivalents.reduce((result, [pattern, canonical]) => result.replace(pattern, canonical), text)
+        .replace(/\s+/g, ' ').trim();
+    }
+
+    function shoeMatchesSmartSearch(shoe, query) {
+      const raw = normalizeShoeText(query);
+      if (!raw) return true;
+      const brand = canonicalShoeBrand(shoe.brand);
+      const model = canonicalShoeModel(shoe.model);
+      const colors = (Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','))
+        .map(canonicalShoeColor);
+      const rawText = normalizeShoeText([shoe.brand, shoe.model, shoe.sku || '', ...colors].join(' '));
+      const searchText = [brand, model, normalizeShoeText(shoe.sku), ...colors].join(' ');
+      const normalizedQuery = canonicalShoeColor(raw);
+      const brandQuery = canonicalShoeBrand(raw);
+      const modelQuery = canonicalShoeModel(raw);
+      if (rawText.includes(raw) || searchText.includes(normalizedQuery) ||
+          brand.includes(brandQuery) || (modelQuery && model.includes(modelQuery))) return true;
+      // Ogni termine deve essere presente: "NB 9060 grey" trova "New Balance 9060 grigio".
+      const queryWords = normalizedQuery.replace(/\bnew balance\b|\bnb\b/g, 'newbalance').split(' ').filter(Boolean);
+      const searchable = searchText.replace(/\bnew balance\b/g, 'newbalance');
+      return queryWords.every(word => searchable.split(' ').some(token => token.startsWith(word)));
+    }
+
+    function renderArchive() {
+      const grid = document.getElementById('shoesGrid');
+      const emptyMsg = document.getElementById('emptyArchiveMsg');
+      const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+      const badge = document.getElementById('shoesCountBadge');
+      updateArchiveFilterOptions();
+      const brandFilter = document.getElementById('brandFilter').value;
+      const colorFilter = document.getElementById('colorFilter').value;
+      const collectionFilter = document.getElementById('collectionFilter').value;
+      updateCollectionOptions();
+
+      const filtered = shoes.filter(shoe => {
+        const matchesCat = currentCategory === 'all' || shoe.category === currentCategory;
+        const colorString = Array.isArray(shoe.colors) ? shoe.colors.join(' ') : (shoe.colors || '');
+        const matchesSearch = shoeMatchesSmartSearch(shoe, searchVal);
+        const matchesBrand = !brandFilter || String(shoe.brand || '').trim().toLocaleLowerCase('it') === brandFilter;
+        const colors = Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',');
+        const matchesColor = !colorFilter || colors.some(c => normalizeColorGroup(c).toLocaleLowerCase('it') === colorFilter);
+        const matchesCollection = !collectionFilter ||
+          (collectionFilter.startsWith('category:') && shoe.category === collectionFilter.slice(9));
+        return matchesCat && matchesSearch && matchesBrand && matchesColor && matchesCollection;
+      });
+
+      // Data effettiva di inserimento, non data d'acquisto o nome della scarpa.
+      // Per gli archivi precedenti usa l'ID timestamp; per record senza
+      // timestamp conserva l'ordine originale di memorizzazione.
+      const insertionOrder = new Map(shoes.map((shoe, index) => [shoe, index]));
+      const insertionTime = shoe => {
+        const explicit = Date.parse(shoe.createdAt || '');
+        if (Number.isFinite(explicit)) return explicit;
+        const id = String(shoe.id || '');
+        if (/^\d{13}$/.test(id)) return Number(id);
+        const legacy = Date.parse(shoe.dateAdded || '');
+        return Number.isFinite(legacy) ? legacy : null;
+      };
+      filtered.sort((a, b) => {
+        const aTime = insertionTime(a);
+        const bTime = insertionTime(b);
+        if (aTime !== null && bTime !== null && aTime !== bTime) return bTime - aTime;
+        if (aTime !== null && bTime === null) return -1;
+        if (bTime !== null && aTime === null) return 1;
+        return insertionOrder.get(a) - insertionOrder.get(b);
+      });
+      badge.textContent = `${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'}`;
+      document.getElementById('archiveResultCount').textContent = `${filtered.length} di ${shoes.length} ${shoes.length === 1 ? 'paio' : 'paia'} ${filtered.length === 1 ? 'visualizzato' : 'visualizzati'}`;
+      updateActiveFiltersBadge();
+      updateQuickSearchResults();
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        const filteredEmpty = shoes.length > 0;
+        document.getElementById('emptyArchiveTitle').textContent = filteredEmpty ? 'Nessuna scarpa corrisponde ai filtri' : 'Nessuna scarpa archiviata';
+        document.getElementById('emptyArchiveDescription').textContent = filteredEmpty ? 'Modifica o azzera i filtri per visualizzare le scarpe salvate.' : 'Scatta una foto o caricala per archiviare il tuo primo paio.';
+        const emptyAction = document.getElementById('emptyArchiveAction');
+        emptyAction.onclick = filteredEmpty ? resetArchiveFilters : () => switchTab('add');
+        emptyAction.textContent = filteredEmpty ? 'Azzera filtri' : 'Aggiungi ora';
+        emptyMsg.classList.remove('hidden');
+        return;
+      }
+
+      emptyMsg.classList.add('hidden');
+      grid.innerHTML = filtered.map(shoe => {
+        const colorsList = Array.isArray(shoe.colors) ? shoe.colors : [shoe.colors || 'N/D'];
+        return `
+          <div class="shoe-card bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg group">
+            <div class="shoe-card-photo relative bg-slate-950 overflow-hidden">
+              <img src="${safeShoeImageUrl(shoe.image)}" alt="${escapeHtml(shoe.brand)} ${escapeHtml(shoe.model)}" loading="lazy" decoding="async" class="w-full h-full object-cover">
+            </div>
+            <div class="shoe-card-info p-3 flex flex-col min-w-0">
+              <div class="min-w-0">
+                <p class="text-[11px] font-bold text-amber-400 uppercase tracking-wider">${escapeHtml(shoe.brand)}</p>
+                <h3 class="text-sm font-semibold text-slate-100 break-words">${escapeHtml(shoe.model)}</h3>
+                <p class="text-xs text-slate-400">${escapeHtml(shoe.category)}</p>
+                <p class="text-xs text-slate-400 break-words">${escapeHtml([shoe.size ? "EU "+shoe.size : "",shoe.price != null ? Number(shoe.price).toLocaleString("it-IT",{style:"currency",currency:"EUR"}) : "",shoe.store || ""].filter(Boolean).join(" · "))}</p>
+                ${shoe.sku ? `<p class="text-[10px] text-slate-400 break-all">SKU: ${escapeHtml(shoe.sku)}</p>` : ''}
+                <div class="flex flex-wrap gap-1 mt-1">
+                  ${colorsList.map(c => `<span class="text-[10px] bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded-md font-medium">${escapeHtml(String(c).trim())}</span>`).join('')}
+                </div>
+              </div>
+              <div class="shoe-card-actions flex items-center gap-2 mt-auto pt-3">
+                <button type="button" data-view-shoe-photos="${escapeHtml(shoe.id)}" aria-label="Apri ${shoePhotos(shoe).length} fotografie" title="Fotografie" class="w-10 h-10 bg-slate-800 border border-slate-600 text-slate-700 rounded-xl flex items-center justify-center gap-1"><i class="fa-solid fa-images"></i><span class="text-xs">${shoePhotos(shoe).length}</span></button>
+                <button type="button" data-edit-shoe="${escapeHtml(shoe.id)}" aria-label="Modifica scarpa" title="Modifica scarpa" class="w-10 h-10 bg-slate-800 border border-slate-600 text-cyan-700 rounded-xl flex items-center justify-center"><i class="fa-solid fa-pen text-sm"></i></button>
+                <button type="button" data-delete-shoe="${escapeHtml(shoe.id)}" aria-label="Elimina scarpa" title="Elimina scarpa" class="w-10 h-10 bg-red-50 border border-red-200 text-red-600 rounded-xl flex items-center justify-center"><i class="fa-solid fa-trash text-sm"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setCategoryFilter(cat) {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        if (btn.getAttribute('data-cat') === cat) {
+          btn.classList.add('bg-amber-500', 'text-slate-950', 'active');
+          btn.setAttribute('aria-pressed','true');
+          btn.classList.remove('bg-slate-800', 'text-slate-300');
+        } else {
+          btn.classList.remove('bg-amber-500', 'text-slate-950', 'active');
+          btn.setAttribute('aria-pressed','false');
+          btn.classList.add('bg-slate-800', 'text-slate-300');
+        }
+      });
+      renderArchive();
+    }
+
+    function filterArchive() { renderArchive(); }
+
+    function updateActiveFiltersBadge() {
+      const count = [
+        document.getElementById('brandFilter').value,
+        document.getElementById('colorFilter').value,
+        document.getElementById('collectionFilter').value,
+        currentCategory !== 'all' ? currentCategory : ''
+      ].filter(Boolean).length;
+      document.getElementById('activeFiltersBadge').textContent = count ? count + (count === 1 ? ' filtro attivo' : ' filtri attivi') : '';
+    }
+
+    function updateQuickSearchResults() {
+      const container = document.getElementById('quickSearchResults');
+      if (!container) return;
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) { container.replaceChildren(); return; }
+      const matches = shoes.filter(shoe => shoeMatchesSmartSearch(shoe, query)).slice(0, 20);
+      container.innerHTML = '<p class="text-xs text-slate-400">' + matches.length + (matches.length === 20 ? '+' : '') + (matches.length === 1 ? ' risultato' : ' risultati') + ' nell’archivio</p>' +
+        (matches.length ? matches.map(shoe => '<button type="button" data-edit-shoe="' + escapeHtml(shoe.id) + '" class="w-full flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2 text-left min-h-14"><img src="' + safeShoeImageUrl(shoe.image || '') + '" alt="" class="w-12 h-12 object-cover rounded-lg"><span class="min-w-0 flex-1"><strong class="block text-sm truncate">' + escapeHtml(shoe.brand) + ' · ' + escapeHtml(shoe.model) + '</strong><span class="text-xs text-slate-400">' + escapeHtml(Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '') + '</span></span><i class="fa-solid fa-chevron-right text-slate-500"></i></button>').join('') : '<p class="text-xs text-slate-400">Nessuna scarpa trovata.</p>');
+    }
+
+    function getAddDuplicates() {
+      const brand = canonicalShoeBrand(document.getElementById('addBrand').value);
+      const model = canonicalShoeModel(document.getElementById('addModel').value);
+      const sku = normalizeSku(document.getElementById('addSku').value);
+      const colors = document.getElementById('addColors').value.split(',').map(canonicalShoeColor).filter(Boolean).sort().join('|');
+      if (!brand || (!model && !sku)) return [];
+      return shoes.filter(shoe => canonicalShoeBrand(shoe.brand) === brand && (
+        (sku && normalizeSku(shoe.sku) === sku) ||
+        (model && canonicalShoeModel(shoe.model) === model &&
+          colors && (Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(',')).map(canonicalShoeColor).filter(Boolean).sort().join('|') === colors)
+      ));
+    }
+
+    function updateAddDuplicateNotice() {
+      const el = document.getElementById('addDuplicateNotice');
+      if (!el) return;
+      const duplicates = getAddDuplicates();
+      el.classList.toggle('hidden', !duplicates.length);
+      el.replaceChildren();
+      if (duplicates.length) {
+        const heading = document.createElement('p');
+        heading.className = 'font-bold';
+        heading.textContent = 'Possibile doppione: questa scarpa potrebbe essere già presente.';
+        el.appendChild(heading);
+        for (const shoe of duplicates.slice(0,2)) {
+          const btn = document.createElement('button');
+          btn.type='button';btn.className='flex items-center gap-2 rounded-lg border border-amber-500/40 p-2 w-full text-left';
+          btn.textContent = shoe.brand + ' · ' + shoe.model + ' · ' + (Array.isArray(shoe.colors) ? shoe.colors.join(', ') : shoe.colors || '');
+          btn.dataset.duplicateShoe = String(shoe.id);
+          el.appendChild(btn);
+        }
+        const note = document.createElement('p');
+        note.textContent = 'Tocca la scarpa per visualizzarne le fotografie. Puoi comunque salvarne un altro paio dopo la conferma.';
+        el.appendChild(note);
+      }
+    }
+
+    function openEditShoeModal(id) {
+      const shoe = shoes.find(item => String(item.id) === String(id));
+      if (!shoe) return;
+      document.getElementById('editShoeId').value = String(shoe.id);
+      document.getElementById('editShoeBrand').value = shoe.brand || '';
+      document.getElementById('editShoeModel').value = shoe.model || '';
+      document.getElementById('editShoeColors').value = Array.isArray(shoe.colors) ? shoe.colors.join(', ') : (shoe.colors || '');
+      document.getElementById('editShoeSku').value = shoe.sku || '';
+      document.getElementById('editShoeSize').value = shoe.size || '';
+      document.getElementById('editShoePrice').value = shoe.price ?? '';
+      document.getElementById('editPurchaseDate').value = shoe.purchaseDate || '';
+      document.getElementById('editShoeStore').value = shoe.store || '';
+      document.getElementById('editShoeCategory').value = shoe.category || 'Casual / Altro';
+      document.getElementById('editShoeNotes').value = shoe.notes || '';
+      document.getElementById('editShoeCollections').value = Array.isArray(shoe.collections) ? shoe.collections.join(', ') : '';
+      editingImages = shoePhotos(shoe).slice();
+      renderPhotoThumbnails('edit');
+      document.getElementById('editShoeModal').classList.remove('hidden');
+      document.getElementById('editShoeBrand').focus();
+    }
+
+    function closeEditShoeModal() {
+      document.getElementById('editShoeModal').classList.add('hidden');
+    }
+
+    function saveEditedShoe(event) {
+      event.preventDefault();
+      const id = document.getElementById('editShoeId').value;
+      const shoe = shoes.find(item => String(item.id) === id);
+      if (!shoe) { closeEditShoeModal(); return; }
+      const brand = document.getElementById('editShoeBrand').value.trim();
+      const model = document.getElementById('editShoeModel').value.trim();
+      const colors = document.getElementById('editShoeColors').value.split(',').map(c => c.trim()).filter(Boolean);
+      if (!brand || !model || !colors.length) return;
+      shoe.brand = brand;
+      shoe.model = model;
+      shoe.colors = colors;
+      shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
+      shoe.category = document.getElementById('editShoeCategory').value;
+      shoe.notes = document.getElementById('editShoeNotes').value.trim();
+      Object.assign(shoe, readShoePurchaseFields('edit'));
+      shoe.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
+      shoe.collections.forEach(name => { if (!collectionNames.includes(name)) collectionNames.push(name); });
+      saveCollectionNames();
+      shoe.image = editingImages[0] || shoe.image;
+      shoe.images = editingImages.slice();
+      saveToStorage();
+      closeEditShoeModal();
+    }
+
+    document.addEventListener('click', event => {
+      const duplicateButton = event.target.closest('[data-duplicate-shoe]');
+      if (duplicateButton) { openShoeGallery(duplicateButton.dataset.duplicateShoe); return; }
+      const photoButton = event.target.closest('[data-view-shoe-photos]');
+      if (photoButton) { openShoeGallery(photoButton.dataset.viewShoePhotos); return; }
+      const editButton = event.target.closest('[data-edit-shoe]');
+      if (editButton) { openEditShoeModal(editButton.dataset.editShoe); return; }
+      const deleteButton = event.target.closest('[data-delete-shoe]');
+      if (deleteButton) deleteShoe(deleteButton.dataset.deleteShoe);
+    });
+
+    function deleteShoe(id) {
+      const shoe = shoes.find(s => String(s.id) === String(id));
+      if (shoe && confirm('Eliminare definitivamente ' + shoe.brand + ' ' + shoe.model + ' dall’archivio?')) {
+        shoes = shoes.filter(s => s.id !== id);
+        saveToStorage();
+      }
+    }
+
+    function shoePhotos(shoe) {
+      const photos = Array.isArray(shoe.images) ? shoe.images.filter(p => typeof p === 'string' && p) : [];
+      if (shoe.image && !photos.includes(shoe.image)) photos.unshift(shoe.image);
+      return photos.length ? photos : (shoe.image ? [shoe.image] : []);
+    }
+
+    function renderPhotoThumbnails(mode) {
+      const images = mode === 'edit' ? editingImages : addExtraImages;
+      const target = document.getElementById(mode === 'edit' ? 'editShoePhotosPreview' : 'addExtraPhotosPreview');
+      target.replaceChildren();
+      images.forEach((src, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'relative w-16 h-16 rounded-lg overflow-hidden border border-slate-600';
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Foto ' + (index + 1);
+        img.className = 'w-full h-full object-cover';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'absolute top-0 right-0 bg-red-900 text-white rounded-bl-md w-7 h-7 text-xs';
+        remove.textContent = '×';
+        remove.setAttribute('aria-label', 'Rimuovi foto ' + (index + 1));
+        remove.onclick = () => {
+          if (mode === 'edit' && images.length <= 1) { alert('Conserva almeno una fotografia.'); return; }
+          images.splice(index, 1);
+          renderPhotoThumbnails(mode);
+        };
+        wrapper.append(img, remove);
+        target.appendChild(wrapper);
+      });
+    }
+
+    function resizePhotoAsync(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Lettura foto non riuscita'));
+        reader.onload = event => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Immagine non valida'));
+          img.onload = () => {
+            const ratio = Math.min(1, 700 / img.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(img.width * ratio));
+            canvas.height = Math.max(1, Math.round(img.height * ratio));
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.68));
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function addExtraPhotos(input, mode) {
+      const target = mode === 'edit' ? editingImages : addExtraImages;
+      const max = mode === 'edit' ? 5 : 4;
+      const files = Array.from(input.files || []);
+      input.value = '';
+      if (!files.length) return;
+      if (target.length + files.length > max) {
+        alert('Massimo ' + max + ' foto ' + (mode === 'edit' ? 'totali' : 'aggiuntive') + ' per scarpa.');
+        return;
+      }
+      try {
+        for (const file of files) target.push(await resizePhotoAsync(file));
+        renderPhotoThumbnails(mode);
+      } catch (error) { alert('Impossibile caricare le foto: ' + error.message); }
+    }
+
+    function openShoeGallery(id) {
+      const shoe = shoes.find(item => String(item.id) === String(id));
+      if (!shoe) return;
+      const photos = shoePhotos(shoe);
+      const container = document.getElementById('shoeGalleryPhotos');
+      container.replaceChildren();
+      photos.forEach((src, index) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Foto ' + (index + 1) + ' di ' + shoe.brand + ' ' + shoe.model;
+        img.className = 'w-full rounded-xl object-contain max-h-[65vh] bg-slate-950';
+        img.loading = 'lazy';
+        container.appendChild(img);
+      });
+      document.getElementById('shoeGalleryTitle').textContent = shoe.brand + ' ' + shoe.model + ' — ' + photos.length + ' foto' + (shoe.size ? ' · EU ' + shoe.size : '') + (shoe.purchaseDate ? ' · ' + shoe.purchaseDate : '') + (shoe.store ? ' · ' + shoe.store : '');
+      document.getElementById('shoeGalleryModal').classList.remove('hidden');
+    }
+
+    // OCR locale nel browser: Tesseract è caricato solo su richiesta, senza chiavi API.
+    let shoeOcrLoader = null;
+    function loadShoeOcr() {
+      if (window.Tesseract) return Promise.resolve(window.Tesseract);
+      if (shoeOcrLoader) return shoeOcrLoader;
+      shoeOcrLoader = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        script.onload = () => window.Tesseract ? resolve(window.Tesseract) : reject(new Error('Libreria OCR non disponibile'));
+        script.onerror = () => reject(new Error('Impossibile scaricare OCR: verifica la connessione'));
+        document.head.appendChild(script);
+      }).catch(error => { shoeOcrLoader = null; throw error; });
+      return shoeOcrLoader;
+    }
+
+    function suggestSkuFromOcr(text) {
+      const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      // Solo candidati alfanumerici, mai codici a barre numerici o numeri seriali.
+      const candidates = [];
+      for (const line of lines) {
+        const labeled = line.match(/(?:SKU|STYLE(?:\s*(?:NO|CODE|#))?|ARTICLE|ART(?:ICOLO)?\.?|ITEM(?:\s*(?:NO|#))?|COD(?:ICE)?\.?\s*ART(?:ICOLO)?\.?)[\s:=-]*([A-Z0-9][A-Z0-9-]{4,22})/i);
+        if (labeled) candidates.push(labeled[1]);
+      }
+      for (const candidate of candidates) {
+        const sku = normalizeSku(candidate);
+        if (/[A-Z]/.test(sku) && /\d/.test(sku) && !/^\d{8,14}$/.test(sku)) return sku;
+      }
+      return '';
+    }
+
+    async function runShoeOCR(mode, automatic = false) {
+      const src = imagesByMode[mode];
+      const status = document.getElementById(mode + 'OcrStatus');
+      const button = document.getElementById(mode + 'OcrButton');
+      const output = document.getElementById(mode + 'OcrText');
+      const skuPanel = document.getElementById(mode + 'OcrSkuPanel');
+      if (!src) { status.textContent = 'Carica prima una fotografia dell’etichetta.'; return; }
+      if (button.disabled) return;
+      const sourceAtStart = src;
+      button.disabled = true;
+      output.classList.add('hidden');
+      skuPanel.classList.add('hidden');
+      try {
+        status.textContent = 'Caricamento motore OCR...';
+        const engine = await loadShoeOcr();
+        status.textContent = 'Lettura del testo in corso...';
+        const worker = await engine.createWorker('eng');
+        let result;
+        try { result = await worker.recognize(src); }
+        finally { await worker.terminate(); }
+        if (imagesByMode[mode] !== sourceAtStart) return;
+        const text = (result.data?.text || '').trim();
+        output.value = text;
+        output.classList.remove('hidden');
+        const sku = suggestSkuFromOcr(text);
+        if (sku) {
+          document.getElementById(mode + 'OcrSku').value = sku;
+          skuPanel.classList.remove('hidden');
+        }
+        status.textContent = text ? (sku ? 'Testo letto. Controlla il codice suggerito prima di applicarlo.' : 'Testo letto. Nessuno SKU sicuro individuato; verifica il testo manualmente.') : 'Nessun testo riconosciuto: riprova con una foto più nitida.';
+        if (automatic && sku) status.textContent = 'OCR: possibile SKU ' + sku + '. Controlla l’etichetta e premi Usa SKU per confermarlo.';
+      } catch (error) {
+        status.textContent = 'OCR non disponibile: ' + error.message + '. Gemini continua a funzionare normalmente.';
+      } finally { button.disabled = false; }
+    }
+
+    function applyOcrSku(mode) {
+      const sku = normalizeSku(document.getElementById(mode + 'OcrSku').value);
+      if (!sku || !/[A-Z]/.test(sku) || !/\d/.test(sku)) { alert('Verifica il codice articolo prima di utilizzarlo.'); return; }
+      if (mode === 'add') {
+        const input = document.getElementById('addSku');
+        if (input.value && normalizeSku(input.value) !== sku && !confirm('Sostituire lo SKU già individuato da Gemini?')) return;
+        input.value = sku;
+      } else {
+        if (!lastCheckedCandidate) { alert('Completa prima il riconoscimento della scarpa con Gemini, poi applica lo SKU OCR.'); return; }
+        if (lastCheckedCandidate.sku && normalizeSku(lastCheckedCandidate.sku) !== sku && !confirm('Sostituire lo SKU rilevato da Gemini?')) return;
+        const candidate = { ...lastCheckedCandidate, sku };
+        evaluatePurchase(candidate);
+      }
+      document.getElementById(mode + 'OcrStatus').textContent = 'SKU applicato. Verifica che corrisponda all’etichetta originale.';
+    }
+
+    function resizeImage(file, maxWidth, callback) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const scale = Math.min(1, maxWidth / Math.max(width, height));
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          callback(canvas.toDataURL('image/jpeg', 0.68));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // dHash: firma percettiva compatta, calcolata solo in memoria.
+    // Confronta l'aspetto complessivo delle foto, non l'identità del modello.
+    function visualHashFromPixels(pixels, width = 9, height = 8) {
+      const gray = [];
+      for (let y = 0; y < height; y++) {
+        const row = [];
+        for (let x = 0; x < width; x++) {
+          const offset = (y * width + x) * 4;
+          row.push(pixels[offset] * 0.299 + pixels[offset + 1] * 0.587 + pixels[offset + 2] * 0.114);
+        }
+        gray.push(row);
+      }
+      let hash = '';
+      for (let y = 0; y < height; y++) for (let x = 0; x < width - 1; x++) hash += gray[y][x] > gray[y][x + 1] ? '1' : '0';
+      return hash;
+    }
+
+    function visualHashDistance(a, b) {
+      if (typeof a !== 'string' || typeof b !== 'string' || a.length !== 64 || b.length !== 64) return 64;
+      let distance = 0;
+      for (let i = 0; i < 64; i++) if (a[i] !== b[i]) distance++;
+      return distance;
+    }
+
+    function imageVisualHash(src) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 9;
+            canvas.height = 8;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            ctx.drawImage(image, 0, 0, 9, 8);
+            resolve(visualHashFromPixels(ctx.getImageData(0, 0, 9, 8).data));
+          } catch (error) { reject(error); }
+        };
+        image.onerror = () => reject(new Error('Impossibile leggere una fotografia.'));
+        image.src = src;
+      });
+    }
+
+    let activeVisualRun = 0;
+    let latestVisualMatches = [];
+    const visualHashCache = new Map();
+    function cachedVisualHash(src) {
+      if (!visualHashCache.has(src)) {
+        if (visualHashCache.size > 350) visualHashCache.clear();
+        const task = imageVisualHash(src);
+        visualHashCache.set(src, task);
+        task.catch(() => visualHashCache.delete(src));
+      }
+      return visualHashCache.get(src);
+    }
+    async function findVisuallySimilarShoes() {
+      const status = document.getElementById('visualSearchStatus');
+      const output = document.getElementById('visualSearchResults');
+      const runId = activeVisualRun;
+      const src = imagesByMode.check;
+      latestVisualMatches = [];
+      output.replaceChildren();
+      if (!src) { status.textContent = 'Prima scatta o carica una fotografia nella sezione Ricerche.'; return; }
+      if (!shoes.length) { status.textContent = 'L’archivio è vuoto.'; return; }
+      status.textContent = 'Confronto visivo in corso...';
+      try {
+        const queryHash = await cachedVisualHash(src);
+        const found = [];
+        let skipped = 0;
+        // Yield periodicamente per mantenere reattiva l'interfaccia mobile.
+        for (let index = 0; index < shoes.length; index++) {
+          const shoe = shoes[index];
+          let best = 64;
+          if (runId !== activeVisualRun) return;
+          for (const photo of shoePhotos(shoe)) {
+            try {
+              const distance = visualHashDistance(queryHash, await cachedVisualHash(photo));
+              best = Math.min(best, distance);
+            } catch { skipped++; }
+          }
+          if (best <= 18) found.push({ shoe, distance: best });
+          if (index % 8 === 7) {
+            status.textContent = 'Confrontate ' + (index + 1) + ' di ' + shoes.length + ' scarpe...';
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+        if (runId !== activeVisualRun) return;
+        found.sort((a, b) => a.distance - b.distance);
+        latestVisualMatches = found.slice(0, 8);
+        const matches = latestVisualMatches;
+        status.textContent = matches.length
+          ? matches.length + ' possibili somiglianze visive, da verificare.' + (skipped ? ' Alcune foto non sono state lette.' : '')
+          : 'Nessuna fotografia sufficientemente simile trovata.' + (skipped ? ' Alcune foto non sono state lette.' : '');
+        if (lastCheckedCandidate && imagesByMode.check === src && runId === activeVisualRun) evaluatePurchase(lastCheckedCandidate);
+        else if (imagesByMode.check === src && runId === activeVisualRun) document.getElementById('recognitionProgress').textContent = 'Confronto fotografico pronto. Gemini sta identificando la scarpa...';
+        if (runId !== activeVisualRun) return;
+        for (const { shoe, distance } of matches) {
+          const row = document.createElement('div');
+          row.className = 'flex gap-3 items-center rounded-xl bg-slate-950 border border-slate-700 p-2';
+          const img = document.createElement('img');
+          img.src = shoe.image || shoePhotos(shoe)[0];
+          img.alt = 'Foto scarpa';
+          img.className = 'w-16 h-16 rounded-lg object-cover';
+          const details = document.createElement('div');
+          details.className = 'flex-1 min-w-0';
+          const name = document.createElement('p');
+          name.className = 'text-xs font-bold text-white break-words';
+          name.textContent = [shoe.brand, shoe.model].filter(Boolean).join(' ') || 'Scarpa senza nome';
+          const desc = document.createElement('p');
+          desc.className = 'text-[11px] text-slate-400';
+          desc.textContent = distance <= 5 ? 'Foto molto simile' : distance <= 11 ? 'Foto simile' : 'Somiglianza possibile';
+          details.append(name, desc);
+          const view = document.createElement('button');
+          view.type = 'button';
+          view.className = 'px-3 py-2 bg-indigo-600 rounded-lg text-xs font-bold text-white';
+          view.textContent = 'Modifica';
+          view.onclick = () => openEditShoeModal(shoe.id);
+          row.append(img, details, view);
+          output.appendChild(row);
+        }
+      } catch (error) { if (runId === activeVisualRun) status.textContent = 'Confronto non riuscito: ' + error.message; }
+    }
+
+    function handleImageSelected(input, mode) {
+      const file = input.files[0];
+      if (!file) return;
+
+      resizeImage(file, 560, async (base64Url) => {
+        selectedImageBase64 = base64Url;
+        imagesByMode[mode] = base64Url;
+        if (mode === 'check') { activeVisualRun++; latestVisualMatches = []; lastCheckedCandidate = null; document.getElementById('checkResultContainer').classList.add('hidden'); document.getElementById('visualSearchResults').replaceChildren(); document.getElementById('visualSearchStatus').textContent = ''; document.getElementById('recognitionProgress').textContent = 'Confronto fotografico avviato. Riconoscimento Gemini in corso...'; void findVisuallySimilarShoes(); }
+        document.getElementById(mode + 'OcrText').value = '';
+        document.getElementById(mode + 'OcrText').classList.add('hidden');
+        document.getElementById(mode + 'OcrSkuPanel').classList.add('hidden');
+        document.getElementById(mode + 'OcrStatus').textContent = '';
+        document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
+
+        if (mode === 'add') {
+          document.getElementById('addPreviewImg').src = base64Url;
+          document.getElementById('addPreviewImg').classList.remove('hidden');
+          document.getElementById('addPlaceholder').classList.add('hidden');
+          document.getElementById('addScanningAnim').classList.remove('hidden');
+          try {
+            await analyzeShoeWithGemini(base64Url, 'add');
+          } finally {
+            document.getElementById('addScanningAnim').classList.add('hidden');
+          }
+        } else if (mode === 'check') {
+          document.getElementById('checkPreviewImg').src = base64Url;
+          document.getElementById('checkPreviewImg').classList.remove('hidden');
+          document.getElementById('checkPlaceholder').classList.add('hidden');
+          document.getElementById('checkScanningAnim').classList.remove('hidden');
+          // Keep the local photographic report visible.
+          try {
+            await analyzeShoeWithGemini(base64Url, 'check');
+          } finally {
+            document.getElementById('checkScanningAnim').classList.add('hidden');
+          }
+        }
+      });
+      input.value = '';
+    }
+
+    function retryAnalysis(mode) {
+      if (!imagesByMode[mode]) {
+        alert("Nessuna immagine da riprovare. Carica nuovamente la foto.");
+        return;
+      }
+      document.getElementById(`${mode}ErrorOverlay`).classList.add('hidden');
+      document.getElementById(`${mode}ScanningAnim`).classList.remove('hidden');
+      if (mode === 'check') document.getElementById('recognitionProgress').textContent = 'Nuovo tentativo Gemini in corso...';
+
+      analyzeShoeWithGemini(imagesByMode[mode], mode).finally(() => {
+        document.getElementById(`${mode}ScanningAnim`).classList.add('hidden');
+      });
+    }
+
+    async function analyzeShoeWithGemini(base64Data, targetMode) {
+      const apiKey = sessionStorage.getItem('scava_gemini_api_key');
+      const cleanBase64 = base64Data.split(',')[1];
+      const analysisKey = targetMode + ':' + (apiKey || '').slice(-8) + ':' + base64Data.length + ':' + base64Data.slice(-96);
+      if (geminiPending.has(analysisKey)) return geminiPending.get(analysisKey);
+      if (geminiResultCache.has(analysisKey)) {
+        if (imagesByMode[targetMode] === base64Data) applyAIData(geminiResultCache.get(analysisKey), targetMode);
+        return;
+      }
+      const pending = performGeminiAnalysis(base64Data, targetMode, apiKey, cleanBase64, analysisKey);
+      geminiPending.set(analysisKey, pending);
+      try { return await pending; } finally { geminiPending.delete(analysisKey); }
+    }
+    const geminiPending = new Map();
+    const geminiResultCache = new Map();
+    async function performGeminiAnalysis(base64Data, targetMode, apiKey, cleanBase64, analysisKey) {
+      const statusEl = document.getElementById(`${targetMode}ScanStatus`);
+      const errorTextEl = document.getElementById(`${targetMode}ErrorText`);
+
+      if (!apiKey) {
+        const errorEl = document.getElementById(targetMode + 'ErrorText');
+        if (errorEl) errorEl.textContent = 'Chiave Gemini mancante. Apri Sistema → Imposta AI per configurarla.';
+        openApiKeyModal();
+        return;
+      }
+
+      const promptInstructions = `Sei un esperto di scarpe e di etichette di scatole. Leggi PRIMA tutte le scritte visibili sull'etichetta, incluse le diciture in inglese, i codici prodotto, i codici colore e il nome della colorway. Poi considera l'aspetto della scarpa, se visibile. Non inventare informazioni non leggibili. Rispondi SOLO con un oggetto JSON con queste chiavi:
+"marca": marca riportata sulla scatola (stringa, vuota se sconosciuta);
+"modello": nome commerciale esatto e versione, se leggibile (stringa);
+"categoria": una tra "Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro";
+"colori": elenco dei colori della variante, separati da virgola, traducendo i nomi in italiano se possibile (stringa);
+"sku": codice articolo del produttore (style code), NON EAN, UPC o seriale; vuoto se non leggibile (stringa);
+"note": altri dettagli dell'etichetta (stringa);
+"confidence": "alta", "media" o "bassa" secondo la leggibilità reale;
+"uncertainFields": elenco JSON dei nomi dei campi non certi.
+Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice colore è alfanumerico, non confonderlo con il colore visivo. Se un dato è incerto, lascialo vuoto.`;
+      const requestBody = {
+        contents: [{ parts: [{ text: promptInstructions }, { inlineData: { mimeType: 'image/jpeg', data: cleanBase64 } }] }],
+        generationConfig: { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 1600 }
+      };
+      let modelsToTry = [];
+      let lastErrorMsg = "";
+      const preferredFastModel = 'gemini-2.5-flash-lite';
+      const cacheKey = 'scava_gemini_models_v9';
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 86400000) {
+          modelsToTry = cached.models;
+        } else {
+          if (statusEl) statusEl.textContent = 'Ricerca rapida del modello AI...';
+          const lc = new AbortController(); const lt = setTimeout(() => lc.abort(), 6000); let listing; try { listing = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {signal:lc.signal, headers: {'x-goog-api-key': apiKey}}); } finally {clearTimeout(lt);}
+          const catalog = await listing.json();
+          if (!listing.ok) throw new Error(catalog.error?.message || 'Impossibile ottenere i modelli Gemini.');
+          const supported = (catalog.models || []).filter(model =>
+            (model.supportedGenerationMethods || []).includes('generateContent') &&
+            /gemini/i.test(model.name || '') &&
+            !/embedding|tts|audio|image-generation|robotics|live|preview|image|transcribe|computer-use|nano-banana|omni/i.test(model.name || '')
+          );
+          const preference = name => {
+            if (/gemini-2\.5-flash-lite$/.test(name)) return 0;
+            if (/gemini-2\.5-flash$/.test(name)) return 1;
+            if (/flash/i.test(name)) return 2;
+            return 3;
+          };
+          modelsToTry = supported.sort((a,b) => preference(a.name)-preference(b.name))
+            .map(model => model.name.replace(/^models\//, ''));
+          if (!modelsToTry.length) throw new Error('Nessun modello Gemini generateContent disponibile per questa chiave.');
+          localStorage.setItem(cacheKey, JSON.stringify({keyHint: apiKey.slice(-6), time: Date.now(), models: modelsToTry}));
+        }
+        const recentSuccess = localStorage.getItem('scava_gemini_last_success_v2');
+        const firstModel = recentSuccess && modelsToTry.includes(recentSuccess) ? recentSuccess : preferredFastModel;
+        modelsToTry = [...new Set([firstModel, preferredFastModel, ...modelsToTry])].slice(0, 4);
+      } catch (listingError) {
+        lastErrorMsg = listingError.message; modelsToTry = [preferredFastModel, 'gemini-2.5-flash'];
+      }
+
+      for (let i = 0; i < modelsToTry.length; i++) {
+        const currentModel = modelsToTry[i];
+        if (statusEl) statusEl.textContent = i === 0 ? "Analisi con Gemini AI..." : `Tentativo con modello alternativo (${i + 1}/${modelsToTry.length})...`;
+
+        // Max 2 tentativi per singolo modello in caso di sovraccarico temporaneo (503/429)
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 22000);
+
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+              signal: controller.signal,
+              body: JSON.stringify({ ...requestBody, generationConfig: { ...requestBody.generationConfig, ...(/gemini-2\\.5/.test(currentModel) ? { thinkingConfig: { thinkingBudget: 0 } } : {}) } })
+            });
+
+            clearTimeout(timeoutId);
+            const data = await response.json();
+
+            if (data.error) {
+              const code = data.error.code;
+              lastErrorMsg = data.error.message;
+              if (/no longer available|not found|not supported/i.test(lastErrorMsg)) {
+                lastErrorMsg = currentModel + ': ' + data.error.message;
+              } else if (code === 429) {
+                lastErrorMsg = 'Limite di richieste Gemini raggiunto. Attendi il ripristino della quota o verifica il piano in Google AI Studio.';
+              } else if (code === 403 || code === 401) {
+                lastErrorMsg = 'Chiave API non autorizzata. Controlla la chiave in Imposta AI.';
+              }
+
+              // 503 (Unavailable), 429 (Too Many Requests) o 500 sono errori transitori
+              if ([503, 500, 429].includes(code)) {
+                if (attempt === 0) {
+                  const delay = (1000 * Math.pow(2, attempt)) + (Math.random() * 500); // Backoff esponenziale con jitter
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  continue;
+                }
+                break; // Passa al modello successivo
+              }
+              break; // Passa al modello successivo, se disponibile
+            }
+
+            const rawText = (data.candidates?.[0]?.content?.parts || []).map(part => part.text || '').join('');
+            if (!rawText) {
+              lastErrorMsg = "L'AI non ha rilevato informazioni. Prova con una foto più nitida.";
+              break;
+            }
+
+            let parsed;
+            try {
+              const cleaned = rawText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+              let result;
+              try { result = JSON.parse(cleaned); }
+              catch (e) { const start = cleaned.indexOf('{'); const end = cleaned.lastIndexOf('}'); if (start < 0 || end <= start) throw e; result = JSON.parse(cleaned.slice(start, end + 1)); }
+              if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('JSON non valido');
+              const str = value => typeof value === 'string' ? value.trim() : Array.isArray(value) ? value.join(', ') : '';
+              const allowed = ["Sport / Running", "Sneakers", "Eleganti", "Stivali", "Casual / Altro"];
+              parsed = {
+                marca: str(result.marca || result.brand),
+                modello: str(result.modello || result.model),
+                categoria: allowed.find(cat => cat.toLowerCase() === str(result.categoria).toLowerCase()) || 'Casual / Altro',
+                colori: str(result.colori || result.colore || result.colors),
+                note: str(result.note),
+                sku: str(result.sku || result.codice_articolo || result.style_code),
+                confidence: ['alta','media','bassa'].includes(str(result.confidence).toLowerCase())?str(result.confidence).toLowerCase():'bassa',
+                uncertainFields: Array.isArray(result.uncertainFields)?result.uncertainFields.filter(x=>typeof x==='string').slice(0,5):[]
+              };
+            } catch (parseError) {
+              lastErrorMsg = 'Risposta Gemini incompleta o non valida. Provo un altro modello.';
+              continue;
+            }
+            if (!parsed.marca && !parsed.modello && !parsed.colori) {
+              lastErrorMsg = 'Nessuna informazione leggibile sulla scatola. Fotografa da vicino l’etichetta.';
+              break;
+            }
+            localStorage.setItem('scava_gemini_last_success_v2', currentModel);
+            if (geminiResultCache.size > 15) geminiResultCache.clear();
+            geminiResultCache.set(analysisKey, parsed);
+            if (imagesByMode[targetMode] !== base64Data) return;
+            applyAIData(parsed, targetMode);
+            if (targetMode === 'check') document.getElementById('recognitionProgress').textContent = 'Riconoscimento completato. Controlla il risultato e premi Memorizza se desideri.';
+            return; // Successo, interrompe il ciclo
+
+          } catch (err) {
+            lastErrorMsg = err.name === 'AbortError' ? 'Il modello ' + currentModel + ' non ha risposto entro 22 secondi.' : err.message;
+            // Retry is user initiated.
+          }
+        }
+      }
+
+      // Se tutti i tentativi falliscono, mostra l'overlay di errore
+      if (errorTextEl) {
+        errorTextEl.textContent = /high demand|overloaded|sovraccaric/i.test(lastErrorMsg) 
+          ? "I server AI di Google sono momentaneamente sovraccarichi. Attendi qualche secondo e riprova." 
+          : `Errore: ${lastErrorMsg}`;
+      }
+      if (targetMode === 'check') { const progress = document.getElementById('recognitionProgress'); if (progress) progress.textContent = 'Identificazione AI non riuscita. Il confronto fotografico resta disponibile.'; document.getElementById('checkResultContainer').classList.remove('hidden'); }
+      document.getElementById(`${targetMode}ErrorOverlay`).classList.remove('hidden');
+    }
+
+    function showRecognitionConfidence(data,mode){
+      const el=document.getElementById(mode+'AiStatus');if(!el)return;
+      const confidence=String(data.confidence||'bassa').toLowerCase();
+      const unknown=Array.isArray(data.uncertainFields)?data.uncertainFields.filter(x=>typeof x==='string').slice(0,5):[];
+      el.textContent='Identificazione AI: affidabilità stimata '+confidence+'. '+(unknown.length?'Controlla: '+unknown.join(', ')+'.':'Verifica sempre marca, modello, colori e SKU prima di salvare.');
+    }
+    function applyAIData(data, targetMode) {
+      showRecognitionConfidence(data,targetMode);
+      const brand = data.marca || '';
+      const model = data.modello || '';
+      const category = data.categoria || 'Sport / Running';
+      const notes = data.note || '';
+      const sku = normalizeSku(data.sku);
+      const colorsStr = data.colori || '';
+
+      if (targetMode === 'add') {
+        document.getElementById('addBrand').value = brand;
+        document.getElementById('addModel').value = model;
+        document.getElementById('addCategory').value = category;
+        document.getElementById('addColors').value = colorsStr;
+        document.getElementById('addNotes').value = notes;
+        document.getElementById('addSku').value = sku;
+        updateAddDuplicateNotice();
+        if (!sku && !brand && !model && imagesByMode.add && !document.getElementById('addOcrText').value) {
+          document.getElementById('addOcrStatus').textContent = 'SKU non rilevato: controllo OCR complementare in corso...';
+          void runShoeOCR('add', true);
+        }
+      } else if (targetMode === 'check') {
+        evaluatePurchase({
+          brand: brand,
+          model: model,
+          category: category,
+          colors: colorsStr.split(',').map(c => c.trim()),
+          image: imagesByMode.check,
+          sku,
+          notes
+        });
+        if (!sku && !brand && !model && imagesByMode.check && !document.getElementById('checkOcrText').value) {
+          document.getElementById('checkOcrStatus').textContent = 'SKU non rilevato: controllo OCR in corso...';
+          void runShoeOCR('check', true);
+        }
+      }
+    }
+
+    function readShoePurchaseFields(prefix) {
+      const rawPrice = document.getElementById(prefix + 'ShoePrice').value;
+      const price = rawPrice === '' ? null : Number(rawPrice);
+      return {size:document.getElementById(prefix + 'ShoeSize').value.trim().slice(0,20),price:Number.isFinite(price)&&price>=0?price:null,purchaseDate:document.getElementById(prefix + 'PurchaseDate').value,store:document.getElementById(prefix + 'ShoeStore').value.trim().slice(0,120)};
+    }
+    function saveShoe(e) {
+      e.preventDefault();
+      const rawColors = document.getElementById('addColors').value;
+      const colorsArray = rawColors.split(',').map(c => c.trim()).filter(Boolean);
+      const brand = document.getElementById('addBrand').value.trim();
+      const model = document.getElementById('addModel').value.trim();
+
+      const newShoe = {
+        id: Date.now().toString(),
+        brand: brand,
+        model: model,
+        category: document.getElementById('addCategory').value,
+        colors: colorsArray.length > 0 ? colorsArray : ['N/D'],
+        notes: document.getElementById('addNotes').value.trim(),
+        sku: normalizeSku(document.getElementById('addSku').value),
+        collections: [],
+        image: imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'),
+        images: [imagesByMode.add || createShoeSvgBase64(brand, model, '#1e293b'), ...addExtraImages].slice(0, 5),
+        createdAt: new Date().toISOString(),
+        dateAdded: new Date().toISOString().split('T')[0],
+        ...readShoePurchaseFields('add')
+      };
+
+      const duplicates = getAddDuplicates();
+      if (duplicates.length && !confirm('Possibile doppione: ' + duplicates.slice(0, 2).map(shoe => shoe.brand + ' ' + shoe.model).join(', ') + '. Vuoi aggiungere comunque un altro paio?')) return;
+      shoes.unshift(newShoe);
+      saveToStorage();
+
+      document.getElementById('addShoeForm').reset();
+      updateAddDuplicateNotice();
+      document.getElementById('addPreviewImg').classList.add('hidden');
+      document.getElementById('addPlaceholder').classList.remove('hidden');
+      document.getElementById('addErrorOverlay').classList.add('hidden');
+      selectedImageBase64 = null;
+      imagesByMode.add = null;
+      addExtraImages = [];
+      document.getElementById('addExtraPhotosInput').value = '';
+      renderPhotoThumbnails('add');
+      showToast('Scarpa salvata nell’archivio.');
+      switchTab('archive');
+    }
+
+    let lastCheckedCandidate = null;
+
+    function addComparedShoe() {
+      const candidate = lastCheckedCandidate || {};
+      const photo = imagesByMode.check;
+      if (!photo) { showToast('Scatta prima una foto nella pagina Confronta.'); return; }
+      document.getElementById('addShoeForm').reset();
+      addExtraImages = [];
+      imagesByMode.add = photo;
+      selectedImageBase64 = photo;
+      document.getElementById('addPreviewImg').src = photo;
+      document.getElementById('addPreviewImg').classList.remove('hidden');
+      document.getElementById('addPlaceholder').classList.add('hidden');
+      document.getElementById('addBrand').value = candidate.brand || '';
+      document.getElementById('addModel').value = candidate.model || '';
+      document.getElementById('addColors').value = Array.isArray(candidate.colors) ? candidate.colors.join(', ') : (candidate.colors || '');
+      document.getElementById('addSku').value = candidate.sku || '';
+      document.getElementById('addNotes').value = candidate.notes || '';
+      const category = document.getElementById('addCategory');
+      if (candidate.category && [...category.options].some(option => option.value === candidate.category)) category.value = candidate.category;
+      renderPhotoThumbnails('add');
+      updateAddDuplicateNotice();
+      switchTab('add');
+    }
+
+    function completeCheckedShoe() {
+      if (!lastCheckedCandidate) return;
+      const brand = prompt('Marca della scarpa:', lastCheckedCandidate.brand || '');
+      if (brand === null) return;
+      const model = prompt('Modello della scarpa (puoi indicare "Modello sconosciuto"):', lastCheckedCandidate.model || '');
+      if (model === null) return;
+      const colors = prompt('Colori, separati da virgola:', Array.isArray(lastCheckedCandidate.colors) ? lastCheckedCandidate.colors.join(', ') : (lastCheckedCandidate.colors || ''));
+      if (colors === null) return;
+      const sku = prompt('Codice articolo / SKU (facoltativo):', lastCheckedCandidate.sku || '');
+      if (sku === null) return;
+      const updated = { ...lastCheckedCandidate, brand: brand.trim(), model: model.trim(), sku: normalizeSku(sku), colors: colors.split(',').map(c => c.trim()).filter(Boolean) };
+      if (!updated.brand || !updated.model || !updated.colors.length) {
+        alert('Compila tutti i campi prima di salvare.');
+        return;
+      }
+      evaluatePurchase(updated);
+      saveCheckedShoe();
+    }
+
+    function saveCheckedShoe() {
+      const candidate = lastCheckedCandidate;
+      if (!candidate) return;
+      const brand = String(candidate.brand || '').trim();
+      const model = String(candidate.model || '').trim();
+      const colors = (Array.isArray(candidate.colors) ? candidate.colors : String(candidate.colors || '').split(','))
+        .map(color => String(color || '').trim()).filter(Boolean);
+      if (!brand || !model || !colors.length) {
+        alert('Completa marca, modello e colori prima di salvare.');
+        return;
+      }
+      const candidateSku = normalizeSku(candidate.sku);
+      const sameColors = (a, b) => a.map(canonicalShoeColor).sort().join('|') === b.map(canonicalShoeColor).sort().join('|');
+      const alreadyOwned = shoes.some(shoe => {
+        if (canonicalShoeBrand(shoe.brand) !== canonicalShoeBrand(brand)) return false;
+        return canonicalShoeModel(shoe.model) === canonicalShoeModel(model) &&
+          sameColors(Array.isArray(shoe.colors) ? shoe.colors : String(shoe.colors || '').split(','), colors);
+      });
+      if (alreadyOwned && !confirm('Questa scarpa è già presente nell’archivio. Vuoi aggiungere comunque un altro paio identico?')) return;
+      const newShoe = {
+        id: Date.now().toString(),
+        brand, model,
+        category: candidate.category || 'Casual / Altro',
+        colors,
+        notes: candidate.notes || '',
+        sku: normalizeSku(candidate.sku),
+        collections: [],
+        image: candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b'),
+        images: [candidate.image || imagesByMode.check || createShoeSvgBase64(brand, model, '#1e293b')],
+        createdAt: new Date().toISOString(),
+        dateAdded: new Date().toISOString().split('T')[0]
+      };
+      shoes.unshift(newShoe);
+      saveToStorage();
+      lastCheckedCandidate = null;
+      switchTab('archive');
+    }
+
+    function renderSideBySideComparison(candidate,existing){
+      const newImg=safeShoeImageUrl(candidate.image||imagesByMode.check||'');
+      const oldImg=safeShoeImageUrl(existing.image||'');
+      return '<div class="mt-3 grid grid-cols-2 gap-2"><div class="rounded-xl bg-slate-950 p-2"><p class="text-xs text-slate-300 mb-2">Da verificare</p><img src="'+newImg+'" alt="Scarpa da verificare" class="w-full aspect-square object-contain rounded-lg"><p class="text-xs mt-1">'+escapeHtml([candidate.brand,candidate.model].filter(Boolean).join(' '))+'</p></div><div class="rounded-xl bg-slate-950 p-2"><p class="text-xs text-slate-300 mb-2">Nel tuo archivio</p><img src="'+oldImg+'" alt="Scarpa già archiviata" class="w-full aspect-square object-contain rounded-lg"><p class="text-xs mt-1">'+escapeHtml([existing.brand,existing.model].filter(Boolean).join(' '))+'</p></div></div>';
+    }
+    function evaluatePurchase(candidate) {
+      const container = document.getElementById('checkResultContainer');
+      lastCheckedCandidate = null;
+      container.classList.remove('hidden');
+
+      const candColors = (Array.isArray(candidate.colors) ? candidate.colors : String(candidate.colors || '').split(',')).map(c => String(c).toLowerCase().trim()).filter(Boolean);
+      const candBrand = (candidate.brand || '').toLowerCase().trim();
+      const candModel = (candidate.model || '').toLowerCase().trim();
+
+      let exactMatches = [];
+      let highSimilarity = [];
+      let mediumSimilarity = [];
+
+      const normalizeColors = values => (Array.isArray(values) ? values : String(values || '').split(','))
+        .map(canonicalShoeColor).filter(Boolean).sort();
+      const sameColors = (a, b) => a.length > 0 && b.length > 0 &&
+        a.length === b.length && a.every((color, index) => color === b[index]);
+      const candidateColors = normalizeColors(candidate.colors);
+      const candidateBrand = canonicalShoeBrand(candidate.brand);
+      const candidateModel = canonicalShoeModel(candidate.model);
+      const candidateSku = normalizeSku(candidate.sku);
+      shoes.forEach(myShoe => {
+        const brandEqual = candidateBrand && canonicalShoeBrand(myShoe.brand) === candidateBrand;
+        const ownedSku = normalizeSku(myShoe.sku);
+        const skuEqual = Boolean(candidateSku && ownedSku && candidateSku === ownedSku);
+        const skuDifferent = Boolean(candidateSku && ownedSku && candidateSku !== ownedSku);
+        const modelEqual = candidateModel && canonicalShoeModel(myShoe.model) === candidateModel;
+        const ownedColors = normalizeColors(myShoe.colors);
+        const colorsEqual = sameColors(candidateColors, ownedColors);
+        const shared = candidateColors.filter(color => ownedColors.includes(color));
+        if (brandEqual && modelEqual && colorsEqual) {
+          exactMatches.push({ shoe: myShoe, reason: 'Stessa marca, modello e colori' });
+        } else if (brandEqual && skuEqual) {
+          highSimilarity.push({ shoe: myShoe, reason: 'Stesso SKU: verifica il modello e la colorazione' });
+        } else if (brandEqual && modelEqual) {
+          highSimilarity.push({ shoe: myShoe, reason: skuDifferent ? 'Stesso modello, SKU differente' : 'Stesso modello, colorazione differente' });
+        } else if (brandEqual && shared.length && myShoe.category === candidate.category) {
+          mediumSimilarity.push({ shoe: myShoe, reason: 'Stessa marca e alcuni colori in comune' });
+        }
+      });
+
+      const matchedIds = new Set([...exactMatches, ...highSimilarity, ...mediumSimilarity].map(m => String(m.shoe.id)));
+      latestVisualMatches.forEach(v => {
+        if (!matchedIds.has(String(v.shoe.id))) mediumSimilarity.push({ shoe: v.shoe, reason: 'Foto visivamente simile (non prova di doppione)' });
+      });
+      let status = {
+        border: 'border-emerald-500/40',
+        text: 'text-emerald-400',
+        bg: 'bg-emerald-500/20',
+        icon: 'fa-circle-check',
+        badge: 'NESSUNA CORRISPONDENZA RILEVATA',
+        title: 'Nessuna corrispondenza nei dati disponibili',
+        desc: 'Nessuna corrispondenza rilevata nei dati disponibili. Il confronto fotografico può essere ancora in corso e non esclude tutti i doppioni.'
+      };
+
+      if (!candidateBrand || !candidateModel || candidateColors.length === 0) {
+        status = { border: 'border-amber-500/40', text: 'text-amber-400', bg: 'bg-amber-500/20', icon: 'fa-circle-exclamation', badge: 'VERIFICA NECESSARIA', title: 'Identificazione incompleta', desc: 'Conferma marca, modello e colori prima di decidere.' };
+      } else if (exactMatches.length > 0) {
+        status = {
+          border: 'border-red-500/40',
+          text: 'text-red-400',
+          bg: 'bg-red-500/20',
+          icon: 'fa-triangle-exclamation',
+          badge: 'SCARPA GIÀ PRESENTE',
+          title: 'Ce l\'hai già nel tuo armadio!',
+          desc: 'Marca, modello e colori coincidono con una scarpa già memorizzata.'
+        };
+      } else if (highSimilarity.length > 0 || mediumSimilarity.length > 0) {
+        status = {
+          border: 'border-amber-500/40',
+          text: 'text-amber-400',
+          bg: 'bg-amber-500/20',
+          icon: 'fa-circle-exclamation',
+          badge: 'POSSIBILI CORRISPONDENZE',
+          title: 'Hai già scarpe simili nell’archivio',
+          desc: 'Sono presenti somiglianze nei dati o nelle fotografie. Controlla le corrispondenze prima di salvare.'
+        };
+      }
+
+      const allMatches = [...exactMatches, ...highSimilarity, ...mediumSimilarity];
+      const sideBySide=allMatches.length?renderSideBySideComparison(candidate,allMatches[0].shoe):'';
+      const incomplete = !candidateBrand || !candidateModel || candidateColors.length === 0;
+      const canSave = Boolean(imagesByMode.check);
+      const saveLevel = incomplete ? 'similar' : exactMatches.length ? 'identical' : (highSimilarity.length || mediumSimilarity.length ? 'similar' : 'new');
+      const saveButtonClass = saveLevel === 'identical'
+        ? 'bg-red-600 hover:bg-red-500 text-white'
+        : saveLevel === 'similar'
+          ? 'bg-orange-500 hover:bg-orange-400 text-slate-950'
+          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950';
+      const saveButtonText = 'Memorizza';
+      if (canSave) lastCheckedCandidate = { ...candidate, image: imagesByMode.check };
+      else lastCheckedCandidate = null;
+
+      container.innerHTML = `
+        <div class="bg-slate-900 border ${status.border} rounded-2xl p-4 shadow-xl">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl ${status.bg} ${status.text} flex items-center justify-center text-xl shrink-0">
+              <i class="fa-solid ${status.icon}"></i>
+            </div>
+            <div>
+              <span class="text-[10px] font-black uppercase tracking-wider ${status.text}">${status.badge}</span>
+              <h3 class="text-sm font-bold text-slate-100">${status.title}</h3>
+              <p class="text-xs text-slate-400 mt-0.5">${status.desc}</p>
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800">
+            <p class="text-[10px] text-slate-500 uppercase font-semibold">Scarpa valutata</p>
+            <p class="text-xs font-bold text-slate-200">${escapeHtml(candidate.brand || 'Marca n.d.')} - ${escapeHtml(candidate.model || 'Modello n.d.')}</p>
+            <p class="text-[11px] text-amber-400">Colori: ${escapeHtml(candColors.join(', ') || 'n.d.')}</p>
+            <p class="text-[11px] text-slate-300">SKU: ${escapeHtml(candidateSku || 'non rilevato')}</p>
+            <p class="text-[11px] text-slate-400 mt-1">Verifica incrociata: SKU, marca, modello, colori e fotografie. La somiglianza visiva da sola non prova un doppione.</p>
+          </div>
+
+          ${canSave ? `
+            <button type="button" onclick="addComparedShoe()" class="mt-4 w-full min-h-12 rounded-xl ${saveButtonClass} font-bold text-sm flex items-center justify-center gap-2 transition">
+              <i class="fa-solid fa-plus"></i> Aggiungi all’armadio
+            </button>
+            <p class="mt-2 text-[11px] text-slate-400 text-center">${incomplete ? 'Completa i dati nella schermata successiva. La foto sarà già inserita.' : saveLevel === 'identical' ? 'Scarpa già presente: per salvare un altro paio identico verrà richiesta conferma.' : saveLevel === 'similar' ? 'Sono presenti scarpe simili: puoi aggiungere comunque questa colorazione o modello.' : 'La foto verrà trasferita automaticamente al modulo di inserimento.'}</p>
+          ` : ''}
+
+          ${sideBySide}
+          ${allMatches.length > 0 ? `
+            <div class="mt-4 pt-3 border-t border-slate-800 space-y-2">
+              <p class="text-xs font-semibold text-slate-300">Confronto con le tue scarpe:</p>
+              ${allMatches.map(m => `
+                <div class="flex items-center gap-3 p-2 bg-slate-950/70 border border-slate-800 rounded-xl">
+                  <img src="${safeShoeImageUrl(m.shoe.image)}" class="w-12 h-12 object-cover rounded-lg border border-slate-800 shrink-0">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(m.shoe.brand)} ${escapeHtml(m.shoe.model)}</p>
+                    <p class="text-[11px] text-amber-300/90 truncate">${escapeHtml(m.reason)}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function openApiKeyModal() {
+      document.getElementById('apiKeyInput').value = sessionStorage.getItem('scava_gemini_api_key') || '';
+      document.getElementById('apiKeyInput').type = 'password';
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-pressed', 'false');
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-label', 'Mostra chiave API');
+      document.getElementById('apiKeyEyeIcon').className = 'fa-solid fa-eye';
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('apiKeyInput');
+      const visible = input.type === 'password';
+      input.type = visible ? 'text' : 'password';
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-pressed', String(visible));
+      document.getElementById('toggleApiKeyBtn').setAttribute('aria-label', visible ? 'Nascondi chiave API' : 'Mostra chiave API');
+      document.getElementById('apiKeyEyeIcon').className = visible ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    }
+    function closeApiKeyModal() { document.getElementById('apiKeyModal').classList.add('hidden'); }
+    function saveApiKey() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      if (!key) {
+        alert("Inserisci una chiave valida.");
+        return;
+      }
+      sessionStorage.setItem('scava_gemini_api_key', key);
+      updateKeyUI();
+      closeApiKeyModal();
+    }
+    async function testAiConnection() {
+      const key = document.getElementById('apiKeyInput').value.trim() || sessionStorage.getItem('scava_gemini_api_key');
+      const output = document.getElementById('aiTestResult');
+      const button = document.getElementById('testAiBtn');
+      output.classList.remove('hidden');
+      output.textContent = 'Verifica della chiave e dei modelli in corso...';
+      if (!key) { output.textContent = 'Inserisci prima una chiave API.'; return; }
+      button.disabled = true;
+      try {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': key } });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || 'Errore HTTP ' + response.status);
+        const models = (data.models || []).filter(m =>
+          (m.supportedGenerationMethods || []).includes('generateContent') &&
+          /gemini/i.test(m.name || '') &&
+          !/embedding|tts|audio|image-generation|robotics|live|preview|image|transcribe|computer-use|nano-banana|omni/i.test(m.name || '')
+        );
+        if (!models.length) { output.textContent = 'Chiave accettata, ma nessun modello Gemini compatibile con generateContent.'; return; }
+        output.textContent = 'Chiave accettata. Modelli candidati:\n' + models.map(m => '• ' + m.name.replace('models/', '')).join('\n') + '\n\nVerifica generazione e comprensione immagini...';
+        // Pixel PNG 1x1 di prova: controlla la capacità di elaborare un input immagine.
+        const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/mXcAAAAASUVORK5CYII=';
+        let errors = [];
+        let working = '';
+        for (const m of models.slice(0, 6)) {
+          const test = await fetch('https://generativelanguage.googleapis.com/v1beta/' + m.name + ':generateContent', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'Descrivi brevemente questa immagine.' }, { inlineData: { mimeType: 'image/png', data: tinyPng } }] }], generationConfig: { maxOutputTokens: 60 } })
+          });
+          const result = await test.json();
+          if (test.ok && (result.candidates || []).some(c => (c.content?.parts || []).some(p => typeof p.text === 'string' && p.text.trim()))) { working = m.name.replace('models/', ''); sessionStorage.setItem('scava_gemini_last_success', working); break; }
+          errors.push(m.name.replace('models/', '') + ': ' + (result.error?.message || 'Risposta senza contenuto').slice(0, 130));
+        }
+        output.textContent = working
+          ? 'Connessione e analisi immagini riuscite.\nModello funzionante: ' + working + '\n\nPuoi riprovare a fotografare la scatola.'
+          : 'Chiave riconosciuta, ma nessun modello ha superato il test immagini.\n' + errors.join('\n');
+      } catch (error) {
+        output.textContent = 'Test non riuscito: ' + error.message;
+      } finally { button.disabled = false; }
+    }
+    function clearApiKey() {
+      sessionStorage.removeItem('scava_gemini_api_key');
+      localStorage.removeItem('gemini_account_email');
+      document.getElementById('apiKeyInput').value = '';
+      updateKeyUI();
+      closeApiKeyModal();
+    }
+    function updateKeyUI() {
+      const key = sessionStorage.getItem('scava_gemini_api_key');
+      const label = document.getElementById('keyLabel');
+      const btn = document.getElementById('keyStatusBtn');
+      updatePhotoAiStatus();
+      if (key) {
+        label.textContent = 'AI Attiva';
+        btn.classList.add('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.remove('text-amber-400');
+      } else {
+        label.textContent = 'Imposta AI';
+        btn.classList.remove('text-emerald-400', 'border-emerald-500/40');
+        btn.classList.add('text-amber-400');
+      }
+    }
+  </script>
+
+  <script>
+    // Catalogo statico selezionato dal feed Awin Cisalfa: nessuna chiave API è pubblicata.
+    (async () => { // data-awin-import
+      const catalogProducts = [];
+      // Confronta soltanto prodotti identificabili come la stessa variante.
+      // Se il feed contiene un EAN/GTIN o uno SKU globale, usa quello; altrimenti
+      // richiedi una corrispondenza esatta del nome normalizzato (incluso colore).
+      const normalize = value => String(value || '').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
+      const productKey = product => {
+        // Identificativi della variante commerciale; SKU del rivenditore non è globale.
+        const id = normalize(product.gtin || product.ean || product.globalId);
+        const color = normalize(product.color || product.colour || '');
+        const size = normalize(product.size || '');
+        const variant = color || size ? '|color:' + color + '|size:' + size : '';
+        return id ? 'id:' + id + variant : 'name:' + normalize(product.name) + variant;
+      };
+      const numericPrice = product => {
+        const raw = String(product.price || '').replace(/[^\d,.]/g, '');
+        const decimal = raw.lastIndexOf(',') > raw.lastIndexOf('.')
+          ? raw.replace(/\./g, '').replace(',', '.')
+          : raw.replace(/,/g, '');
+        const value = Number(decimal);
+        return Number.isFinite(value) && value > 0 ? value : Infinity;
+      };
+      let products = catalogProducts;
+      try {
+        const response = await fetch('./catalogo-scava.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Catalogo non disponibile');
+        const imported = await response.json();
+        if (Array.isArray(imported) && imported.length) {
+          products = imported.filter(item => item && typeof item.name === 'string' &&
+            typeof item.merchant === 'string' && typeof item.url === 'string' &&
+            /^https:\/\//i.test(item.url) && typeof item.image === 'string' &&
+            /^https:\/\//i.test(item.image) && Number.isFinite(numericPrice(item)));
+        }
+      } catch (error) { console.warn('Catalogo Awin di riserva.', error); }
+      // Anche il catalogo esterno viene confrontato: per ogni variante rimane il prezzo minore.
+      const cheapestByProduct = new Map();
+      for (const product of products) {
+        const key = productKey(product);
+        const current = cheapestByProduct.get(key);
+        if (!current || numericPrice(product) < numericPrice(current)) cheapestByProduct.set(key, product);
+      }
+      products = [...cheapestByProduct.values()];
+      // Esclude i listini disattivati anche dopo un nuovo aggiornamento del catalogo Awin.
+
+      const shuffle = items => {
+        for (let i = items.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [items[i], items[j]] = [items[j], items[i]];
+        }
+        return items;
+      };
+      const slot = document.getElementById('cisalfaProducts');
+      if (!slot) return;
+      if (!products.length) {
+        const ad = document.getElementById('affiliateAdSlot');
+        if (ad) ad.classList.add('hidden');
+        const promotionsStatus = document.getElementById('promotionsStatus');
+        if (promotionsStatus) promotionsStatus.textContent = 'Nessuna promozione disponibile.';
+        return;
+      }
+      const bannerBands = [
+        shuffle(products.filter(product => numericPrice(product) < 50)),
+        shuffle(products.filter(product => {
+          const price = numericPrice(product);
+          return Number.isFinite(price) && price >= 50;
+        }))
+      ];
+      const pageCount = bannerBands.every(band => band.length)
+        ? Math.max(...bannerBands.map(band => band.length)) : 1;
+      const bannerProducts = pageIndex => bannerBands
+        .filter(band => band.length)
+        .map(band => band[pageIndex % band.length]);
+      let page = 0;
+      const createCard = (product) => {
+        const card = document.createElement('a');
+        card.href = /^https:\/\//i.test(String(product.url || '')) ? product.url : '#';
+        card.dataset.productUrl = product.url;
+        card.target = '_blank';
+        card.rel = 'sponsored noopener noreferrer';
+        card.className = 'cisalfa-product-card';
+        const img = document.createElement('img');
+        img.src = /^https:\/\//i.test(String(product.image || '')) ? product.image : '';
+        img.alt = product.name;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('error', () => {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'aspect-square rounded-xl bg-slate-100 grid place-items-center p-2 text-center text-xs text-slate-600';
+          placeholder.textContent = 'Foto non disponibile';
+          img.replaceWith(placeholder);
+        }, { once: true });
+        const name = document.createElement('span');
+        name.className = 'cisalfa-product-name';
+        name.textContent = product.name;
+        const price = document.createElement('strong');
+        price.className = 'cisalfa-product-price';
+        price.textContent = product.price + ' €';
+        const merchant = document.createElement('span');
+        merchant.className = 'text-[10px] font-semibold';
+        merchant.textContent = product.merchant;
+        const action = document.createElement('span');
+        action.className = 'cisalfa-product-link';
+        action.textContent = 'Vedi su ' + product.merchant;
+        // data-awin-variant-note
+        const details = [];
+        if (product.color) details.push('Colore: ' + product.color);
+        if (product.size) details.push('Taglia: ' + product.size);
+        const options = [];
+        if (product.colorCount > 1) options.push(product.colorCount + ' colori');
+        if (product.sizeCount > 1) options.push(product.sizeCount + ' taglie');
+        card.append(img, merchant, name, price);
+        if (details.length || options.length) {
+          const note = document.createElement('small');
+          note.className = 'text-[11px]';
+          note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');
+          card.append(note);
+        }
+        card.append(action);
+        return card;
+      };
+      const render = () => {
+        slot.replaceChildren(...bannerProducts(page).map(createCard));
+      };
+      let touchStart;
+      const rotationButton = document.getElementById('bannerRotationButton');
+      let rotationTimer;
+      let rotationPaused = false;
+      const scheduleRotation = () => {
+        clearTimeout(rotationTimer);
+        if (rotationPaused || pageCount < 2) return;
+        rotationTimer = setTimeout(() => {
+          if (!document.hidden && slot.getClientRects().length && !touchStart &&
+              !slot.matches(':focus-within') &&
+              !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'))) {
+            moveBanner(1);
+          } else {
+            scheduleRotation();
+          }
+        }, 5000);
+      };
+      const moveBanner = direction => {
+        page = (page + direction + pageCount) % pageCount;
+        render();
+        scheduleRotation();
+      };
+      slot.addEventListener('keydown', event => {
+        if (event.target !== slot || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+        event.preventDefault();
+        moveBanner(event.key === 'ArrowRight' ? 1 : -1);
+      });
+      slot.addEventListener('touchstart', event => {
+        touchStart = event.touches.length === 1 ? event.touches[0] : null;
+      }, { passive: true });
+      slot.addEventListener('touchcancel', () => { touchStart = null; });
+      slot.addEventListener('touchend', event => {
+        const start = touchStart;
+        touchStart = null;
+        const end = event.changedTouches[0];
+        if (!start || !end || start.identifier !== end.identifier || event.touches.length) return;
+        const dx = end.clientX - start.clientX;
+        const dy = end.clientY - start.clientY;
+        if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          event.preventDefault();
+          moveBanner(dx < 0 ? 1 : -1);
+        }
+      }, { passive: false });
+      render();
+      if (pageCount > 1) {
+        rotationButton.hidden = false;
+        rotationButton.addEventListener('click', () => {
+          rotationPaused = !rotationPaused;
+          rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
+          scheduleRotation();
+        });
+        scheduleRotation();
+      }
+
+      const grid = document.getElementById('promotionsGrid');
+      const status = document.getElementById('promotionsStatus');
+      const more = document.getElementById('promotionsMore');
+      const pageSize = 6;
+      let promotionProducts = [];
+      let visibleCount = 0;
+      const showMore = () => {
+        const nextProducts = promotionProducts.slice(visibleCount, visibleCount + pageSize);
+        grid.append(...nextProducts.map(createCard));
+        visibleCount += nextProducts.length;
+        status.textContent = visibleCount + ' di ' + promotionProducts.length + ' prodotti';
+        more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
+        return nextProducts.length;
+      };
+      const arrangePromotions = catalog => {
+        const bands = [[], [], []];
+        for (const product of catalog) {
+          const price = numericPrice(product);
+          if (!Number.isFinite(price)) continue;
+          bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
+        }
+        bands.forEach(shuffle);
+        const ordered = [];
+        // Blocchi completi: due offerte per fascia, senza ripetizioni.
+        while (bands.every(band => band.length >= 2)) {
+          const group = bands.flatMap(band => band.splice(0, 2));
+          ordered.push(...shuffle(group));
+        }
+        // Se una fascia si esaurisce, usa solo prodotti realmente disponibili:
+        // nessun articolo fittizio e nessuna ripetizione per riempire sei posti.
+        const remaining = shuffle(bands.flat());
+        while (remaining.length) ordered.push(...remaining.splice(0, pageSize));
+        return ordered;
+      };
+      const openPromotions = () => {
+        promotionProducts = arrangePromotions(products);
+        visibleCount = 0;
+        grid.replaceChildren();
+        showMore();
+      };
+      more.addEventListener('click', () => {
+        const firstAdded = visibleCount;
+        if (showMore()) grid.children[firstAdded].focus();
+      });
+      document.addEventListener('promotions-open', openPromotions);
+      if (!document.getElementById('view-promotions').classList.contains('hidden')) openPromotions();
+    })();
+  </script>
+</body>
+</html>
