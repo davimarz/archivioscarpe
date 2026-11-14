@@ -8,6 +8,7 @@
   <meta name="application-name" content="Archivio Scarpe">
   <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
+  <script>try { localStorage.removeItem('gemini_api_key'); } catch (_) {} </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -484,6 +485,16 @@
       <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
     </section>
   </main>
+  <footer class="max-w-5xl w-full mx-auto px-4 py-5 mb-20 text-center text-xs text-slate-400 border-t border-slate-800" aria-label="Informazioni legali">
+    <p>© 2026 Davide Marziano · Tutti i diritti riservati</p>
+    <div class="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-2">
+      <a class="underline hover:text-amber-300" href="https://github.com/davimarz/archivioscarpe/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licenza e copyright</a>
+      <a class="underline hover:text-amber-300" href="./privacy.html">Privacy</a>
+      <a class="underline hover:text-amber-300" href="./cookie.html">Cookie e tecnologie locali</a>
+    </div>
+    <p class="mt-2">Alcuni link commerciali sono affiliati: un acquisto può generare una commissione senza costi aggiuntivi.</p>
+  </footer>
+
 
   <!-- Modifica scarpa archiviata -->
   <div id="editShoeModal" role="dialog" aria-modal="true" aria-labelledby="editShoeTitle" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -810,7 +821,7 @@
       }
     }
     function updatePhotoAiStatus() {
-      const ready = Boolean(localStorage.getItem('gemini_api_key'));
+      const ready = Boolean(sessionStorage.getItem('gemini_api_key'));
       for (const mode of ['add','check']) {
         const el = document.getElementById(mode + 'AiStatus');
         if (!el) continue;
@@ -1582,7 +1593,7 @@
     }
 
     async function analyzeShoeWithGemini(base64Data, targetMode) {
-      const apiKey = localStorage.getItem('gemini_api_key');
+      const apiKey = sessionStorage.getItem('gemini_api_key');
       const cleanBase64 = base64Data.split(',')[1];
       const analysisKey = targetMode + ':' + (apiKey || '').slice(-8) + ':' + base64Data.length + ':' + base64Data.slice(-96);
       if (geminiPending.has(analysisKey)) return geminiPending.get(analysisKey);
@@ -2077,7 +2088,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
     }
 
     function openApiKeyModal() {
-      document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('apiKeyInput').value = sessionStorage.getItem('gemini_api_key') || '';
       document.getElementById('apiKeyInput').type = 'password';
       document.getElementById('toggleApiKeyBtn').setAttribute('aria-pressed', 'false');
       document.getElementById('toggleApiKeyBtn').setAttribute('aria-label', 'Mostra chiave API');
@@ -2099,12 +2110,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         alert("Inserisci una chiave valida.");
         return;
       }
-      localStorage.setItem('gemini_api_key', key);
+      sessionStorage.setItem('gemini_api_key', key);
       updateKeyUI();
       closeApiKeyModal();
     }
     async function testAiConnection() {
-      const key = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gemini_api_key');
+      const key = document.getElementById('apiKeyInput').value.trim() || sessionStorage.getItem('gemini_api_key');
       const output = document.getElementById('aiTestResult');
       const button = document.getElementById('testAiBtn');
       output.classList.remove('hidden');
@@ -2143,14 +2154,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       } finally { button.disabled = false; }
     }
     function clearApiKey() {
-      localStorage.removeItem('gemini_api_key');
+      sessionStorage.removeItem('gemini_api_key');
       localStorage.removeItem('gemini_account_email');
       document.getElementById('apiKeyInput').value = '';
       updateKeyUI();
       closeApiKeyModal();
     }
     function updateKeyUI() {
-      const key = localStorage.getItem('gemini_api_key');
+      const key = sessionStorage.getItem('gemini_api_key');
       const label = document.getElementById('keyLabel');
       const btn = document.getElementById('keyStatusBtn');
       updatePhotoAiStatus();
