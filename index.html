@@ -615,8 +615,20 @@
       }
     ];
 
-    let savedData = localStorage.getItem('kicks_archive_v17');
-    let shoes = savedData ? JSON.parse(savedData) : DEFAULT_SHOES;
+    // Conserva il dato originale anche quando il JSON locale non è leggibile.
+    function readShoeArchive() {
+      try {
+        const raw = localStorage.getItem('kicks_archive_v17');
+        if (!raw) return DEFAULT_SHOES;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error('Formato archivio non valido');
+        return parsed;
+      } catch (error) {
+        console.error('Archivio locale non leggibile; dati originali conservati.', error);
+        return [];
+      }
+    }
+    let shoes = readShoeArchive();
     let selectedImageBase64 = null;
     let addExtraImages = [];
     let editingImages = [];
@@ -624,7 +636,8 @@
     let currentCategory = 'all';
 
     window.addEventListener('DOMContentLoaded', () => {
-      saveToStorage();
+      try { if (!localStorage.getItem('kicks_archive_v17')) saveToStorage(); }
+      catch (error) { console.warn('Salvataggio iniziale non disponibile:', error); }
       renderArchive();
       updateKeyUI();
       initLocalBackupStatus();
@@ -768,9 +781,16 @@
       const previous=localStorage.getItem('kicks_archive_v17');
       const current=JSON.stringify(shoes);
       if(previous!==current&&previous){try{localStorage.setItem('kicks_archive_previous_v1',previous);}catch{}}
-      localStorage.setItem('kicks_archive_v17',current);
+      try {
+        localStorage.setItem('kicks_archive_v17',current);
+      } catch (error) {
+        alert('Spazio locale insufficiente: le modifiche potrebbero non essere salvate. Esporta un backup e libera spazio nel browser.');
+        console.error('Salvataggio archivio non riuscito', error);
+        return false;
+      }
       if(previous!==current)saveAutomaticSnapshot(current);
       renderArchive();
+      return true;
     }
     function isValidShoeArchive(items){
       return Array.isArray(items)&&items.length<=10000&&items.every(item=>item&&typeof item==='object'&&!Array.isArray(item)&&(typeof item.id==='string'||typeof item.id==='number')&&typeof item.brand==='string'&&typeof item.model==='string'&&(Array.isArray(item.colors)?item.colors.every(c=>typeof c==='string'):typeof item.colors==='string')&&(!item.image||isSafeShoeImageUrl(item.image))&&(!item.images||(Array.isArray(item.images)&&item.images.every(isSafeShoeImageUrl))))&&new Set(items.map(item=>String(item.id))).size===items.length;
@@ -2199,21 +2219,26 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const value = Number(decimal);
         return Number.isFinite(value) && value > 0 ? value : Infinity;
       };
-      const cheapestByProduct = new Map();
-      for (const product of catalogProducts) {
-        const key = productKey(product);
-        const current = cheapestByProduct.get(key);
-        if (!current || numericPrice(product) < numericPrice(current)) {
-          cheapestByProduct.set(key, product);
-        }
-      }
-      let products = [...cheapestByProduct.values()];
+      let products = catalogProducts;
       try {
         const response = await fetch('./catalogo-awin.json', { cache: 'no-store' });
         if (!response.ok) throw new Error('Catalogo non disponibile');
         const imported = await response.json();
-        if (Array.isArray(imported) && imported.length) products = imported;
+        if (Array.isArray(imported) && imported.length) {
+          products = imported.filter(item => item && typeof item.name === 'string' &&
+            typeof item.merchant === 'string' && typeof item.url === 'string' &&
+            /^https:\/\//i.test(item.url) && typeof item.image === 'string' &&
+            /^https:\/\//i.test(item.image) && Number.isFinite(numericPrice(item)));
+        }
       } catch (error) { console.warn('Catalogo Awin di riserva.', error); }
+      // Anche il catalogo esterno viene confrontato: per ogni variante rimane il prezzo minore.
+      const cheapestByProduct = new Map();
+      for (const product of products) {
+        const key = productKey(product);
+        const current = cheapestByProduct.get(key);
+        if (!current || numericPrice(product) < numericPrice(current)) cheapestByProduct.set(key, product);
+      }
+      products = [...cheapestByProduct.values()];
       // Esclude i listini disattivati anche dopo un nuovo aggiornamento del catalogo Awin.
       const disabledMerchants = new Set(['voghion global', 'goicon global']);
       products = products.filter(product =>
@@ -2232,7 +2257,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         shuffle(products.filter(product => numericPrice(product) < 50)),
         shuffle(products.filter(product => {
           const price = numericPrice(product);
-          return Number.isFinite(price) && price > 50;
+          return Number.isFinite(price) && price >= 50;
         }))
       ];
       const pageCount = Math.max(1, ...bannerBands.map(band => band.length));
@@ -2242,13 +2267,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let page = 0;
       const createCard = (product) => {
         const card = document.createElement('a');
-        card.href = product.url;
+        card.href = /^https:\/\//i.test(String(product.url || '')) ? product.url : '#';
         card.dataset.productUrl = product.url;
         card.target = '_blank';
         card.rel = 'sponsored noopener noreferrer';
         card.className = 'cisalfa-product-card';
         const img = document.createElement('img');
-        img.src = product.image;
+        img.src = /^https:\/\//i.test(String(product.image || '')) ? product.image : '';
         img.alt = product.name;
         img.loading = 'lazy';
         img.decoding = 'async';
