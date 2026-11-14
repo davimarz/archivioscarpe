@@ -193,7 +193,8 @@
         <div class="flex items-center justify-between gap-2 mb-3">
           <div><p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p><h3 class="text-sm font-bold">Offerte scarpe dai negozi partner</h3></div>
         </div>
-        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra." aria-live="polite"></div>
+        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
+        <button type="button" id="bannerRotationButton" class="mt-2 min-h-11 rounded-lg px-2 text-xs font-semibold text-sky-800" hidden>Pausa rotazione</button>
         <p class="text-[11px] mt-3">Prezzi dai listini Awin. Verifica disponibilità e spese di spedizione sul sito del venditore.</p>
       </aside>
       <div class="flex items-center justify-between gap-2">
@@ -2325,16 +2326,33 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const render = () => {
         slot.replaceChildren(...bannerProducts(page).map(createCard));
       };
+      let touchStart;
+      const rotationButton = document.getElementById('bannerRotationButton');
+      let rotationTimer;
+      let rotationPaused = false;
+      const scheduleRotation = () => {
+        clearTimeout(rotationTimer);
+        if (rotationPaused || pageCount < 2) return;
+        rotationTimer = setTimeout(() => {
+          if (!document.hidden && slot.getClientRects().length && !touchStart &&
+              !slot.matches(':focus-within') &&
+              !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'))) {
+            moveBanner(1);
+          } else {
+            scheduleRotation();
+          }
+        }, 5000);
+      };
       const moveBanner = direction => {
         page = (page + direction + pageCount) % pageCount;
         render();
+        scheduleRotation();
       };
       slot.addEventListener('keydown', event => {
         if (event.target !== slot || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
         event.preventDefault();
         moveBanner(event.key === 'ArrowRight' ? 1 : -1);
       });
-      let touchStart;
       slot.addEventListener('touchstart', event => {
         touchStart = event.touches.length === 1 ? event.touches[0] : null;
       }, { passive: true });
@@ -2352,6 +2370,15 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
       }, { passive: false });
       render();
+      if (pageCount > 1) {
+        rotationButton.hidden = false;
+        rotationButton.addEventListener('click', () => {
+          rotationPaused = !rotationPaused;
+          rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
+          scheduleRotation();
+        });
+        scheduleRotation();
+      }
 
       const grid = document.getElementById('promotionsGrid');
       const status = document.getElementById('promotionsStatus');
