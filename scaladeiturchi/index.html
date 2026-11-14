@@ -187,7 +187,7 @@
   <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4">
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
-    <section id="view-archive" class="space-y-4">
+    <section id="view-archive" class="hidden space-y-4">
       <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
       <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="rounded-xl px-3 py-3">
         <div class="flex items-center justify-between gap-2 mb-3">
@@ -479,7 +479,7 @@
       </div>
     </section>
 
-    <section id="view-promotions" class="hidden space-y-4" aria-labelledby="promotionsHeading">
+    <section id="view-promotions" class="space-y-4" aria-labelledby="promotionsHeading">
       <div>
         <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
@@ -576,18 +576,9 @@
   <div id="appToast" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 max-w-xs w-[90%] rounded-xl bg-emerald-700 text-white px-4 py-3 text-sm text-center shadow-xl" role="status" aria-live="polite"></div>
 
   <!-- Bottom Navigation Bar -->
-  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
-    <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
-      <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
-    </button>
-    <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa nuova">
-      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
-    </button>
-    <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
-      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
-    </button>
+  <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-1 gap-1 items-center">
 
-    <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition">
+    <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-current="page">
       <i class="fa-solid fa-tags text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Promozioni</span>
     </button>
   </nav>
@@ -856,7 +847,7 @@
       }
     }
     function switchTab(tabId) {
-      if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'archive';
+      if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'promotions';
       const promotionsWasOpen = !document.getElementById('view-promotions').classList.contains('hidden');
       ['archive', 'check', 'add', 'settings', 'promotions'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
