@@ -74,6 +74,8 @@
     input::placeholder,textarea::placeholder{color:#8194a1!important}
     button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #00a9c8!important}
     #archiveSearchPanel input{background:#f2f8fb!important;border-radius:999px!important;box-shadow:0 4px 12px #163f5b0d}
+    #usageGuideButton{background:#005f2d;border:2px solid #39ff14;color:#fff;box-shadow:0 0 8px #39ff1466;font-size:.875rem}
+    #usageGuideButton:hover{background:#006b31;color:#fff}
     #shoesCountBadge{background:#e8f7fb!important;color:#087e9b!important;border-color:#d5ecf3!important}
     #archiveFiltersDetails{background:#fff!important;border:1px solid #e0e9ef!important}
     #archiveFiltersDetails summary{color:#253c4c!important}
@@ -196,7 +198,7 @@
       </aside>
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
-        <a href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl bg-green-700 px-3 py-2 text-xs font-bold whitespace-nowrap text-white hover:bg-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
+        <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
       </div>
       <div id="archiveSearchPanel" class="mode-panel space-y-2">
