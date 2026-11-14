@@ -205,7 +205,7 @@
         <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
-        <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e raccolte <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
+        <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e tipologie <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
         <div>
           <label for="brandFilter" class="block text-xs font-semibold text-slate-300 mb-1.5">Marca</label>
@@ -220,7 +220,7 @@
           </select>
         </div>
         <div class="col-span-2">
-          <select id="collectionFilter" onchange="filterArchive()" aria-label="Filtra raccolta" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-slate-100"><option value="">Tutte le raccolte</option></select>
+          <select id="collectionFilter" onchange="filterArchive()" aria-label="Filtra raccolta" class="w-full rounded-xl bg-slate-950 border border-slate-700 px-2 py-2 text-xs text-slate-100"><option value="">Tutte le tipologie</option></select>
         </div>
         <div class="col-span-2 flex items-center justify-between gap-2">
           <span id="archiveResultCount" class="text-xs text-slate-400" aria-live="polite">Tutte le scarpe</span>
@@ -739,7 +739,7 @@
       const select = document.getElementById('collectionFilter');
       const selected = select.value;
       const categories = [...new Set(shoes.map(shoe => String(shoe.category || '').trim()).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'it'));
-      select.replaceChildren(new Option('Tutte le raccolte', ''));
+      select.replaceChildren(new Option('Tutte le tipologie', ''));
       categories.forEach(name => select.add(new Option(name, 'category:' + name)));
       select.value = categories.some(name => 'category:' + name === selected) ? selected : '';
     }
