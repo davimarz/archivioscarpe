@@ -40,7 +40,7 @@
 <div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
 <div class="panel">
 <strong>Commissioni Awin</strong>
-<p class="muted">Totali dell’intero account Awin per data di transazione, nel periodo scelto.</p>
+<p class="muted">Commissioni per data di transazione. I dati storici senza riferimento del sito sono inclusi solo nei totali dell’account.</p>
 <p id="awinStatus" role="status"></p>
 <div id="awinTotals"></div>
 </div>
@@ -91,14 +91,21 @@ async function loadAwinStats(since,current){
      : 'Report Awin non disponibile. Premi Aggiorna per riprovare.';
    return;
   }
-  status.textContent=data.transactions ? formatNumber.format(data.transactions)+' transazioni' : 'Nessuna transazione nel periodo.';
-  for(const row of data.commissions){
+  status.textContent='';
+  for(const [label,report] of [['Archivio Scarpe',data.site],['Intero account Awin',data]]){
+   const heading=document.createElement('strong');
+   heading.textContent=label;
+   const count=document.createElement('p');
+   count.textContent=report.transactions ? formatNumber.format(report.transactions)+' transazioni' : 'Nessuna transazione nel periodo.';
+   totals.append(heading,count);
+   for(const row of report.commissions){
    const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:row.currency});
    const line=document.createElement('p');
    const parts=[['Approvate',row.approved],['In attesa',row.pending],['Rifiutate',row.declined]];
    if(row.other)parts.push(['Altri stati',row.other]);
    line.textContent=parts.map(([label,amount])=>label+': '+money.format(amount)).join(' · ');
-   totals.append(line);
+    totals.append(line);
+   }
   }
  }catch{
   if(current())status.textContent='Report Awin non disponibile. Premi Aggiorna per riprovare.';
@@ -115,20 +122,14 @@ async function loadStats(){
  void loadAwinStats(since,current);
  refreshStats.disabled=true;
  status.textContent='Caricamento delle statistiche…';
- async function countEvents(type,dimension){
-  let query=client.from('app_events').select('id',{count:'exact',head:true})
-   .eq('event_type',type).gte('recorded_at',since);
-  if(dimension)query=query.eq('dimension',dimension);
-  const {count,error}=await query;
-  if(error || count===null)throw new Error('Conteggio non disponibile');
-  return count;
- }
  try{
   const sectionEntries=Object.entries(sections);
-  const [visits,instagram,clicks,...counts]=await Promise.all([
-   countEvents('visit'),countEvents('visit','instagram'),countEvents('affiliate_click'),
-   ...sectionEntries.map(([section])=>countEvents('section',section))
-  ]);
+  const {data,error}=await client.rpc('dashboard_event_counts',{since});
+  if(error)throw error;
+  const count=(type,dimension)=>data.reduce((sum,row)=>
+   row.event_type===type && (!dimension || row.dimension===dimension) ? sum+Number(row.total) : sum,0);
+  const visits=count('visit'),instagram=count('visit','instagram'),clicks=count('affiliate_click');
+  const counts=sectionEntries.map(([section])=>count('section',section));
   if(!current())return;
   const totals=[visits,instagram,clicks,counts.reduce((sum,count)=>sum+count,0)];
   metrics.forEach((id,index)=>{document.getElementById(id).textContent=formatNumber.format(totals[index]);});
