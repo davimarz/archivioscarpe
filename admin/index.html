@@ -5,6 +5,7 @@
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}body{margin:0;background:#08172f;color:#f1f5f9;min-height:100vh;display:grid;place-items:center;padding:20px;box-sizing:border-box}main{width:min(100%,470px);border:1px solid #34506b;border-radius:20px;background:#13243d;padding:24px;box-sizing:border-box}h1{font-size:23px;margin:0 0 8px}p{color:#cbd5e1;line-height:1.5}label{display:block;margin:18px 0 7px;font-size:14px;font-weight:700}input{width:100%;padding:13px;border-radius:10px;background:#fff;color:#172033;border:1px solid #64748b;box-sizing:border-box;font-size:16px}button{background:#0b79a5;color:white;border:0;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:wait}a{color:#93d9ff}#message{min-height:25px}#dashboard[hidden],#login[hidden]{display:none}.panel{background:#1d3452;border-radius:12px;padding:16px;margin:14px 0}.muted{font-size:13px;color:#b8c9d9}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}#signout{background:#475569}#status{font-weight:700}
 #dashboardMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}#dashboardMetrics div{background:#1d3452;border-radius:12px;padding:12px}#dashboardMetrics dt{font-size:13px;color:#cbd5e1}#dashboardMetrics dd{font-size:24px;font-weight:700;margin:4px 0 0}#sectionCounts li{display:flex;justify-content:space-between;padding:6px 0}#sectionCounts{padding-left:0;list-style:none}.stats-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.stats-actions h2{font-size:18px;margin:0}
+#statsPeriod{font:inherit;color:inherit;background:#1d3452;border:1px solid #64748b;border-radius:10px;padding:9px 12px;min-height:44px}
 </style></head><body><main>
 <a href="../">← Torna ad Archivio Scarpe</a>
 <div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
@@ -20,7 +21,15 @@
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
 <div class="stats-actions"><h2>Statistiche</h2><button type="button" id="refreshStats">Aggiorna</button></div>
-<p class="muted">Ultimi 30 giorni · Conteggio degli eventi registrati</p>
+<label for="statsPeriod">Periodo</label>
+<select id="statsPeriod">
+<option value="7">Ultimi 7 giorni</option>
+<option value="15">Ultimi 15 giorni</option>
+<option value="30" selected>Ultimi 30 giorni</option>
+<option value="60">Ultimi 60 giorni</option>
+<option value="months:6">Ultimi 6 mesi</option>
+<option value="months:12">Ultimo anno</option>
+</select>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
 <div><dt>Visite totali</dt><dd id="statVisits">—</dd></div>
@@ -42,6 +51,20 @@ const adminEmail=document.getElementById('email').defaultValue;
 let recovering=false;
 let checkVersion=0;
 const refreshStats=document.getElementById('refreshStats');
+const statsPeriod=document.getElementById('statsPeriod');
+function periodStart(value, now=new Date()){
+ const start=new Date(now);
+ if(value.startsWith('months:')){
+  const day=start.getUTCDate();
+  start.setUTCDate(1);
+  start.setUTCMonth(start.getUTCMonth()-Number(value.split(':')[1]));
+  const lastDay=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,0)).getUTCDate();
+  start.setUTCDate(Math.min(day,lastDay));
+ }else{
+  start.setUTCDate(start.getUTCDate()-Number(value));
+ }
+ return start.toISOString();
+}
 const formatNumber=new Intl.NumberFormat('it-IT');
 const sections={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
 let statsVersion=0;
@@ -52,7 +75,7 @@ async function loadStats(){
  const status=document.getElementById('statsStatus');
  const list=document.getElementById('sectionCounts');
  const metrics=['statVisits','statInstagram','statClicks','statSections'];
- const since=new Date(Date.now()-30*86400000).toISOString();
+ const since=periodStart(statsPeriod.value);
  refreshStats.disabled=true;
  status.textContent='Caricamento delle statistiche…';
  async function countEvents(type,dimension){
@@ -81,7 +104,7 @@ async function loadStats(){
    row.append(label,value);
    return row;
   }));
-  status.textContent=totals.some(Boolean)?'':'Nessun evento registrato negli ultimi 30 giorni.';
+  status.textContent=totals.some(Boolean)?'':'Nessun evento registrato nel periodo selezionato.';
  }catch{
   if(current()){
    metrics.forEach(id=>{document.getElementById(id).textContent='—';});
@@ -93,6 +116,7 @@ async function loadStats(){
  }
 }
 refreshStats.addEventListener('click',loadStats);
+statsPeriod.addEventListener('change',loadStats);
 async function check(){
  const version=++checkVersion;
  dashboard.hidden=true;login.hidden=true;recovery.hidden=true;message.textContent='Verifica accesso in corso…';
