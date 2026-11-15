@@ -88,23 +88,55 @@ async function verifyOnline(repo) {
 }
 
 async function main() {
-  const publisher = process.argv[2];
+  const [publisher, option, ...values] = process.argv.slice(2);
   if (!/^\d+$/.test(publisher || '')) throw new Error('Specifica il tuo Publisher ID Awin.');
+  const advertisers = option === '--advertiser' ? values.map(name => name.trim()) : [];
+  const source = option === '--da-listini' && values.length === 1 && values[0].trim() ? path.resolve(values[0]) : null;
+  if (option !== undefined && !source && (!advertisers.length || advertisers.some(name => !name || name.startsWith('--')) ||
+      new Set(advertisers.map(name => name.toLowerCase())).size !== advertisers.length)) {
+    throw new Error('Uso: node aggiorna-archivio-scarpe.cjs <publisher-id> [--advertiser <nome> ... | --da-listini <cartella>]');
+  }
   const working = fs.mkdtempSync(path.join(os.tmpdir(), 'archivioscarpe-awin-'));
   const staging = path.join(working, 'listini');
   const repo = path.join(working, 'sito');
   const downloadPath = path.join(__dirname, '.scarica-awin-' + randomUUID() + '.cjs');
   const importPath = path.join(repo, 'tools', 'awin', 'importa-listini-awin.cjs');
   let phase = 'Preparazione';
+  let preserveWorking = false;
   try {
     fs.mkdirSync(staging);
-    await downloadScript('a4bf3cc0ebecadc7450c6180d42a2d2af6407bc2', 'scarica-listini-awin.cjs', downloadPath);
-
-    phase = '1/3 Scaricamento listini';
-    console.log(phase);
-    run(process.execPath, [downloadPath, publisher], {
-      env: { ...process.env, AWIN_LISTINI_DIR: staging }
-    });
+    if (source) {
+      phase = '1/3 Lettura dei listini esistenti';
+      console.log(phase + ' | ' + source);
+      keepLocalFeeds(source, staging);
+    } else {
+      await downloadScript('a4bf3cc0ebecadc7450c6180d42a2d2af6407bc2', 'scarica-listini-awin.cjs', downloadPath);
+      phase = '1/3 Scaricamento listini';
+      console.log(phase);
+      if (advertisers.length) console.log('Advertiser richiesti: ' + advertisers.join(', '));
+      try {
+        run(process.execPath, [downloadPath, publisher, ...advertisers], {
+          env: { ...process.env, AWIN_LISTINI_DIR: staging }
+        });
+        if (advertisers.length && fs.readdirSync(staging).length !== advertisers.length) {
+          throw new Error('Il numero di listini ricevuti non coincide con gli advertiser richiesti.');
+        }
+      } catch (error) {
+        if (fs.readdirSync(staging).some(name => feedExtension.test(name))) {
+          const recoveries = path.join(__dirname, 'LISTINI-PARZIALI');
+          try {
+            fs.mkdirSync(recoveries, { recursive: true });
+            const saved = fs.mkdtempSync(path.join(recoveries, 'download-'));
+            const retained = keepLocalFeeds(staging, saved);
+            console.error('Listini parziali conservati: ' + retained + ' | ' + saved);
+          } catch {
+            preserveWorking = true;
+            console.error('Listini parziali disponibili nella cartella temporanea: ' + staging);
+          }
+        }
+        throw error;
+      }
+    }
     const local = path.join(__dirname, 'LISTINI');
     const count = keepLocalFeeds(staging, local);
     console.log('Listini aggiornati: ' + count + ' | ' + local);
@@ -129,7 +161,7 @@ async function main() {
     process.exitCode = 1;
   } finally {
     fs.rmSync(downloadPath, { force: true });
-    fs.rmSync(working, { recursive: true, force: true });
+    if (!preserveWorking) fs.rmSync(working, { recursive: true, force: true });
   }
 }
 

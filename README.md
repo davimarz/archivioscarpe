@@ -3,6 +3,8 @@
 
 Lo script [aggiorna-archivio-scarpe.cjs](tools/awin/aggiorna-archivio-scarpe.cjs) scarica i listini con il flusso già configurato e usa l’importatore della copia aggiornata del repository. Richiede Node.js, Git e l’accesso al proprio account Awin.
 
+Con `--advertiser "Nome advertiser" "Altro advertiser"` puoi scegliere esattamente quali listini scaricare e pubblicare. Con `--da-listini "Percorso della cartella"` puoi pubblicare direttamente i listini da una cartella dedicata. La pubblicazione rigenera il catalogo partendo dai soli listini forniti. Se lo scaricamento si interrompe, i file già scaricati vengono conservati separatamente in `LISTINI-PARZIALI`.
+
 Promozioni può essere aperta direttamente con `#promozioni`, `#promozioni/sotto-50`, `#promozioni/50-150` oppure `#promozioni/oltre-150`. Per distinguere una campagna nel pannello aggiungi `?utm_source=instagram&utm_campaign=nome-campagna` prima del cancelletto. Usa nomi brevi senza dati personali.
 
 ### Compilazione degli stili
