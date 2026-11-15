@@ -2373,7 +2373,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const percent = Math.round((original - current) / original * 100);
         return percent >= 1 && percent <= 99 ? { original, current, percent } : null;
       };
-      const byDiscount = (a, b) => discountFor(b).percent - discountFor(a).percent || numericPrice(a) - numericPrice(b);
+      const byDiscount = (a, b) => (discountFor(b)?.percent || 0) - (discountFor(a)?.percent || 0) || numericPrice(a) - numericPrice(b);
       const formatEuro = amount => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
       const priceBand = product => numericPrice(product) < 50 ? 'Sotto 50 €' : numericPrice(product) <= 150 ? '50–150 €' : 'Oltre 150 €';
       let products = catalogProducts;
@@ -2402,7 +2402,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         !disabledMerchants.has(String(product.merchant ?? '').trim().toLowerCase().replace(/\s+/g, ' '))
       );
       // Il catalogo completo resta nel JSON; soltanto banner e Promozioni usano gli scontati.
-      products = products.filter(product => discountFor(product) !== null).sort(byDiscount);
+      const discountedProducts = products.filter(product => discountFor(product) !== null).sort(byDiscount);
+      // Se i feed non espongono il prezzo originale, non lasciare vuota l'app:
+      // mostra i prezzi disponibili senza attribuire sconti inesistenti.
+      products = discountedProducts.length ? discountedProducts : products.sort((a, b) => numericPrice(a) - numericPrice(b));
        const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
       if (!products.length) {
@@ -2465,15 +2468,25 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const offer = discountFor(product);
         const discountBadge = document.createElement('span');
         discountBadge.className = 'awin-discount-badge';
-        discountBadge.textContent = '−' + offer.percent + '%';
+        if (offer) discountBadge.textContent = '−' + offer.percent + '%';
         const previous = document.createElement('del');
         previous.className = 'awin-original-price';
-        previous.textContent = formatEuro(offer.original);
+        if (offer) previous.textContent = formatEuro(offer.original);
         const band = document.createElement('small');
         band.className = 'awin-price-band';
         band.textContent = priceBand(product);
-        price.textContent = formatEuro(offer.current);
-        card.append(img, merchant, discountBadge, name, previous, price, band);
+        price.textContent = formatEuro(offer ? offer.current : numericPrice(product));
+        card.append(img, merchant);
+        if (offer) card.append(discountBadge);
+        card.append(name);
+        if (offer) card.append(previous);
+        card.append(price, band);
+        if (!offer) {
+          const note = document.createElement('small');
+          note.className = 'awin-price-band';
+          note.textContent = 'Prezzo di listino · sconto non verificato';
+          card.append(note);
+        }
         if (details.length || options.length) {
           const note = document.createElement('small');
           note.className = 'text-[11px]';
