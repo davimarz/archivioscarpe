@@ -225,6 +225,21 @@
     nav button.text-slate-400{color:#a9c6e4!important}
     #quickAddButton{background:linear-gradient(135deg,#158af4,#03b4e2)!important;box-shadow:0 8px 24px #0462ae88!important}
     @media(max-width:390px){.brand-mark{width:46px;height:46px}header h1{font-size:1.04rem!important}#usageGuideButton{font-size:11px!important;padding-inline:9px!important}#shoesCountBadge{padding-inline:9px!important}}
+
+    /* Navigazione in quattro pulsanti illustrati, come nel mockup promozionale. */
+    nav[aria-label="Navigazione principale"]{gap:8px!important;padding:9px 10px max(12px,env(safe-area-inset-bottom))!important;background:#07182f!important}
+    nav[aria-label="Navigazione principale"] button{min-width:0!important;min-height:64px!important;border-radius:15px!important;border:1px solid #ffffff38!important;box-shadow:0 5px 12px #010b1b77!important;display:flex;flex-direction:column;gap:5px!important;align-items:center;justify-content:center;color:#fff!important;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
+    nav[aria-label="Navigazione principale"] button i{font-size:21px!important;color:white!important;filter:drop-shadow(0 2px 3px #0004)}
+    nav[aria-label="Navigazione principale"] button span{font-size:11px!important;font-weight:800!important;letter-spacing:-.01em;line-height:1.15}
+    nav[aria-label="Navigazione principale"] #tab-archive{background:linear-gradient(145deg,#139fff,#0461c5)!important}
+    nav[aria-label="Navigazione principale"] #tab-add{background:linear-gradient(145deg,#14b3e8,#03689e)!important}
+    nav[aria-label="Navigazione principale"] #tab-check{background:linear-gradient(145deg,#0cbdad,#008a7a)!important}
+    nav[aria-label="Navigazione principale"] #tab-promotions{background:linear-gradient(145deg,#487adf,#224e9c)!important}
+    nav[aria-label="Navigazione principale"] button[aria-current="page"]{outline:2px solid #f3fbff!important;outline-offset:1px!important;box-shadow:0 0 0 4px #4bc7ff38,0 8px 22px #0008!important;filter:brightness(1.13)}
+    nav[aria-label="Navigazione principale"] button:active{transform:scale(.96)}
+    main{padding-bottom:calc(135px + env(safe-area-inset-bottom))!important}
+    #quickAddButton{bottom:calc(103px + env(safe-area-inset-bottom))!important}
+    @media(max-width:359px){nav[aria-label="Navigazione principale"]{gap:5px!important;padding-inline:6px!important}nav[aria-label="Navigazione principale"] button span{font-size:10px!important}nav[aria-label="Navigazione principale"] button{min-height:60px!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -638,13 +653,13 @@
   <!-- Bottom Navigation Bar -->
   <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
     <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
-      <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Armadio</span>
+      <i class="fa-solid fa-shoe-prints text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Armadio</span>
     </button>
     <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa nuova">
-      <i class="fa-solid fa-circle-plus text-lg"></i><span class="text-[11px] font-semibold">Aggiungi</span>
+      <i class="fa-solid fa-camera text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Aggiungi</span>
     </button>
     <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
-      <i class="fa-solid fa-camera text-lg"></i><span class="text-[11px] font-semibold">Confronta</span>
+      <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Compro?</span>
     </button>
 
     <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition">
