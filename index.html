@@ -2465,9 +2465,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const merchant = document.createElement('span');
         merchant.className = 'text-[10px] font-semibold';
         merchant.textContent = product.merchant;
-        const action = document.createElement('span');
-        action.className = 'cisalfa-product-link';
-        action.textContent = 'Vedi su ' + product.merchant;
         // data-awin-variant-note
         const details = [];
         if (product.color) details.push('Colore: ' + product.color);
@@ -2494,7 +2491,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');
           card.append(note);
         }
-        card.append(action);
         return card;
       };
       const render = () => {
