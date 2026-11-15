@@ -38,7 +38,12 @@
 <div><dt>Aperture delle sezioni</dt><dd id="statSections">—</dd></div>
 </dl>
 <div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
-<p class="muted">Commissioni Awin: in attesa del collegamento ai report.</p>
+<div class="panel">
+<strong>Commissioni Awin</strong>
+<p class="muted">Totali dell’intero account Awin per data di transazione, nel periodo scelto.</p>
+<p id="awinStatus" role="status"></p>
+<div id="awinTotals"></div>
+</div>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
@@ -68,6 +73,37 @@ function periodStart(value, now=new Date()){
 const formatNumber=new Intl.NumberFormat('it-IT');
 const sections={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
 let statsVersion=0;
+async function loadAwinStats(since,current){
+ const status=document.getElementById('awinStatus');
+ const totals=document.getElementById('awinTotals');
+ totals.replaceChildren();
+ status.textContent='Caricamento delle commissioni…';
+ try{
+  const {data,error}=await client.functions.invoke('awin-commissions',{body:{since}});
+  if(!current())return;
+  if(error){
+   const detail=await error.context?.json?.().catch(()=>null);
+   if(!current())return;
+   status.textContent=detail?.code==='AWIN_NOT_CONFIGURED'
+    ? 'Awin in attesa del token API in Supabase.'
+    : detail?.code==='AWIN_AUTH'
+     ? 'Awin ha rifiutato il token API.'
+     : 'Report Awin non disponibile. Premi Aggiorna per riprovare.';
+   return;
+  }
+  status.textContent=data.transactions ? formatNumber.format(data.transactions)+' transazioni' : 'Nessuna transazione nel periodo.';
+  for(const row of data.commissions){
+   const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:row.currency});
+   const line=document.createElement('p');
+   const parts=[['Approvate',row.approved],['In attesa',row.pending],['Rifiutate',row.declined]];
+   if(row.other)parts.push(['Altri stati',row.other]);
+   line.textContent=parts.map(([label,amount])=>label+': '+money.format(amount)).join(' · ');
+   totals.append(line);
+  }
+ }catch{
+  if(current())status.textContent='Report Awin non disponibile. Premi Aggiorna per riprovare.';
+ }
+}
 async function loadStats(){
  const version=++statsVersion;
  const authVersion=checkVersion;
@@ -76,6 +112,7 @@ async function loadStats(){
  const list=document.getElementById('sectionCounts');
  const metrics=['statVisits','statInstagram','statClicks','statSections'];
  const since=periodStart(statsPeriod.value);
+ void loadAwinStats(since,current);
  refreshStats.disabled=true;
  status.textContent='Caricamento delle statistiche…';
  async function countEvents(type,dimension){
