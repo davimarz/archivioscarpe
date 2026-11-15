@@ -2483,21 +2483,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const previous = document.createElement('del');
         previous.className = 'awin-original-price';
         if (offer) previous.textContent = formatEuro(offer.original);
-        const band = document.createElement('small');
-        band.className = 'awin-price-band';
-        band.textContent = priceBand(product);
         price.textContent = formatEuro(offer ? offer.current : numericPrice(product));
         card.append(img, merchant);
         if (offer) card.append(discountBadge);
         card.append(name);
         if (offer) card.append(previous);
-        card.append(price, band);
-        if (!offer) {
-          const note = document.createElement('small');
-          note.className = 'awin-price-band';
-          note.textContent = 'Prezzo di listino · sconto non verificato';
-          card.append(note);
-        }
+        card.append(price);
         if (details.length || options.length) {
           const note = document.createElement('small');
           note.className = 'text-[11px]';
