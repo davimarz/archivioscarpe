@@ -9,9 +9,14 @@
 <div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
 <section id="login">
 <p>Accesso riservato all'amministratore. Accedi con la password dell’account amministratore oppure richiedi un link via email.</p>
-<form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><label for="password">Password amministratore</label><input id="password" type="password" autocomplete="current-password"><p><button type="submit" id="passwordSignIn">Accedi con password</button> <button type="submit" id="send">Invia link di accesso</button></p></form>
+<form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><label for="password">Password amministratore</label><input id="password" type="password" autocomplete="current-password"><p><button type="submit" id="passwordSignIn">Accedi con password</button> <button type="submit" id="send">Invia link di accesso</button></p><p><button type="button" id="recover">Password dimenticata?</button></p></form>
 <p class="muted">Se il collegamento non riporta a questa pagina, occorre autorizzare l'URL nelle impostazioni Supabase Auth.</p>
 </section>
+<form id="recoveryForm" hidden>
+<label for="newPassword">Nuova password</label><input id="newPassword" type="password" autocomplete="new-password" minlength="12" required>
+<label for="confirmPassword">Ripeti la nuova password</label><input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" required>
+<p><button type="submit">Salva nuova password</button></p>
+</form>
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
 <div class="panel"><strong id="status">Accesso verificato</strong><p>Area riservata attiva. Le statistiche centralizzate delle campagne verranno aggiunte nella seconda fase, dopo la tua verifica.</p></div>
@@ -23,16 +28,22 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
 const client = createClient('https://psjnqiqobidvyljrzjuh.supabase.co','sb_publishable_GEV4zSghYUbUbpQeEpeySg__rbHWeZ5');
 const login=document.getElementById('login'),dashboard=document.getElementById('dashboard'),message=document.getElementById('message');
+const recovery=document.getElementById('recoveryForm');
+const adminEmail=document.getElementById('email').defaultValue;
+let recovering=false;
 let checkVersion=0;
 async function check(){
  const version=++checkVersion;
- dashboard.hidden=true;login.hidden=true;message.textContent='Verifica accesso in corso…';
+ dashboard.hidden=true;login.hidden=true;recovery.hidden=true;message.textContent='Verifica accesso in corso…';
  try {
   const {data:{user},error}=await client.auth.getUser();
   if(error || !user){if(version===checkVersion){login.hidden=false;message.textContent='';}return;}
   const {data,error:accessError}=await client.from('admin_access').select('id').eq('id',1).maybeSingle();
   if(version!==checkVersion)return;
   if(accessError || !data){login.hidden=false;message.textContent='Account non autorizzato.';return;}
+  if(recovering){
+   recovery.hidden=false;message.textContent='Scegli una nuova password di almeno 12 caratteri.';return;
+  }
   document.getElementById('identity').textContent=user.email || 'Amministratore';
   dashboard.hidden=false;message.textContent='';
  } catch {if(version===checkVersion){login.hidden=false;message.textContent='Impossibile verificare l’accesso. Riprova.';}}
@@ -67,6 +78,43 @@ document.getElementById('loginForm').addEventListener('submit',async event=>{
  }
 });
 document.getElementById('signout').addEventListener('click',async()=>{await client.auth.signOut();await check();});
-client.auth.onAuthStateChange(()=>{setTimeout(check,0);});
+document.getElementById('recover').addEventListener('click',async event=>{
+ const button=event.currentTarget;
+ button.disabled=true;
+ message.textContent='Invio del link di recupero…';
+ try {
+  const {error}=await client.auth.resetPasswordForEmail(adminEmail,{redirectTo:location.origin+location.pathname});
+  message.textContent=error
+   ? error.code==='over_email_send_rate_limit' || error.status===429
+    ? 'Limite di invio raggiunto. Attendi prima di richiedere un altro link.'
+    : 'Invio non riuscito: '+error.message
+   : 'Apri il link di recupero ricevuto via email per impostare una nuova password.';
+ }catch{
+  message.textContent='Impossibile contattare il servizio di accesso. Riprova.';
+ }finally{button.disabled=false;}
+});
+recovery.addEventListener('submit',async event=>{
+ event.preventDefault();
+ if(!recovering || recovery.hidden)return;
+ const password=document.getElementById('newPassword').value;
+ if(password!==document.getElementById('confirmPassword').value){
+  message.textContent='Le due password devono coincidere.';return;
+ }
+ const button=recovery.querySelector('button');
+ button.disabled=true;
+ try{
+  const {error}=await client.auth.updateUser({password});
+  if(error){message.textContent='Password non aggiornata: '+error.message;return;}
+  recovering=false;recovery.reset();
+  await check();
+ }catch{
+  message.textContent='Impossibile salvare la nuova password. Riprova.';
+ }finally{button.disabled=false;}
+});
+client.auth.onAuthStateChange(event=>{
+ if(event==='PASSWORD_RECOVERY')recovering=true;
+ if(event==='SIGNED_OUT')recovering=false;
+ if(event!=='USER_UPDATED')setTimeout(check,0);
+});
 check();
 </script></body></html>
