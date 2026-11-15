@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archivio Scarpe - Il tuo Guardaroba Scarpe</title>
-  <meta name="theme-color" content="#f8fbfd">
+  <meta name="theme-color" content="#08172f">
   <meta name="application-name" content="Archivio Scarpe">
   <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./assets/archivio-scarpe-logo.svg">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
   <script>try { localStorage.removeItem('gemini_api_key'); } catch (_) {} </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -163,6 +164,67 @@
     #view-promotions h2{color:#16465d}
     #view-promotions button{min-height:44px;background:#e9f7fc;color:#086d8a}
     nav[aria-label="Navigazione principale"] button{min-width:0}
+
+    /* Identità visiva 2026: blu profondo, accenti elettrici e schede da app mobile. */
+    :root{color-scheme:dark!important;--surface:#102443;--line:rgba(132,183,237,.22);--gold:#1ca6ff}
+    html,body,body.bg-slate-950{background:#071327!important;color:#f1f7ff!important}
+    body{background:radial-gradient(ellipse 90% 48% at 50% -12%,#1450a055,transparent 70%),linear-gradient(180deg,#091b38,#071327 60%)!important}
+    header{background:rgba(8,25,51,.97)!important;border-color:#254a79!important;box-shadow:0 6px 28px #02091655!important}
+    header h1{color:#f7fbff!important;font-size:1.17rem!important;letter-spacing:-.025em}
+    header p{color:#aac4e4!important}
+    .brand-mark{width:52px;height:52px;border-radius:15px;box-shadow:0 6px 20px #030d22a6}
+    #headerSettingsButton{background:#143157!important;color:#e8f5ff!important;border-color:#315784!important}
+    main section,main section h2,main section h3{color:#f0f7ff!important}
+    main .text-white,main .text-slate-100,main .text-slate-200,main .text-slate-300{color:#edf6ff!important}
+    main .text-slate-400,main .text-slate-500{color:#a5c1dc!important}
+    main .text-amber-400,main .text-indigo-300{color:#51c5ff!important}
+    main .bg-slate-950,main .bg-slate-900,main .bg-slate-800{background:#12294c!important}
+    main .border-slate-800,main .border-slate-700,main .border-slate-600{border-color:#305278!important}
+    main .bg-amber-500,main .bg-indigo-600{background:linear-gradient(110deg,#128bf2,#04b4e9)!important;color:#fff!important}
+    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #59d5ff!important;outline-offset:3px}
+    #affiliateAdSlot{background:linear-gradient(145deg,#123e79,#0b2448 68%,#0c1c37)!important;border:1px solid #32629a!important;border-radius:24px!important;box-shadow:0 14px 36px #0009!important}
+    #affiliateAdSlot p{color:#c4ddf7!important}
+    #affiliateAdSlot h3{color:#fff!important}
+    #affiliateAdSlot .cisalfa-product-card,#promotionsGrid .cisalfa-product-card{background:#10294e!important;border:1px solid #335d91!important;color:#f3f8ff!important;box-shadow:0 6px 18px #030e2355}
+    #affiliateAdSlot .cisalfa-product-name,#promotionsGrid .cisalfa-product-name{color:#e9f5ff!important}
+    #affiliateAdSlot .cisalfa-product-price,#promotionsGrid .cisalfa-product-price{color:#65d4ff!important;font-weight:800}
+    #affiliateAdSlot .cisalfa-product-link,#promotionsGrid .cisalfa-product-link{background:linear-gradient(110deg,#0784e8,#00b4d8)!important;color:white!important}
+    #affiliateAdSlot .cisalfa-product-card img,#promotionsGrid .cisalfa-product-card img{background:#eaf2fa!important}
+    #shoesCountBadge{background:#153d71!important;color:#7bd9ff!important;border-color:#3677ac!important}
+    #usageGuideButton{background:#076b43!important;border:1px solid #22d885!important;color:#fff!important;box-shadow:0 5px 16px #022d25a6!important}
+    #archiveSearchPanel input{background:#102849!important;color:#eff7ff!important;border:1px solid #355b84!important;box-shadow:0 5px 15px #0003!important}
+    input:not([type=file]),select,textarea{background:#102849!important;color:#eff7ff!important;border-color:#355b84!important}
+    input::placeholder,textarea::placeholder{color:#a0bbd5!important}
+    #archiveFiltersDetails{background:linear-gradient(120deg,#153b6c,#0d2a50)!important;border:1px solid #35628f!important;color:#e9f5ff!important}
+    #archiveFiltersDetails summary,#archiveFiltersDetails label,#archiveFiltersDetails #archiveResultCount{color:#eaf5ff!important}
+    #archiveFiltersDetails>div{border-color:#315781!important}
+    #archiveFiltersDetails select{background:#0b2343!important;color:#f1f7ff!important;border-color:#426c9c!important}
+    #archiveFiltersDetails select option,#archiveFiltersDetails select optgroup{background:#102849!important;color:#fff!important}
+    #archiveFiltersDetails button:not(.cat-pill){background:#174779!important;color:#e4f6ff!important;border-color:#3b73a9!important}
+    .cat-pill{background:#173b68!important;color:#d4eaff!important;border-color:#366a9d!important}
+    .cat-pill[aria-pressed=true]{background:#0879c6!important;color:#fff!important;border-color:#50c6f3!important}
+    #shoesGrid>div,#shoesGrid>.shoe-card{background:linear-gradient(145deg,#132f57,#0e2444)!important;border:1px solid #315985!important;box-shadow:0 7px 23px #010a1e66!important}
+    #shoesGrid .shoe-card-info{color:#f1f8ff!important}
+    #shoesGrid .shoe-card-info h3{color:#f8fbff!important}
+    #shoesGrid .shoe-card-photo{background:#dceafa!important}
+    #shoesGrid .bg-slate-800{background:#1b4779!important;border-color:#386b9b!important}
+    #shoesGrid .absolute.top-2.left-2{background:#153b66!important;color:#fff!important;border-color:#3a6a9b!important}
+    #view-add>div:first-child,#view-check>div:first-child,#view-settings .bg-slate-900,#view-add .bg-slate-900,#view-check .bg-slate-900,#view-settings .bg-slate-800,#view-add .bg-slate-800,#view-check .bg-slate-800{background:linear-gradient(145deg,#142f55,#0c2241)!important;border-color:#315783!important}
+    #view-settings .text-slate-100,#view-settings .text-slate-200,#view-settings .text-slate-300,#view-add .text-slate-100,#view-add .text-slate-200,#view-add .text-slate-300,#view-check .text-slate-100,#view-check .text-slate-200,#view-check .text-slate-300{color:#e9f4ff!important}
+    #view-settings .text-slate-400,#view-add .text-slate-400,#view-check .text-slate-400,#view-settings .help-text,#view-add .help-text,#view-check .help-text{color:#b1c9e2!important}
+    #view-settings details,#view-add details,#view-check details,#view-settings summary,#view-add summary,#view-check summary{color:#edf6ff!important}
+    #view-settings .border-slate-700,#view-add .border-slate-700,#view-check .border-slate-700{border-color:#365c88!important}
+    #view-settings button.bg-slate-800,#view-add button.bg-slate-800,#view-check button.bg-slate-800{background:#174779!important;color:#dff6ff!important}
+    #addDropZone,#checkDropZone{background:#0b2444!important;border:2px dashed #4486bd!important}
+    .help-text{color:#b5cce5!important}
+    #view-promotions button{background:#144a7c!important;color:#e8f7ff!important}
+    #view-promotions h2{color:#f0f8ff!important}
+    nav{background:#081c38!important;border-top:1px solid #2d5484!important;box-shadow:0 -9px 32px #010916aa!important}
+    nav button{color:#a9c6e4!important}
+    nav button.text-amber-400{color:#fff!important;background:linear-gradient(145deg,#116ad0,#039bdc)!important;box-shadow:0 4px 18px #005ab65c}
+    nav button.text-slate-400{color:#a9c6e4!important}
+    #quickAddButton{background:linear-gradient(135deg,#158af4,#03b4e2)!important;box-shadow:0 8px 24px #0462ae88!important}
+    @media(max-width:390px){.brand-mark{width:46px;height:46px}header h1{font-size:1.04rem!important}#usageGuideButton{font-size:11px!important;padding-inline:9px!important}#shoesCountBadge{padding-inline:9px!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -170,9 +232,7 @@
   <!-- Header -->
   <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40 w-full max-w-5xl mx-auto">
     <div class="flex items-center space-x-2.5 min-w-0">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
-        <i class="fa-solid fa-shoe-prints text-white text-sm"></i>
-      </div>
+      <img src="./assets/archivio-scarpe-logo.svg" alt="Logo Archivio Scarpe" class="brand-mark shrink-0" width="52" height="52">
       <div class="truncate">
         <h1 class="font-bold text-base leading-tight tracking-tight text-white">Archivio Scarpe</h1>
         <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
