@@ -598,6 +598,11 @@
         <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
       </div>
+      <div id="promotionsPriceFilters" class="grid grid-cols-3 gap-2" role="group" aria-label="Filtra le promozioni per prezzo">
+        <button type="button" data-price-band="low" aria-pressed="true" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
+        <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150 €</button>
+        <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150 €</button>
+      </div>
       <p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p>
       <div id="promotionsGrid"></div>
       <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
@@ -2566,13 +2571,21 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const status = document.getElementById('promotionsStatus');
       const more = document.getElementById('promotionsMore');
       const pageSize = 6;
+      const priceFilterButtons = [...document.querySelectorAll('#promotionsPriceFilters [data-price-band]')];
+      const matchesPriceBand = (product, band) => {
+        const price = numericPrice(product);
+        return Number.isFinite(price) && (band === 'low' ? price < 50 : band === 'mid' ? price >= 50 && price <= 150 : price > 150);
+      };
+      let activePriceBand = 'low';
       let promotionProducts = [];
       let visibleCount = 0;
       const showMore = () => {
         const nextProducts = promotionProducts.slice(visibleCount, visibleCount + pageSize);
         grid.append(...nextProducts.map(createCard));
         visibleCount += nextProducts.length;
-        status.textContent = visibleCount + ' di ' + promotionProducts.length + ' prodotti';
+        status.textContent = promotionProducts.length
+          ? visibleCount + ' di ' + promotionProducts.length + ' prodotti'
+          : 'Nessun prodotto disponibile in questa fascia di prezzo.';
         more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
         return nextProducts.length;
       };
@@ -2599,11 +2612,25 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return ordered;
       };
       const openPromotions = () => {
-        promotionProducts = arrangePromotions(products);
+        promotionProducts = arrangePromotions(products.filter(product => matchesPriceBand(product, activePriceBand)));
         visibleCount = 0;
         grid.replaceChildren();
+        priceFilterButtons.forEach(button => {
+          const selected = button.dataset.priceBand === activePriceBand;
+          button.setAttribute('aria-pressed', String(selected));
+          button.classList.toggle('bg-sky-600', selected);
+          button.classList.toggle('border-sky-400', selected);
+          button.classList.toggle('text-white', selected);
+          button.classList.toggle('bg-slate-800', !selected);
+          button.classList.toggle('border-slate-600', !selected);
+          button.classList.toggle('text-slate-200', !selected);
+        });
         showMore();
       };
+      priceFilterButtons.forEach(button => button.addEventListener('click', () => {
+        activePriceBand = button.dataset.priceBand;
+        openPromotions();
+      }));
       more.addEventListener('click', () => {
         const firstAdded = visibleCount;
         if (showMore()) grid.children[firstAdded].focus();
