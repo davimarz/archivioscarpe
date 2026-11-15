@@ -1018,6 +1018,9 @@
     }
     function switchTab(tabId) {
       if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'archive';
+      if (document.getElementById('view-' + tabId).classList.contains('hidden')) {
+        recordAppEvent('section', tabId);
+      }
       const promotionsWasOpen = !document.getElementById('view-promotions').classList.contains('hidden');
       ['archive', 'check', 'add', 'settings', 'promotions'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
@@ -2680,6 +2683,34 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       });
       document.addEventListener('promotions-open', openPromotions);
       if (!document.getElementById('view-promotions').classList.contains('hidden')) openPromotions();
+    })();
+
+    function recordAppEvent(event_type, dimension) {
+      if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) return;
+      fetch('https://psjnqiqobidvyljrzjuh.supabase.co/rest/v1/app_events', {
+        method: 'POST',
+        headers: { apikey: 'sb_publishable_GEV4zSghYUbUbpQeEpeySg__rbHWeZ5', 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ event_type, dimension }),
+        keepalive: true,
+        credentials: 'omit',
+        referrerPolicy: 'no-referrer'
+      }).catch(() => {});
+    }
+
+    (() => {
+      let referrerHost = '';
+      try { if (document.referrer) referrerHost = new URL(document.referrer).hostname; } catch {}
+      const source = new URLSearchParams(location.search).get('utm_source') || '';
+      const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
+      recordAppEvent('visit', fromInstagram ? 'instagram' : 'other');
+      document.addEventListener('click', event => {
+        if (event.target.closest('a[rel~="sponsored"]')) recordAppEvent('affiliate_click', 'awin');
+      });
+      document.addEventListener('auxclick', event => {
+        if (event.button === 1 && event.target.closest('a[rel~="sponsored"]')) {
+          recordAppEvent('affiliate_click', 'awin');
+        }
+      });
     })();
   </script>
 </body>
