@@ -4,6 +4,7 @@
 <link rel="icon" href="../assets/archivio-scarpe-logo.svg">
 <style>
 :root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}body{margin:0;background:#08172f;color:#f1f5f9;min-height:100vh;display:grid;place-items:center;padding:20px;box-sizing:border-box}main{width:min(100%,470px);border:1px solid #34506b;border-radius:20px;background:#13243d;padding:24px;box-sizing:border-box}h1{font-size:23px;margin:0 0 8px}p{color:#cbd5e1;line-height:1.5}label{display:block;margin:18px 0 7px;font-size:14px;font-weight:700}input{width:100%;padding:13px;border-radius:10px;background:#fff;color:#172033;border:1px solid #64748b;box-sizing:border-box;font-size:16px}button{background:#0b79a5;color:white;border:0;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:wait}a{color:#93d9ff}#message{min-height:25px}#dashboard[hidden],#login[hidden]{display:none}.panel{background:#1d3452;border-radius:12px;padding:16px;margin:14px 0}.muted{font-size:13px;color:#b8c9d9}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}#signout{background:#475569}#status{font-weight:700}
+#dashboardMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}#dashboardMetrics div{background:#1d3452;border-radius:12px;padding:12px}#dashboardMetrics dt{font-size:13px;color:#cbd5e1}#dashboardMetrics dd{font-size:24px;font-weight:700;margin:4px 0 0}#sectionCounts li{display:flex;justify-content:space-between;padding:6px 0}#sectionCounts{padding-left:0;list-style:none}.stats-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.stats-actions h2{font-size:18px;margin:0}
 </style></head><body><main>
 <a href="../">← Torna ad Archivio Scarpe</a>
 <div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
@@ -18,8 +19,17 @@
 </form>
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
-<div class="panel"><strong id="status">Accesso verificato</strong><p>Area riservata attiva. Le statistiche centralizzate delle campagne verranno aggiunte nella seconda fase, dopo la tua verifica.</p></div>
-<div class="panel"><p>Le visite Instagram, i clic sui prodotti affiliati e i dati sulle commissioni non sono ancora raccolti da questa pagina.</p></div>
+<div class="stats-actions"><h2>Statistiche</h2><button type="button" id="refreshStats">Aggiorna</button></div>
+<p class="muted">Ultimi 30 giorni · Conteggio degli eventi registrati</p>
+<p id="statsStatus" role="status"></p>
+<dl id="dashboardMetrics">
+<div><dt>Visite totali</dt><dd id="statVisits">—</dd></div>
+<div><dt>Visite da Instagram</dt><dd id="statInstagram">—</dd></div>
+<div><dt>Clic affiliati Awin</dt><dd id="statClicks">—</dd></div>
+<div><dt>Aperture delle sezioni</dt><dd id="statSections">—</dd></div>
+</dl>
+<div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
+<p class="muted">Commissioni Awin: in attesa del collegamento ai report.</p>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
@@ -31,6 +41,58 @@ const recovery=document.getElementById('recoveryForm');
 const adminEmail=document.getElementById('email').defaultValue;
 let recovering=false;
 let checkVersion=0;
+const refreshStats=document.getElementById('refreshStats');
+const formatNumber=new Intl.NumberFormat('it-IT');
+const sections={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
+let statsVersion=0;
+async function loadStats(){
+ const version=++statsVersion;
+ const authVersion=checkVersion;
+ const current=()=>version===statsVersion && authVersion===checkVersion && !dashboard.hidden;
+ const status=document.getElementById('statsStatus');
+ const list=document.getElementById('sectionCounts');
+ const metrics=['statVisits','statInstagram','statClicks','statSections'];
+ const since=new Date(Date.now()-30*86400000).toISOString();
+ refreshStats.disabled=true;
+ status.textContent='Caricamento delle statistiche…';
+ async function countEvents(type,dimension){
+  let query=client.from('app_events').select('id',{count:'exact',head:true})
+   .eq('event_type',type).gte('recorded_at',since);
+  if(dimension)query=query.eq('dimension',dimension);
+  const {count,error}=await query;
+  if(error || count===null)throw new Error('Conteggio non disponibile');
+  return count;
+ }
+ try{
+  const sectionEntries=Object.entries(sections);
+  const [visits,instagram,clicks,...counts]=await Promise.all([
+   countEvents('visit'),countEvents('visit','instagram'),countEvents('affiliate_click'),
+   ...sectionEntries.map(([section])=>countEvents('section',section))
+  ]);
+  if(!current())return;
+  const totals=[visits,instagram,clicks,counts.reduce((sum,count)=>sum+count,0)];
+  metrics.forEach((id,index)=>{document.getElementById(id).textContent=formatNumber.format(totals[index]);});
+  list.replaceChildren(...sectionEntries.map(([,name],index)=>{
+   const row=document.createElement('li');
+   const label=document.createElement('span');
+   const value=document.createElement('strong');
+   label.textContent=name;
+   value.textContent=formatNumber.format(counts[index]);
+   row.append(label,value);
+   return row;
+  }));
+  status.textContent=totals.some(Boolean)?'':'Nessun evento registrato negli ultimi 30 giorni.';
+ }catch{
+  if(current()){
+   metrics.forEach(id=>{document.getElementById(id).textContent='—';});
+   list.replaceChildren();
+   status.textContent='Statistiche non disponibili. Premi Aggiorna per riprovare.';
+  }
+ }finally{
+  if(version===statsVersion)refreshStats.disabled=false;
+ }
+}
+refreshStats.addEventListener('click',loadStats);
 async function check(){
  const version=++checkVersion;
  dashboard.hidden=true;login.hidden=true;recovery.hidden=true;message.textContent='Verifica accesso in corso…';
@@ -45,6 +107,7 @@ async function check(){
   }
   document.getElementById('identity').textContent=user.email || 'Amministratore';
   dashboard.hidden=false;message.textContent='';
+  void loadStats();
  } catch {if(version===checkVersion){login.hidden=false;message.textContent='Impossibile verificare l’accesso. Riprova.';}}
 }
 document.getElementById('loginForm').addEventListener('submit',async event=>{
