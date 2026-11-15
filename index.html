@@ -279,7 +279,6 @@
     /* Prezzo di listino verificato, sconto e fascia di prezzo Awin. */
     .awin-discount-badge{display:inline-flex;align-self:flex-start;border-radius:7px;padding:3px 8px;background:#008e63;color:#fff!important;font-size:12px;font-weight:800}
     .awin-original-price{font-size:12px;color:#c5d5e8!important;text-decoration:line-through}
-    .awin-price-band{font-size:11px;color:#b8d9ed!important;font-weight:600}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -881,7 +880,7 @@
     // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=4', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=13', { scope: './', updateViaCache: 'none' })
           .catch(error => console.warn('Cache offline non disponibile:', error));
       });
     }
