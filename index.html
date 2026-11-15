@@ -3,16 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Archivio Scarpe - Il tuo Guardaroba Scarpe</title>
+  <title>Archivio Scarpe · Il tuo armadio e le offerte di calzature</title>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Archivio Scarpe">
+  <meta property="og:description" content="Organizza le tue scarpe, confronta i modelli e scopri le offerte dei negozi partner.">
+  <meta property="og:url" content="https://davimarz.github.io/archivioscarpe/">
+  <meta property="og:image" content="https://davimarz.github.io/archivioscarpe/assets/archivio-scarpe-social.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Archivio Scarpe, il tuo armadio e le offerte di calzature">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#08172f">
   <meta name="application-name" content="Archivio Scarpe">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="./assets/archivio-scarpe-logo.svg">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
   <script>try { localStorage.removeItem('gemini_api_key'); } catch (_) {} </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="./assets/app.css">
+  <link rel="stylesheet" href="./assets/icons.css">
   <style>
+    .promotion-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .promotion-filters button{min-height:44px;padding:4px;border:1px solid #475569;border-radius:12px;background:#1e293b;color:#e2e8f0;font-size:.75rem;font-weight:700}
+    .promotion-filters button[aria-pressed="true"]{background:#0369a1;border-color:#38bdf8;color:#fff}
+    #promotionsMore{min-height:44px}
 
     :root { color-scheme: dark; --surface:#111b2d; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
     html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
@@ -319,6 +332,16 @@
     #view-settings #settingsBackupCard #autoBackupStatus{color:#34485b!important}
     #view-settings #settingsBackupCard button.bg-slate-800{background:#e1eff7!important;color:#153b56!important;border-color:#a9c7da!important}
     #view-settings #settingsBackupCard button.bg-amber-500{color:#fff!important}
+    header .brand-mark{width:44px!important;height:44px!important}
+    header .truncate{padding-right:48px}
+    #searchInput,#addBrand{scroll-margin-top:90px}
+    #view-archive #personalArchiveCard h2{font-size:1.25rem;line-height:1.3}
+    #view-archive #affiliateAdSlot{padding:8px!important}
+    #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
+    #affiliateAdSlot .cisalfa-product-card img{height:86px!important}
+    #affiliateAdSlot .cisalfa-product-name{font-size:.75rem!important}
+    #affiliateAdSlot .cisalfa-product-card .text-\[10px\]{font-size:.6875rem!important}
+    @media(min-width:640px){#affiliateAdSlot .cisalfa-product-card img{height:104px!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -326,7 +349,7 @@
   <!-- Header -->
   <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40 w-full max-w-5xl mx-auto">
     <div class="flex items-center space-x-2.5 min-w-0">
-      <img src="./assets/archivio-scarpe-logo.svg" alt="Logo Archivio Scarpe" class="brand-mark shrink-0" width="52" height="52">
+      <img src="./assets/archivio-scarpe-logo.svg" alt="" class="brand-mark shrink-0" width="44" height="44">
       <div class="truncate">
         <h1 class="font-bold text-base leading-tight tracking-tight text-white">Archivio Scarpe</h1>
         <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
@@ -342,15 +365,6 @@
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
-      <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
-      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="rounded-xl px-3 py-3">
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
-          <button type="button" id="bannerRotationButton" class="banner-rotation-toggle" aria-pressed="false" hidden>Pausa rotazione</button>
-        </div>
-        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
-        
-      </aside>
       <div id="personalArchiveCard" class="space-y-3">
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2></div>
@@ -363,6 +377,13 @@
         <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
         <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
+      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="hidden rounded-xl px-3 py-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
+          <button type="button" id="bannerRotationButton" class="banner-rotation-toggle" aria-pressed="false" hidden>Pausa rotazione</button>
+        </div>
+        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
+      </aside>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
         <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e tipologie <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
@@ -408,21 +429,9 @@
     <!-- VIEW 3: RADAR ACQUISTI ("COMPRO?") -->
     <section id="view-check" class="hidden space-y-4">
       <h2 class="text-lg font-bold">Hai già questa scarpa?</h2>
-      <p class="help-text">Scatta una foto della scarpa che vuoi comprare. Vedrai se ne hai già una uguale o simile.</p>
-      <div class="hidden grid-cols-2 gap-2" role="group" aria-label="Metodo di verifica">
-        <button type="button" id="checkModeText" onclick="setCheckMode('text')" aria-pressed="true" class="min-h-12 rounded-xl bg-indigo-600 text-white font-semibold text-sm">Cerca per nome</button>
-        <button type="button" id="checkModePhoto" onclick="setCheckMode('photo')" aria-pressed="false" class="min-h-12 rounded-xl bg-slate-800 border border-slate-700 font-semibold text-sm">Verifica con foto</button>
-      </div>
-      <div id="checkPhotoPanel" class="mode-panel space-y-3" hidden>
+      <p class="help-text">Usa una foto per cercare una scarpa uguale o simile nel tuo armadio.</p>
+      <div id="checkPhotoPanel" class="mode-panel space-y-3">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
-        <div>
-          <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider mb-1">
-            Radar acquisti
-          </span>
-          <h2 class="text-base font-bold text-slate-100">Fotografa la scarpa</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Scatta una foto: il confronto con il tuo archivio parte automaticamente.</p>
-        </div>
-
         <p id="checkAiStatus" class="help-text text-left" role="status">Verifica lo stato del riconoscimento automatico.</p>
         <div class="mb-3"><div class="grid grid-cols-2 gap-2.5">
           <button type="button" onclick="document.getElementById('checkCameraInput').click()" class="min-h-14 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition shadow-lg shadow-indigo-600/20">
@@ -432,14 +441,14 @@
             <i class="fa-solid fa-images text-emerald-400"></i> Dalla Galleria
           </button>
         </div></div>
+        <button type="button" id="searchFromCompare" class="w-full rounded-xl border border-slate-600 px-3 py-2 text-sm font-semibold" onclick="focusArchiveSearch()">Cerca nell’Armadio</button>
 
         <div id="checkDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="checkPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="checkPlaceholder" class="p-6 text-center space-y-2">
             <i class="fa-solid fa-radar text-4xl text-indigo-400"></i>
-            <p class="text-xs font-semibold text-slate-300">Carica la scarpa da verificare</p>
-            <span class="help-text block">Fotocamera o galleria</span>
+            <p class="text-xs font-semibold text-slate-300">Anteprima della foto</p>
           </div>
 
           <!-- Animazione Scanner -->
@@ -493,7 +502,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-4">
         <div>
           <h2 class="text-base font-bold text-slate-100">Aggiungi una scarpa</h2>
-          <p class="text-xs text-slate-400 mt-1">Controlla i dati della scarpa e salvala nell’armadio. La foto del confronto viene riutilizzata.</p>
+          <p class="help-text mt-1">Carica una foto per riconoscere la scarpa oppure compila i dati a mano.</p>
         </div>
 
         <p id="addAiStatus" class="help-text text-left" role="status">Puoi inserire i dati anche manualmente.</p>
@@ -505,14 +514,14 @@
             <i class="fa-solid fa-images text-sm text-indigo-400"></i> Dalla Galleria
           </button>
         </div></div>
+        <button type="button" id="addManually" class="w-full rounded-xl border border-slate-600 px-3 py-2 text-sm font-semibold" onclick="document.getElementById('addBrand').focus()">Inserisci i dati a mano</button>
 
         <div id="addDropZone" class="relative w-full h-52 sm:h-64 bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl flex flex-col items-center justify-center overflow-hidden">
           <img id="addPreviewImg" class="hidden w-full h-full object-cover" />
           
           <div id="addPlaceholder" class="p-6 text-center space-y-2">
             <i class="fa-solid fa-camera-retro text-4xl text-slate-500"></i>
-            <p class="text-xs font-semibold text-slate-300">Inquadra la scarpa o l'etichetta</p>
-            <span class="help-text block">Scegli tra Fotocamera o Galleria</span>
+            <p class="text-xs font-semibold text-slate-300">Anteprima della foto</p>
           </div>
 
           <!-- Animazione Scanner -->
@@ -640,8 +649,9 @@
         <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
       </div>
-      <div id="promotionsPriceFilters" class="grid grid-cols-3 gap-2" role="group" aria-label="Filtra le promozioni per prezzo">
-        <button type="button" data-price-band="low" aria-pressed="true" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
+      <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per prezzo">
+        <button type="button" data-price-band="all" aria-pressed="true">Tutte</button>
+        <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
         <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150 €</button>
         <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150 €</button>
       </div>
@@ -738,14 +748,14 @@
 
   <!-- Bottom Navigation Bar -->
   <nav aria-label="Navigazione principale" class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-2 py-2 z-40 max-w-5xl mx-auto grid grid-cols-4 gap-1 items-center">
-    <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Archivio">
+    <button type="button" onclick="switchTab('archive')" id="tab-archive" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-amber-400 transition" aria-label="Armadio">
       <i class="fa-solid fa-shoe-prints text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Armadio</span>
     </button>
     <button type="button" onclick="switchTab('add')" id="tab-add" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Aggiungi scarpa nuova">
       <i class="fa-solid fa-camera text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Aggiungi</span>
     </button>
     <button type="button" onclick="switchTab('check')" id="tab-check" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition" aria-label="Confronta scarpa">
-      <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Compro?</span>
+      <i class="fa-solid fa-magnifying-glass text-lg" aria-hidden="true"></i><span class="text-[11px] font-semibold">Confronta</span>
     </button>
 
     <button type="button" onclick="switchTab('promotions')" id="tab-promotions" class="min-h-14 flex flex-col items-center justify-center gap-1 rounded-xl text-slate-400 transition">
@@ -754,6 +764,7 @@
   </nav>
 
 
+  <script src="./assets/catalogo.js"></script>
   <script>
     function createShoeSvgBase64(brand, model, bgHex) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
@@ -937,18 +948,24 @@
       const snapshot=localStorage.getItem('kicks_archive_snapshot_v1');
       if(snapshot){try{const v=JSON.parse(snapshot);document.getElementById('autoBackupStatus').textContent='Ultima copia locale: '+new Date(v.exportedAt).toLocaleString('it-IT');}catch{}}
     }
-    function saveToStorage() {
-      const previous=localStorage.getItem('kicks_archive_v17');
-      const current=JSON.stringify(shoes);
-      if(previous!==current&&previous){try{localStorage.setItem('kicks_archive_previous_v1',previous);}catch{}}
+    function saveToStorage(nextShoes = shoes) {
+      const current = JSON.stringify(nextShoes);
+      let previous;
       try {
+        previous = localStorage.getItem('kicks_archive_v17');
         localStorage.setItem('kicks_archive_v17',current);
       } catch (error) {
         alert('Spazio locale insufficiente: le modifiche potrebbero non essere salvate. Esporta un backup e libera spazio nel browser.');
         console.error('Salvataggio archivio non riuscito', error);
         return false;
       }
-      if(previous!==current)saveAutomaticSnapshot(current);
+      shoes = nextShoes;
+      if (previous !== current) {
+        if (previous) {
+          try { localStorage.setItem('kicks_archive_previous_v1', previous); } catch {}
+        }
+        saveAutomaticSnapshot(current);
+      }
       renderArchive();
       return true;
     }
@@ -987,18 +1004,9 @@
       toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
     }
 
-    function setCheckMode(mode) {
-      const photo = mode === 'photo';
-      const textPanel = document.getElementById('checkTextPanel');
-      if (textPanel) textPanel.hidden = photo;
-      document.getElementById('checkPhotoPanel').hidden = !photo;
-      for (const [name,active] of [['Text',!photo],['Photo',photo]]) {
-        const btn = document.getElementById('checkMode' + name);
-        btn.setAttribute('aria-pressed',String(active));
-        btn.classList.toggle('bg-indigo-600',active);
-        btn.classList.toggle('text-white',active);
-        btn.classList.toggle('bg-slate-800',!active);
-      }
+    function focusArchiveSearch() {
+      switchTab('archive');
+      document.getElementById('searchInput').focus();
     }
     function updatePhotoAiStatus() {
       const ready = Boolean(sessionStorage.getItem('gemini_api_key'));
@@ -1006,22 +1014,32 @@
         const el = document.getElementById(mode + 'AiStatus');
         if (!el) continue;
         el.replaceChildren();
-        el.append(document.createTextNode(ready ? 'Riconoscimento AI configurato (non ancora verificato). ' : 'Riconoscimento AI da configurare. '));
+        if (ready) el.append(document.createTextNode('Gemini configurato per questa sessione.'));
         if (!ready) {
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'underline font-semibold text-amber-300';
           button.textContent = 'Configura Gemini'; button.onclick = openApiKeyModal;
           el.appendChild(button);
         }
-        if (mode === 'add') el.append(document.createTextNode(' Puoi inserire i dati anche manualmente.'));
       }
     }
-    function switchTab(tabId) {
+    let promotionScroll = 0;
+    function switchTab(tabId, updateAddress = true) {
       if (!['archive', 'check', 'add', 'settings', 'promotions'].includes(tabId)) tabId = 'archive';
       if (document.getElementById('view-' + tabId).classList.contains('hidden')) {
         recordAppEvent('section', tabId);
       }
+      if (updateAddress) {
+        const currentBand = awinCatalog.promotionBandFromHash(location.hash);
+        if (tabId === 'promotions' && !currentBand) {
+          const band = document.querySelector('#promotionsPriceFilters [aria-pressed="true"]')?.dataset.priceBand || 'all';
+          history.pushState(null, '', awinCatalog.promotionRoutes[band]);
+        } else if (tabId !== 'promotions' && currentBand) {
+          history.pushState(null, '', location.pathname + location.search);
+        }
+      }
       const promotionsWasOpen = !document.getElementById('view-promotions').classList.contains('hidden');
+      if (promotionsWasOpen && tabId !== 'promotions') promotionScroll = window.scrollY;
       ['archive', 'check', 'add', 'settings', 'promotions'].forEach(t => {
         document.getElementById('view-' + t).classList.toggle('hidden', t !== tabId);
         const btn = document.getElementById('tab-' + t);
@@ -1031,11 +1049,10 @@
           btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
         }
       });
-      if (tabId === 'check') setCheckMode('photo');
       if (tabId === 'archive') updateQuickSearchResults();
       if (tabId === 'promotions' && !promotionsWasOpen) document.dispatchEvent(new Event('promotions-open'));
       updatePhotoAiStatus();
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: tabId === 'promotions' ? promotionScroll : 0, behavior: 'instant' });
     }
 
     function escapeHtml(value) {
@@ -1373,19 +1390,18 @@
       const model = document.getElementById('editShoeModel').value.trim();
       const colors = document.getElementById('editShoeColors').value.split(',').map(c => c.trim()).filter(Boolean);
       if (!brand || !model || !colors.length) return;
-      shoe.brand = brand;
-      shoe.model = model;
-      shoe.colors = colors;
-      shoe.sku = normalizeSku(document.getElementById('editShoeSku').value);
-      shoe.category = document.getElementById('editShoeCategory').value;
-      shoe.notes = document.getElementById('editShoeNotes').value.trim();
-      Object.assign(shoe, readShoePurchaseFields('edit'));
-      shoe.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
-      shoe.collections.forEach(name => { if (!collectionNames.includes(name)) collectionNames.push(name); });
+      const edited = { ...shoe, brand, model, colors };
+      edited.sku = normalizeSku(document.getElementById('editShoeSku').value);
+      edited.category = document.getElementById('editShoeCategory').value;
+      edited.notes = document.getElementById('editShoeNotes').value.trim();
+      Object.assign(edited, readShoePurchaseFields('edit'));
+      edited.collections = parseCollectionNames(document.getElementById('editShoeCollections').value);
+      edited.image = editingImages[0] || shoe.image;
+      edited.images = editingImages.slice();
+      if (!saveToStorage(shoes.map(item => item === shoe ? edited : item))) return;
+      collectionNames = [...new Set([...collectionNames, ...edited.collections])];
       saveCollectionNames();
-      shoe.image = editingImages[0] || shoe.image;
-      shoe.images = editingImages.slice();
-      saveToStorage();
+      renderArchive();
       closeEditShoeModal();
     }
 
@@ -1403,8 +1419,7 @@
     function deleteShoe(id) {
       const shoe = shoes.find(s => String(s.id) === String(id));
       if (shoe && confirm('Eliminare definitivamente ' + shoe.brand + ' ' + shoe.model + ' dall’archivio?')) {
-        shoes = shoes.filter(s => s.id !== id);
-        saveToStorage();
+        saveToStorage(shoes.filter(item => item !== shoe));
       }
     }
 
@@ -2032,8 +2047,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
 
       const duplicates = getAddDuplicates();
       if (duplicates.length && !confirm('Possibile doppione: ' + duplicates.slice(0, 2).map(shoe => shoe.brand + ' ' + shoe.model).join(', ') + '. Vuoi aggiungere comunque un altro paio?')) return;
-      shoes.unshift(newShoe);
-      saveToStorage();
+      if (!saveToStorage([newShoe, ...shoes])) return;
 
       document.getElementById('addShoeForm').reset();
       updateAddDuplicateNotice();
@@ -2125,8 +2139,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         createdAt: new Date().toISOString(),
         dateAdded: new Date().toISOString().split('T')[0]
       };
-      shoes.unshift(newShoe);
-      saveToStorage();
+      if (!saveToStorage([newShoe, ...shoes])) return;
       lastCheckedCandidate = null;
       switchTab('archive');
     }
@@ -2367,23 +2380,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
   </script>
 
   <script>
-    // Catalogo statico selezionato dal feed Awin Cisalfa: nessuna chiave API è pubblicata.
+    const lastAppEvent = new Map();
     (async () => { // data-awin-import
-      const catalogProducts = [{"name":"Adidas Hyperboost Edge M - Scarpe Running - Uomo","price":"169,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw2efac59d/cisalfa/files/S6030871-UNI/image/S6030871_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=45290583713&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Nike Air Force 1 Low White '07","price":"120,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Nike-Air-Force-1-Low-White-07_V2-Product.webp?v=1680191164","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fnike-air-force-1-low-white-07%3Fvariant%3D46476021956947","merchant":"OneStreet"},{"name":"Adidas Grand Court 3.0 Gs Jr - Scarpe Sneakers - Bianco","price":"40,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw2a12791e/cisalfa/files/S5949209-UNI/image/S5949209_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=45455506766&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Adidas Yeezy Boost 380 Alien Blue","price":"165,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/adidas-Yeezy-Boost-380-Alien-Blue-Product.jpg?v=1680558453","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fadidas-yeezy-boost-380-alien-blue%3Fvariant%3D46487460020563","merchant":"OneStreet"},{"name":"New Balance Fresh Foam 860 V15 M - Scarpe Running - Uomo","price":"170,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwcefffadf/cisalfa/files/S6045347--/image/S6045347__.jpg","url":"https://www.awin1.com/pclick.php?p=45212758582&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Jordan 1 Retro High White Black Volt University Gold","price":"140,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Air-Jordan-1-Retro-High-White-Black-Volt-University-Gold-Product.jpg?v=1680558636","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fjordan-1-retro-high-white-black-volt-university-gold%3Fvariant%3D46487465394515","merchant":"OneStreet"},{"name":"Hoka Clifton 10 Jr - Scarpe Running - Nero","price":"74,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwd36fa042/cisalfa/files/S5889283-BBLC/image/S5889283_BBLC.jpg","url":"https://www.awin1.com/pclick.php?p=45765555674&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Nike Dunk Low Archeo Pink (Donna)","price":"70,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Nike-Dunk-Low-Archeo-Pink-W.jpg?v=1680559130","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fnike-dunk-low-archeo-pink-w%3Fvariant%3D46487476896083","merchant":"OneStreet"},{"name":"Adidas Gazelle W - Scarpe Sneakers - Donna - Rosa","price":"55,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwde6d8c98/cisalfa/files/S5870530-UNI/image/S5870530_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=41689001141&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Nike Dunk High Cargo Khaki (Bambino)","price":"70,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Nike-Dunk-High-Cargo-Khaki-GS-Product.webp?v=1680559162","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fnike-dunk-high-cargo-khaki-gs%3Fvariant%3D46487477584211","merchant":"OneStreet"},{"name":"Asics Blazeblast M - Scarpe Running - Uomo","price":"120,90","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw706ddacd/cisalfa/files/S6054647-700/image/S6054647_700.jpg","url":"https://www.awin1.com/pclick.php?p=45935954778&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Jordan 1 Mid Grey Green","price":"90,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Air-Jordan-1-Mid-Grey-Green.jpg?v=1680559189","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fjordan-1-mid-grey-green%3Fvariant%3D46487478108499","merchant":"OneStreet"},{"name":"Nike Air Max 90 M - Scarpe Sneakers - Uomo - Bianco","price":"149,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw3b83cde1/cisalfa/files/S5167678-100/image/S5167678_100.jpg","url":"https://www.awin1.com/pclick.php?p=46317446849&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Jordan 1 High Element Gore-Tex Light Bone","price":"200,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Air-Jordan-1-High-Element-Gore-Tex-Light-Bone-Product.webp?v=1680559251","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fjordan-1-high-element-gore-tex-light-bone%3Fvariant%3D46487479714131","merchant":"OneStreet"},{"name":"Puma Softride M - Scarpe Sneakers - Uomo - Grigio","price":"39,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw499333e2/cisalfa/files/S5974194-03/image/S5974194_03.jpg","url":"https://www.awin1.com/pclick.php?p=43889749166&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Jordan 1 Retro High OG Washed Pink (Donna)","price":"140,00","image":"https://cdn.shopify.com/s/files/1/0726/5845/2819/products/Air-Jordan-1-Retro-High-OG-Atmosphere-Pink-W.webp?v=1683540071","url":"https://www.awin1.com/cread.php?awinmid=128805&awinaffid=3150312&ued=https%3A%2F%2Fonestreet.it%2Fproducts%2Fjordan-1-retro-high-og-washed-pink-womens%3Fvariant%3D46587552334163","merchant":"OneStreet"},{"name":"Asics Novablast 5 W - Scarpe Running - Donna - Nero","price":"99,99","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw43090fb8/cisalfa/files/S5934292-003/image/S5934292_003.jpg","url":"https://www.awin1.com/pclick.php?p=43307953913&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"New Balance 530 W - Scarpe Sneakers - Donna - Grigio","price":"120,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw280ff210/cisalfa/files/S6046091--/image/S6046091__.jpg","url":"https://www.awin1.com/pclick.php?p=45204078120&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Salomon X Ultra 5 Gtx D W - Scarpe Trail - Donna","price":"128,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dw151a2baf/cisalfa/files/S5978545-UNI/image/S5978545_UNI.jpg","url":"https://www.awin1.com/pclick.php?p=44475790271&a=3150312&m=16259","merchant":"Cisalfa Sport"},{"name":"Converse Chuck Taylor All Star Fold Over Lift X-high W","price":"110,00","image":"https://www.cisalfasport.it/on/demandware.static/-/Sites-cisalfa-master/default/dwc56c477e/cisalfa/files/S5921646-200/image/S5921646_200.jpg","url":"https://www.awin1.com/pclick.php?p=45396508333&a=3150312&m=16259","merchant":"Cisalfa Sport"}];
-      // Confronta soltanto prodotti identificabili come la stessa variante.
-      // Se il feed contiene un EAN/GTIN o uno SKU globale, usa quello; altrimenti
-      // richiedi una corrispondenza esatta del nome normalizzato (incluso colore).
       const normalize = value => String(value || '').normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '').toLowerCase()
         .replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ');
-      const productKey = product => {
-        // Identificativi della variante commerciale; SKU del rivenditore non è globale.
-        const id = normalize(product.gtin || product.ean || product.globalId);
-        const color = normalize(product.color || product.colour || '');
-        const size = normalize(product.size || '');
-        const variant = color || size ? '|color:' + color + '|size:' + size : '';
-        return id ? 'id:' + id + variant : 'name:' + normalize(product.name) + variant;
-      };
       const numericPrice = product => {
         const raw = String(product.price || '').replace(/[^\d,.]/g, '');
         const decimal = raw.lastIndexOf(',') > raw.lastIndexOf('.')
@@ -2428,47 +2429,34 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const percent = Math.round((original - current) / original * 100);
         return percent >= 1 && percent <= 99 ? { original, current, percent } : null;
       };
-      const byDiscount = (a, b) => (discountFor(b)?.percent || 0) - (discountFor(a)?.percent || 0) || numericPrice(a) - numericPrice(b);
-      const formatEuro = amount => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
-      const priceBand = product => numericPrice(product) < 50 ? 'Sotto 50 €' : numericPrice(product) <= 150 ? '50–150 €' : 'Oltre 150 €';
+      const euroFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+      const formatEuro = amount => euroFormatter.format(amount);
       const disabledMerchants = new Set(['voghion global', 'goicon global']);
-      function prepareCatalog(items) {
-        const cheapest = new Map();
-        for (const product of items) {
-          if (!product || typeof product.name !== 'string' || typeof product.merchant !== 'string' ||
-              !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
-              !Number.isFinite(numericPrice(product))) continue;
-          const merchant = product.merchant.trim().toLowerCase().replace(/\s+/g, ' ');
-          if (disabledMerchants.has(merchant)) continue;
-          const key = productKey(product);
-          const current = cheapest.get(key);
-          if (!current || numericPrice(product) < numericPrice(current)) cheapest.set(key, product);
+      const bands = { low: [], mid: [], high: [] };
+      const catalog = awinCatalog.openIndexedAwinCatalog('./catalogo-awin.json', './catalogo-awin-indice.json');
+      const seen = new Set();
+      let nextBlock;
+      function readNextBlock(keys) {
+        if (!nextBlock) {
+          nextBlock = catalog.next(keys).then(items => {
+            for (const product of shuffleProducts(items)) {
+              if (!product || typeof product.name !== 'string' || typeof product.merchant !== 'string' ||
+                  !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
+                  disabledMerchants.has(normalize(product.merchant))) continue;
+              const amount = numericPrice(product);
+              const key = JSON.stringify([product.url, product.gtin, product.color, product.size]);
+              if (!Number.isFinite(amount) || seen.has(key)) continue;
+              seen.add(key);
+              bands[amount < 50 ? 'low' : amount <= 150 ? 'mid' : 'high'].push(product);
+            }
+          }).finally(() => { nextBlock = null; });
         }
-        const available = [...cheapest.values()];
-        const discounts = available.filter(product => discountFor(product) !== null).sort(byDiscount);
-        return { products: discounts.length ? discounts : available, hasVerifiedDiscounts: discounts.length > 0 };
+        return nextBlock;
+      }
+      async function readUntil(ready, keys) {
+        while (!ready(catalog.ended(keys)) && !catalog.ended(keys)) await readNextBlock(keys);
       }
 
-      const preview = prepareCatalog(catalogProducts);
-      let { products, hasVerifiedDiscounts } = preview;
-      let catalogRequest;
-      function loadFullCatalog() {
-        if (!catalogRequest) {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 12000);
-          catalogRequest = (async () => {
-            const response = await fetch('./catalogo-awin.json', { cache: 'no-cache', signal: controller.signal });
-            if (!response.ok) throw new Error('Catalogo non disponibile');
-            const imported = await response.json();
-            if (!Array.isArray(imported)) throw new Error('Catalogo non valido');
-            return prepareCatalog(imported);
-          })().catch(error => {
-            catalogRequest = null;
-            throw error;
-          }).finally(() => clearTimeout(timeout));
-        }
-        return catalogRequest;
-      }
       const shuffleProducts = items => {
         const copy = [...items];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -2479,28 +2467,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
        const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
-      if (!products.length) {
-        const ad = document.getElementById('affiliateAdSlot');
-        if (ad) ad.classList.add('hidden');
-        const promotionsStatus = document.getElementById('promotionsStatus');
-        if (promotionsStatus) promotionsStatus.textContent = 'Nessuna offerta con sconto verificabile disponibile nei listini attuali.';
-        return;
-      }
-      const bannerBands = [
-        (hasVerifiedDiscounts ? products.filter(product => numericPrice(product) < 50) : shuffleProducts(products.filter(product => numericPrice(product) < 50))),
-        (hasVerifiedDiscounts ? products.filter(product => {
-          const price = numericPrice(product);
-          return Number.isFinite(price) && price >= 50;
-        }) : shuffleProducts(products.filter(product => {
-          const price = numericPrice(product);
-          return Number.isFinite(price) && price >= 50;
-        })))
-      ];
-      const pageCount = bannerBands.every(band => band.length)
-        ? Math.max(...bannerBands.map(band => band.length)) : 1;
-      const bannerProducts = pageIndex => bannerBands
-        .filter(band => band.length)
-        .map(band => band[pageIndex % band.length]);
+      const bannerBands = [[], []];
+      let pageCount = 0;
+      const bannerProducts = pageIndex => pageCount
+        ? bannerBands.map(band => band[pageIndex % band.length])
+        : [];
       let page = 0;
       const createCard = (product) => {
         const card = document.createElement('a');
@@ -2519,7 +2490,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         card.className = 'cisalfa-product-card';
         const img = document.createElement('img');
         img.src = /^https:\/\//i.test(String(product.image || '')) ? product.image : '';
-        img.alt = product.name;
+        img.alt = '';
         img.loading = 'lazy';
         img.decoding = 'async';
         img.addEventListener('error', () => {
@@ -2556,6 +2527,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         if (offer) card.append(discountBadge);
         card.append(name);
         if (offer) card.append(previous);
+        else {
+          const reference = readMoney(product.referencePrice);
+          if (Number.isFinite(reference) && reference > numericPrice(product)) {
+            const recommended = document.createElement('small');
+            recommended.textContent = 'Prezzo consigliato ' + formatEuro(reference);
+            card.append(recommended);
+          }
+        }
         card.append(price);
         if (details.length || options.length) {
           const note = document.createElement('small');
@@ -2571,7 +2550,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
       let rotationTimer;
-      let rotationPaused = false;
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let rotationPaused = reducedMotion.matches;
+      function updateRotationButton() {
+        rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
+        rotationButton.setAttribute('aria-pressed', String(rotationPaused));
+      }
       const scheduleRotation = () => {
         clearTimeout(rotationTimer);
         if (rotationPaused || pageCount < 2) return;
@@ -2586,6 +2570,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }, 5000);
       };
       const moveBanner = direction => {
+        if (!pageCount) return;
         page = (page + direction + pageCount) % pageCount;
         render();
         scheduleRotation();
@@ -2611,108 +2596,122 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           moveBanner(dx < 0 ? 1 : -1);
         }
       }, { passive: false });
-      render();
-      if (pageCount > 1) {
-        rotationButton.hidden = false;
+      if (rotationButton) {
+        updateRotationButton();
         rotationButton.addEventListener('click', () => {
           rotationPaused = !rotationPaused;
-          rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
-          rotationButton.setAttribute('aria-pressed', String(rotationPaused));
+          updateRotationButton();
           scheduleRotation();
         });
-        scheduleRotation();
       }
+      readUntil(() => bands.low.length >= 8 && bands.mid.length + bands.high.length >= 8).then(() => {
+        bannerBands[0] = shuffleProducts(bands.low).slice(0, 12);
+        bannerBands[1] = shuffleProducts([...bands.mid, ...bands.high]).slice(0, 12);
+        if (bannerBands.some(band => !band.length)) {
+          slot.closest('aside').classList.add('hidden');
+          return;
+        }
+        pageCount = Math.max(...bannerBands.map(band => band.length));
+        render();
+        slot.closest('aside').classList.remove('hidden');
+        if (rotationButton) rotationButton.hidden = pageCount < 2;
+        scheduleRotation();
+      }).catch(() => slot.closest('aside').classList.add('hidden'));
 
       const grid = document.getElementById('promotionsGrid');
       const status = document.getElementById('promotionsStatus');
       const more = document.getElementById('promotionsMore');
-      const pageSize = 6;
       const priceFilterButtons = [...document.querySelectorAll('#promotionsPriceFilters [data-price-band]')];
-      const matchesPriceBand = (product, band) => {
-        const price = numericPrice(product);
-        return Number.isFinite(price) && (band === 'low' ? price < 50 : band === 'mid' ? price >= 50 && price <= 150 : price > 150);
-      };
-      let activePriceBand = 'low';
-      let promotionProducts = [];
-      let visibleCount = 0;
-      const showMore = () => {
-        const nextProducts = promotionProducts.slice(visibleCount, visibleCount + pageSize);
-        grid.append(...nextProducts.map(createCard));
-        visibleCount += nextProducts.length;
-        status.textContent = promotionProducts.length
-          ? visibleCount + ' di ' + promotionProducts.length + ' prodotti'
-          : 'Nessun prodotto disponibile in questa fascia di prezzo.';
-        more.classList.toggle('hidden', visibleCount >= promotionProducts.length);
-        return nextProducts.length;
-      };
-      const arrangePromotions = catalog => {
-        const bands = [[], [], []];
-        for (const product of catalog) {
-          const price = numericPrice(product);
-          if (!Number.isFinite(price)) continue;
-          bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
-        }
-        bands.forEach((band, index) => {
-          bands[index] = hasVerifiedDiscounts ? band.sort(byDiscount) : shuffleProducts(band);
-        });
-        const ordered = [];
-        // Blocchi completi: due offerte per fascia, senza ripetizioni.
-        while (bands.every(band => band.length >= 2)) {
-          const group = bands.flatMap(band => band.splice(0, 2));
-          ordered.push(...group);
-        }
-        // Se una fascia si esaurisce, usa solo prodotti realmente disponibili:
-        // nessun articolo fittizio e nessuna ripetizione per riempire sei posti.
-        const remaining = hasVerifiedDiscounts ? bands.flat().sort(byDiscount) : shuffleProducts(bands.flat());
-        while (remaining.length) ordered.push(...remaining.splice(0, pageSize));
-        return ordered;
-      };
+      let activePriceBand = 'all';
+      const pageStates = new Map();
       let promotionLoad = 0;
-      const openPromotions = async () => {
-        const current = ++promotionLoad;
-        grid.replaceChildren();
-        more.classList.add('hidden');
-        status.textContent = 'Caricamento delle promozioni…';
-        let fallback = false;
-        try {
-          const catalog = await loadFullCatalog();
-          if (current !== promotionLoad) return;
-          ({ products, hasVerifiedDiscounts } = catalog);
-        } catch {
-          if (current !== promotionLoad) return;
-          ({ products, hasVerifiedDiscounts } = preview);
-          fallback = true;
+      function updatePriceButtons() {
+        for (const button of priceFilterButtons) {
+          button.setAttribute('aria-pressed', String(button.dataset.priceBand === activePriceBand));
         }
-        promotionProducts = arrangePromotions(products.filter(product => matchesPriceBand(product, activePriceBand)));
-        visibleCount = 0;
-        grid.replaceChildren();
-        priceFilterButtons.forEach(button => {
-          const selected = button.dataset.priceBand === activePriceBand;
-          button.setAttribute('aria-pressed', String(selected));
-          button.classList.toggle('bg-sky-600', selected);
-          button.classList.toggle('border-sky-400', selected);
-          button.classList.toggle('text-white', selected);
-          button.classList.toggle('bg-slate-800', !selected);
-          button.classList.toggle('border-slate-600', !selected);
-          button.classList.toggle('text-slate-200', !selected);
-        });
-        showMore();
-        if (fallback) status.textContent += ' · Anteprima di riserva';
-      };
+      }
+      function renderPageStatus(state) {
+        status.textContent = state.items.length ? state.items.length + ' prodotti mostrati' : 'Nessun prodotto disponibile in questa fascia di prezzo.';
+        more.classList.toggle('hidden', !state.hasMore);
+        more.textContent = 'Mostra altri prodotti';
+      }
+      async function showMore(focusNew = false) {
+        const current = ++promotionLoad;
+        const filter = activePriceBand;
+        const state = pageStates.get(filter);
+        more.disabled = true;
+        status.textContent = 'Caricamento delle promozioni…';
+        try {
+          let next;
+          const keys = filter === 'all' ? undefined : [filter];
+          await readUntil(ended => {
+            next = awinCatalog.nextPromotionPage(bands, state.positions, filter, ended);
+            return Boolean(next);
+          }, keys);
+          if (current !== promotionLoad) return;
+          const firstAdded = state.items.length;
+          state.items.push(...next.items);
+          state.positions = next.positions;
+          state.hasMore = next.hasMore;
+          grid.append(...next.items.map(createCard));
+          renderPageStatus(state);
+          if (focusNew && next.items.length) grid.children[firstAdded].focus();
+        } catch (error) {
+          if (current !== promotionLoad) return;
+          status.textContent = error.message.startsWith('Catalogo cambiato') ? error.message : 'Catalogo temporaneamente non disponibile.';
+          more.textContent = 'Riprova';
+          more.classList.remove('hidden');
+        } finally {
+          if (current === promotionLoad) more.disabled = false;
+        }
+      }
+      function selectPromotionBand() {
+        ++promotionLoad;
+        more.disabled = false;
+        more.classList.add('hidden');
+        updatePriceButtons();
+        let state = pageStates.get(activePriceBand);
+        if (!state) {
+          state = { items: [], positions: { low: 0, mid: 0, high: 0 }, hasMore: true };
+          pageStates.set(activePriceBand, state);
+        }
+        grid.replaceChildren(...state.items.map(createCard));
+        if (state.items.length || !state.hasMore) renderPageStatus(state);
+        else void showMore();
+      }
+      function openPromotions() {
+        if (!pageStates.has(activePriceBand)) selectPromotionBand();
+      }
+      function changePromotionBand(band) {
+        if (activePriceBand === band && pageStates.has(band)) return;
+        activePriceBand = band;
+        promotionScroll = 0;
+        if (!document.getElementById('view-promotions').classList.contains('hidden')) selectPromotionBand();
+        else updatePriceButtons();
+      }
       priceFilterButtons.forEach(button => button.addEventListener('click', () => {
-        activePriceBand = button.dataset.priceBand;
-        openPromotions();
+        const band = button.dataset.priceBand;
+        if (band === activePriceBand) return;
+        history.pushState(null, '', awinCatalog.promotionRoutes[band]);
+        changePromotionBand(band);
       }));
-      more.addEventListener('click', () => {
-        const firstAdded = visibleCount;
-        if (showMore()) grid.children[firstAdded].focus();
-      });
+      more.addEventListener('click', () => { void showMore(true); });
       document.addEventListener('promotions-open', openPromotions);
-      if (!document.getElementById('view-promotions').classList.contains('hidden')) openPromotions();
+      function openAddress() {
+        const band = awinCatalog.promotionBandFromHash(location.hash);
+        if (band) {
+          changePromotionBand(band);
+          switchTab('promotions', false);
+        } else if (!document.getElementById('view-promotions').classList.contains('hidden')) {
+          switchTab('archive', false);
+        }
+      }
+      window.addEventListener('popstate', openAddress);
+      window.addEventListener('hashchange', openAddress);
+      openAddress();
     })();
 
-    const lastAppEvent = new Map();
-    function recordAppEvent(event_type, dimension) {
+    function recordAppEvent(event_type, dimension, campaign = '') {
       if (navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) return;
       const key = event_type + ':' + dimension;
       const now = Date.now();
@@ -2721,7 +2720,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       fetch('https://psjnqiqobidvyljrzjuh.supabase.co/rest/v1/app_events', {
         method: 'POST',
         headers: { apikey: 'sb_publishable_GEV4zSghYUbUbpQeEpeySg__rbHWeZ5', 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ event_type, dimension }),
+        body: JSON.stringify({ event_type, dimension, ...(campaign && { campaign }) }),
         keepalive: true,
         credentials: 'omit',
         referrerPolicy: 'no-referrer'
@@ -2731,9 +2730,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
     (() => {
       let referrerHost = '';
       try { if (document.referrer) referrerHost = new URL(document.referrer).hostname; } catch {}
-      const source = new URLSearchParams(location.search).get('utm_source') || '';
+      const params = new URLSearchParams(location.search);
+      const source = params.get('utm_source') || '';
       const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
-      recordAppEvent('visit', fromInstagram ? 'instagram' : 'other');
+      const campaign = fromInstagram ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
+      recordAppEvent('visit', fromInstagram ? 'instagram' : 'other', campaign);
       document.addEventListener('click', event => {
         if (event.target.closest('a[rel~="sponsored"]')) recordAppEvent('affiliate_click', 'awin');
       });

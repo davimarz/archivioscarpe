@@ -1,18 +1,11 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v18';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html', './assets/archivio-scarpe-logo.svg'];
-const EXTERNAL = [
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
-];
+const CACHE = 'archivio-scarpe-shell-v21';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html',
+  './assets/archivio-scarpe-logo.svg', './assets/app.css', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     await cache.addAll(SHELL);
-    await Promise.allSettled(EXTERNAL.map(async url => {
-      const response = await fetch(url, { mode: 'cors' });
-      if (response.ok) await cache.put(url, response);
-    }));
     await self.skipWaiting();
   })());
 });
@@ -32,13 +25,14 @@ function cacheable(request, url) {
   if (url.hostname === 'generativelanguage.googleapis.com') return false;
   if (url.searchParams.has('key') || url.searchParams.has('api_key')) return false;
   if (url.origin === self.location.origin) return url.pathname.startsWith(new URL(self.registration.scope).pathname);
-  return ['cdn.tailwindcss.com', 'cdnjs.cloudflare.com', 'fonts.gstatic.com', 'cdn.jsdelivr.net', 'tessdata.projectnaptha.com'].includes(url.hostname);
+  return ['cdn.jsdelivr.net', 'tessdata.projectnaptha.com'].includes(url.hostname);
 }
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
   const catalogUrl = new URL('./catalogo-awin.json', self.registration.scope);
-  if (url.origin === catalogUrl.origin && url.pathname === catalogUrl.pathname) return;
+  if (url.origin === catalogUrl.origin && (url.pathname === catalogUrl.pathname ||
+      url.pathname === new URL('./catalogo-awin-indice.json', self.registration.scope).pathname)) return;
   const adminUrl = new URL('./admin/', self.registration.scope);
   if (request.method === 'GET' && url.origin === adminUrl.origin &&
       (url.pathname === adminUrl.pathname.slice(0, -1) || url.pathname.startsWith(adminUrl.pathname))) {
@@ -77,12 +71,6 @@ self.addEventListener('message', event => {
     try {
       const cache = await caches.open(CACHE);
       await cache.addAll(SHELL);
-      const results = await Promise.allSettled(EXTERNAL.map(async url => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Risorsa non disponibile');
-        await cache.put(url, response);
-      }));
-      if (results.some(result => result.status === 'rejected')) throw new Error('Alcune risorse esterne non sono state memorizzate.');
       port?.postMessage({ ok: true });
     } catch (error) { port?.postMessage({ ok: false, error: error.message }); }
   })());

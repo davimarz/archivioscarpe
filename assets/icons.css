@@ -1,0 +1,31 @@
+/* Font Awesome Free 6.4.0 by Fonticons, Inc. — see LICENSE-Font-Awesome.txt */
+@font-face{font-family:ArchivioIcons;src:url("./icons.ttf") format("truetype");font-display:block;font-weight:900}.fa-solid{display:inline-block;font-family:ArchivioIcons;font-style:normal;font-weight:900;line-height:1}
+.fa-bolt:before{content:"\f0e7"}
+.fa-box-open:before{content:"\f49e"}
+.fa-brain:before{content:"\f5dc"}
+.fa-camera:before{content:"\f030"}
+.fa-camera-retro:before{content:"\f083"}
+.fa-check:before{content:"\f00c"}
+.fa-chevron-right:before{content:"\f054"}
+.fa-circle-exclamation:before{content:"\f06a"}
+.fa-compass:before{content:"\f14e"}
+.fa-download:before{content:"\f019"}
+.fa-envelope:before{content:"\f0e0"}
+.fa-eye:before{content:"\f06e"}
+.fa-eye-slash:before{content:"\f070"}
+.fa-floppy-disk:before{content:"\f0c7"}
+.fa-gear:before{content:"\f013"}
+.fa-images:before{content:"\f302"}
+.fa-key:before{content:"\f084"}
+.fa-magnifying-glass:before{content:"\f002"}
+.fa-pen:before{content:"\f304"}
+.fa-phone:before{content:"\f095"}
+.fa-plus:before{content:"\2b"}
+.fa-radar:before{content:"\f14e"}
+.fa-rotate-right:before{content:"\f2f9"}
+.fa-shield-halved:before{content:"\f3ed"}
+.fa-shoe-prints:before{content:"\f54b"}
+.fa-tags:before{content:"\f02c"}
+.fa-trash:before{content:"\f1f8"}
+.fa-upload:before{content:"\f093"}
+.fa-xmark:before{content:"\f00d"}
