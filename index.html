@@ -309,6 +309,16 @@
     #shoesGrid .shoe-card-actions button[data-delete-shoe]{background:#ffe4e6!important;border:1px solid #fda4af!important;color:#9f1239!important}
     #shoesGrid .shoe-card-actions button i{display:inline-block!important;visibility:visible!important;opacity:1!important;color:inherit!important;font-size:15px!important;line-height:1!important}
     #shoesGrid .shoe-card-actions button span{color:inherit!important;font-weight:700!important}
+    /* Testi scuri e leggibili nella scheda backup a sfondo chiaro. */
+    #view-settings #settingsBackupCard{background:#fff!important;color:#1e293b!important;border-color:#cbd5e1!important}
+    #view-settings #settingsBackupCard p:not(.help-text),
+    #view-settings #settingsBackupCard .text-slate-100,
+    #view-settings #settingsBackupCard .text-slate-400{color:#263849!important}
+    #view-settings #settingsBackupCard .help-text{color:#34485b!important}
+    #view-settings #settingsBackupCard #backupFeedback,
+    #view-settings #settingsBackupCard #autoBackupStatus{color:#34485b!important}
+    #view-settings #settingsBackupCard button.bg-slate-800{background:#e1eff7!important;color:#153b56!important;border-color:#a9c7da!important}
+    #view-settings #settingsBackupCard button.bg-amber-500{color:#fff!important}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -610,7 +620,7 @@
       <span id="keyLabel">Imposta AI</span>
     </button>
       </div>
-      <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
+      <div id="settingsBackupCard" class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-3 space-y-2">
         <div class="flex items-center justify-between gap-2">
           <div><p class="text-sm font-bold text-slate-100"><i class="fa-solid fa-shield-halved text-amber-400 mr-2"></i>Backup scarpiera</p><p class="text-[11px] text-slate-400 mt-1">Esporta o ripristina scarpe, dati e fotografie.</p></div>
         </div>
