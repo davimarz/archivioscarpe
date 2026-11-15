@@ -80,6 +80,15 @@
     };
   }
 
+  function shuffleProducts(items) {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
   function openIndexedAwinCatalog(url, indexUrl, fetchBlock = fetch) {
     const bands = ['low', 'mid', 'high'];
     const sequential = openAwinCatalog(url, fetchBlock);
@@ -114,7 +123,7 @@
           const offset = Math.floor(Math.random() * ordered.length);
           return [band, [...ordered.slice(offset), ...ordered.slice(0, offset)]];
         }));
-        return { size: index.size, etag, ranges };
+        return { size: index.size, etag, ranges, started: new Set() };
       } catch {
         return null;
       }
@@ -125,20 +134,31 @@
       },
       async next(keys = bands) {
         if (state === undefined) state = await setup();
-        if (!state) return sequential.next();
-        const pending = keys.filter(key => state.ranges[key].length);
-        const parts = await Promise.all(pending.map(async key => {
-          const [start, end] = state.ranges[key][0];
+        if (!state) return shuffleProducts(await sequential.next());
+        const pending = keys.filter(key => state.ranges[key].length).map(key => {
+          const choices = state.ranges[key];
+          return { key, slots: !state.started.has(key) && choices.length > 1 ? [0, Math.floor(choices.length / 2)] : [0] };
+        });
+        const parts = await Promise.all(pending.flatMap(({ key, slots }) => slots.map(async slot => {
+          const [start, end] = state.ranges[key][slot];
           const response = await request(start, end, state.etag);
           if (response.status !== 206 || response.headers.get('ETag') !== state.etag ||
               response.headers.get('Content-Range') !== 'bytes ' + start + '-' + (end - 1) + '/' + state.size) {
             await response.body?.cancel();
             throw new Error('Catalogo cambiato o non disponibile. Ricarica la pagina.');
           }
-          return JSON.parse('[' + await response.text() + ']');
-        }));
-        for (const key of pending) state.ranges[key].shift();
-        return parts.flat();
+          return shuffleProducts(JSON.parse('[' + await response.text() + ']'));
+        })));
+        for (const { key, slots } of pending) {
+          for (const slot of [...slots].reverse()) state.ranges[key].splice(slot, 1);
+          state.started.add(key);
+        }
+        const rows = [];
+        const length = Math.max(0, ...parts.map(part => part.length));
+        for (let i = 0; i < length; i++) {
+          for (const part of parts) if (i < part.length) rows.push(part[i]);
+        }
+        return rows;
       }
     };
   }
@@ -176,7 +196,7 @@
     return /^[a-z0-9][a-z0-9_-]{0,47}$/.test(slug) ? slug : '';
   }
 
-  const api = { openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionRoutes, promotionBandFromHash, instagramCampaign };
+  const api = { openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionRoutes, promotionBandFromHash, instagramCampaign, shuffleProducts };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else window.awinCatalog = api;
 })();

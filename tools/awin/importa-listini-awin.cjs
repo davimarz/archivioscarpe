@@ -391,4 +391,3 @@ function main() {
 }
 
 try { main(); } catch (error) { console.error('Importazione interrotta: ' + error.message); process.exitCode = 1; }
-

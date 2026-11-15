@@ -6,7 +6,7 @@ const { spawnSync } = require('node:child_process');
 const { setTimeout: delay } = require('node:timers/promises');
 
 const repository = 'https://github.com/davimarz/archivioscarpe.git';
-const publicCatalog = 'https://davimarz.github.io/archivioscarpe/catalogo-awin.json';
+const publicSite = 'https://davimarz.github.io/archivioscarpe/';
 const rawBase = 'https://raw.githubusercontent.com/davimarz/archivioscarpe/';
 const filesToPublish = ['catalogo-awin.json', 'catalogo-awin-indice.json'];
 const feedExtension = /\.(?:(?:csv|tsv|jsonl|ndjson)(?:\.gz)?|gz)$/i;
@@ -60,22 +60,28 @@ function publish(repo) {
   git('push', 'origin', 'HEAD:main');
 }
 
-async function verifyOnline(catalogPath) {
-  const expected = createHash('sha256').update(fs.readFileSync(catalogPath)).digest('hex');
-  for (let attempt = 0; attempt < 12; attempt++) {
+async function verifyOnline(repo) {
+  const hashes = new Map(filesToPublish.map(name => [
+    name, createHash('sha256').update(fs.readFileSync(path.join(repo, name))).digest('hex')
+  ]));
+  async function matches(name, expected) {
     try {
-      const url = new URL(publicCatalog);
+      const url = new URL(name, publicSite);
       url.searchParams.set('verifica', Date.now().toString());
       const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
-      if (response.ok) {
-        const actual = createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex');
-        if (actual === expected) return true;
-      } else {
+      if (!response.ok) {
         await response.body?.cancel();
+        return false;
       }
+      const actual = createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex');
+      return actual === expected;
     } catch {
-      // Pages may still be building.
+      return false;
     }
+  }
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const confirmed = await Promise.all([...hashes].map(([name, expected]) => matches(name, expected)));
+    if (confirmed.every(Boolean)) return true;
     if (attempt < 11) await delay(10000);
   }
   return false;
@@ -112,7 +118,7 @@ async function main() {
     console.log(phase);
     publish(repo);
     console.log('GitHub aggiornato. Attendo che GitHub Pages serva il nuovo catalogo.');
-    if (!await verifyOnline(path.join(repo, 'catalogo-awin.json'))) {
+    if (!await verifyOnline(repo)) {
       console.warn('GitHub aggiornato, ma il nuovo catalogo non è ancora verificabile sul sito pubblico.');
       process.exitCode = 2;
       return;

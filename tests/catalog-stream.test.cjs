@@ -81,8 +81,24 @@ test('indexed loading reaches every price band without reading the offers in bet
   assert.deepEqual(await reader.next(['high']), [sample[3]]);
   assert.ok(reader.ended(['high']));
   assert.ok(!reader.ended(['low']));
-  assert.deepEqual(await reader.next(['low', 'mid']), sample.slice(0, 3));
+  const remaining = await reader.next(['low', 'mid']);
+  assert.deepEqual(remaining.sort((a,b) => a.price.localeCompare(b.price)), [...sample.slice(0,3)].sort((a,b) => a.price.localeCompare(b.price)));
   assert.equal(requests[0], 'bytes=0-1023');
   assert.equal(requests.length, 4);
   assert.ok(reader.ended());
+});
+
+
+test('the first page alternates products from distant blocks in the same band', async () => {
+  const { openIndexedAwinCatalog } = require('../assets/catalogo.js');
+  const { catalogIndex } = require('../tools/awin/indicizza-catalogo-awin.cjs');
+  const sample = Array.from({ length: 12 }, (_, i) => ({
+    name: 'Modello ' + i, price: (i < 6 ? '14,99' : '44,99'), description: 'x'.repeat(2900)
+  }));
+  const content = JSON.stringify(sample) + '\n';
+  const fetchRange = server(content);
+  const reader = openIndexedAwinCatalog('/catalog', '/index', (url, options) =>
+    url === '/index' ? Promise.resolve(Response.json(catalogIndex(sample, content))) : fetchRange(url, options));
+  const result = await reader.next(['low']);
+  assert.equal(new Set(result.slice(0, 6).map(offer => offer.price)).size, 2);
 });

@@ -1,5 +1,5 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v21';
+const CACHE = 'archivio-scarpe-shell-v22';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html',
   './assets/archivio-scarpe-logo.svg', './assets/app.css', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js'];
 self.addEventListener('install', event => {

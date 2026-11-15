@@ -2439,7 +2439,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       function readNextBlock(keys) {
         if (!nextBlock) {
           nextBlock = catalog.next(keys).then(items => {
-            for (const product of shuffleProducts(items)) {
+            for (const product of items) {
               if (!product || typeof product.name !== 'string' || typeof product.merchant !== 'string' ||
                   !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
                   disabledMerchants.has(normalize(product.merchant))) continue;
@@ -2457,15 +2457,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         while (!ready(catalog.ended(keys)) && !catalog.ended(keys)) await readNextBlock(keys);
       }
 
-      const shuffleProducts = items => {
-        const copy = [...items];
-        for (let i = copy.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [copy[i], copy[j]] = [copy[j], copy[i]];
-        }
-        return copy;
-      };
-       const slot = document.getElementById('cisalfaProducts');
+      const { shuffleProducts } = awinCatalog;
+      const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
       const bannerBands = [[], []];
       let pageCount = 0;
