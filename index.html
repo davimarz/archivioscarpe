@@ -2378,7 +2378,15 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const priceBand = product => numericPrice(product) < 50 ? 'Sotto 50 €' : numericPrice(product) <= 150 ? '50–150 €' : 'Oltre 150 €';
       let products = catalogProducts;
       try {
-        const response = await fetch('./catalogo-awin.json', { cache: 'no-store' });
+        // Evita che un feed molto grande o una richiesta bloccata lasci vuote le schede.
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 6500);
+        let response;
+        try {
+          response = await fetch('./catalogo-awin.json', { cache: 'no-store', signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
         if (!response.ok) throw new Error('Catalogo non disponibile');
         const imported = await response.json();
         if (Array.isArray(imported) && imported.length) {
