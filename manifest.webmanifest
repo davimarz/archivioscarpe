@@ -4,7 +4,15 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#080e1c",
-  "theme_color": "#0b1220",
-  "description": "Archivio personale di scarpe con consultazione offline"
+  "background_color": "#071327",
+  "theme_color": "#08172f",
+  "description": "Archivio personale di scarpe con consultazione offline",
+  "icons": [
+    {
+      "src": "./assets/archivio-scarpe-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
