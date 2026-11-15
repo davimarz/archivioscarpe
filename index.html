@@ -172,8 +172,11 @@
     #cisalfaProducts{touch-action:pan-y pinch-zoom}
     #cisalfaProducts:focus-visible{outline:2px solid #008bb1;outline-offset:4px;border-radius:10px}
     @media(max-width:359px){nav[aria-label="Navigazione principale"] button span{font-size:10px}}
-    #promotionsGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    @media(min-width:640px){#promotionsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    #cisalfaProducts,#promotionsGrid{--offer-gap:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--offer-gap)}
+    @media(min-width:640px){
+      #promotionsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+      #cisalfaProducts{grid-template-columns:repeat(2,minmax(0,calc((100% - 2 * var(--offer-gap)) / 3)));justify-content:center}
+    }
     #view-promotions h2{color:#16465d}
     #view-promotions button{min-height:44px;background:#e9f7fc;color:#086d8a}
     nav[aria-label="Navigazione principale"] button{min-width:0}
@@ -293,29 +296,22 @@
     .awin-discount-badge{display:inline-flex;align-self:flex-start;border-radius:7px;padding:3px 8px;background:#008e63;color:#fff!important;font-size:12px;font-weight:800}
     .awin-original-price{font-size:12px;color:#c5d5e8!important;text-decoration:line-through}
   
-    /* Banner compatto: archivio personale visibile prima nella home. */
+    /* Banner delle offerte, dopo la ricerca dell’armadio. */
     #view-archive{gap:10px}
     #affiliateAdSlot{padding:9px!important;border-radius:15px!important}
-    #affiliateAdSlot>div:first-child{margin-bottom:7px!important}
+    #affiliateAdSlot>div:first-child{margin-bottom:7px!important;padding-inline:8px}
     #affiliateAdSlot h3{font-size:12px!important;line-height:1.2}
-    #cisalfaProducts{gap:7px!important}
-    #affiliateAdSlot .cisalfa-product-card{padding:6px!important;gap:3px!important;border-radius:10px!important}
-    #affiliateAdSlot .cisalfa-product-card img{height:104px!important;aspect-ratio:auto!important;object-fit:contain!important}
-    #affiliateAdSlot .cisalfa-product-name{font-size:11px!important;min-height:0!important;-webkit-line-clamp:2!important}
-    #affiliateAdSlot .cisalfa-product-price{font-size:13px!important}
-    #affiliateAdSlot .cisalfa-product-card .text-\\[10px\\]{font-size:9px!important}
-    @media(max-width:410px){#affiliateAdSlot .cisalfa-product-card img{height:90px!important}}
       #affiliateAdSlot .banner-rotation-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px 10px;border:1px solid #5e9ac8;border-radius:999px;background:#174779;color:#eaf6ff;font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer}
     #affiliateAdSlot .banner-rotation-toggle[aria-pressed="false"]{background:#166534!important;border-color:#15803d!important;color:#fff!important}
     #affiliateAdSlot .banner-rotation-toggle[aria-pressed="true"]{background:#c2410c!important;border-color:#9a3412!important;color:#fff!important}
     #affiliateAdSlot .banner-rotation-toggle[hidden]{display:none!important}
     #affiliateAdSlot .banner-rotation-toggle:focus-visible{outline:2px solid #59d5ff;outline-offset:2px}
       /* Home: due schede visivamente separate. */
-    #view-archive #affiliateAdSlot{background:linear-gradient(145deg,#dff5ff,#bce9fa)!important;border:1px solid #8ccde7!important;box-shadow:0 6px 20px #03152b24!important}
+    #view-archive #affiliateAdSlot{background:linear-gradient(145deg,#dff5ff,#bce9fa)!important;border:0!important;padding:8px 0!important;box-shadow:inset 0 0 0 1px #8ccde7,0 6px 20px #03152b24!important}
     #view-archive #affiliateAdSlot>div:first-child p{color:#174d68!important;font-weight:800!important}
-    #view-archive #personalArchiveCard{background:linear-gradient(145deg,#112c50,#0c213f)!important;border:1px solid #42719e!important;border-radius:16px;padding:12px;box-shadow:0 8px 22px #0005}
+    #view-archive .personal-archive-panel{background:linear-gradient(145deg,#112c50,#0c213f)!important;border:1px solid #42719e!important;border-radius:16px;padding:12px;box-shadow:0 8px 22px #0005}
     #view-archive #personalArchiveCard>div:first-child{margin-bottom:2px}
-    @media(max-width:410px){#view-archive #personalArchiveCard{padding:10px}}
+    @media(max-width:410px){#view-archive .personal-archive-panel{padding:10px}}
     /* Contrasto icone dei comandi nelle schede Armadio. */
     #shoesGrid .shoe-card-actions button[data-view-shoe-photos],
     #shoesGrid .shoe-card-actions button[data-edit-shoe]{background:#dff3ff!important;border:1px solid #78bce5!important;color:#075985!important}
@@ -336,12 +332,7 @@
     header .truncate{padding-right:48px}
     #searchInput,#addBrand{scroll-margin-top:90px}
     #view-archive #personalArchiveCard h2{font-size:1.25rem;line-height:1.3}
-    #view-archive #affiliateAdSlot{padding:8px!important}
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
-    #affiliateAdSlot .cisalfa-product-card img{height:86px!important}
-    #affiliateAdSlot .cisalfa-product-name{font-size:.75rem!important}
-    #affiliateAdSlot .cisalfa-product-card .text-\[10px\]{font-size:.6875rem!important}
-    @media(min-width:640px){#affiliateAdSlot .cisalfa-product-card img{height:104px!important}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -365,7 +356,7 @@
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
     <section id="view-archive" class="space-y-4">
-      <div id="personalArchiveCard" class="space-y-3">
+      <div id="personalArchiveCard" class="personal-archive-panel space-y-3">
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2></div>
         <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
@@ -377,13 +368,15 @@
         <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
         <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
-      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="hidden rounded-xl px-3 py-3">
+      </div>
+      <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="hidden">
         <div class="flex items-center justify-between gap-2 mb-2">
           <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
           <button type="button" id="bannerRotationButton" class="banner-rotation-toggle" aria-pressed="false" hidden>Pausa rotazione</button>
         </div>
-        <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
+        <div id="cisalfaProducts" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
       </aside>
+      <div class="personal-archive-panel space-y-3">
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
         <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e tipologie <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
