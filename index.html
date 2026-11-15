@@ -240,6 +240,41 @@
     main{padding-bottom:calc(135px + env(safe-area-inset-bottom))!important}
     #quickAddButton{bottom:calc(103px + env(safe-area-inset-bottom))!important}
     @media(max-width:359px){nav[aria-label="Navigazione principale"]{gap:5px!important;padding-inline:6px!important}nav[aria-label="Navigazione principale"] button span{font-size:10px!important}nav[aria-label="Navigazione principale"] button{min-height:60px!important}}
+
+    /* Contrasto leggibile su tutte le superfici scure e contenuti dinamici. */
+    body .text-slate-950,body .text-slate-700,body .text-slate-600,
+    body .text-sky-800,body .text-cyan-700{color:#e4f2ff!important}
+    body .text-indigo-400,body .text-indigo-300{color:#80d9ff!important}
+    body .text-slate-500,body .text-slate-400{color:#b8cee7!important}
+    body .text-amber-200,body .text-amber-300{color:#ffe3a3!important}
+    main p,main label,main summary,main h2,main h3,main h4,main dt,main dd,
+    main li,main strong,main small{color:#e7f3ff}
+    main .help-text,main .text-xs.text-slate-400,main .text-sm.text-slate-400{color:#b8cee7!important}
+    #view-archive,#view-check,#view-add,#view-settings,#view-promotions{color:#edf6ff!important}
+    #shoesGrid .shoe-card-info *,#quickSearchResults *,#archiveFiltersDetails *,
+    #promotionsGrid .cisalfa-product-card *,#affiliateAdSlot .cisalfa-product-card *{color:#eaf5ff}
+    #shoesGrid .shoe-card-info .text-slate-400,#quickSearchResults .text-slate-400{color:#bbd4ec!important}
+    #affiliateAdSlot .cisalfa-product-link,#promotionsGrid .cisalfa-product-link,
+    #view-archive .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500,
+    #view-settings .bg-amber-500{color:#fff!important}
+    #usageGuideButton,nav[aria-label="Navigazione principale"] button,
+    #affiliateAdSlot a.cisalfa-product-link,#promotionsGrid a.cisalfa-product-link{color:#fff!important}
+    #shoesGrid button,#view-check button,#view-add button,#view-settings button{color:#eaf5ff}
+    #view-settings .bg-white,#view-add .bg-white,#view-check .bg-white,
+    #view-archive .bg-white,#view-promotions .bg-white{background:#153457!important;color:#eff8ff!important}
+    #view-settings .bg-slate-50,#view-add .bg-slate-50,#view-check .bg-slate-50,
+    #view-archive .bg-slate-50,#view-promotions .bg-slate-50{background:#143253!important;color:#eff8ff!important}
+    #view-settings .bg-slate-100,#view-add .bg-slate-100,#view-check .bg-slate-100,
+    #view-archive .bg-slate-100,#view-promotions .bg-slate-100{background:#16385d!important;color:#eff8ff!important}
+    #view-settings .bg-slate-200,#view-add .bg-slate-200,#view-check .bg-slate-200,
+    #view-archive .bg-slate-200,#view-promotions .bg-slate-200{background:#1b426c!important;color:#eff8ff!important}
+    input[type="date"]{color-scheme:dark}
+    select option,select optgroup{background:#0e294b!important;color:#f4f9ff!important}
+    #quickSearchResults{background:#102b50!important;color:#eaf5ff!important}
+    #quickSearchResults button{color:#eaf5ff!important}
+    footer,footer p,footer a{color:#bcd2e9!important}
+    #apiKeyModal,#editShoeModal,#shoeGalleryModal{color:#f1f8ff!important}
+    #apiKeyModal .text-slate-400,#editShoeModal .text-slate-400,#shoeGalleryModal .text-slate-400{color:#bcd4eb!important}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
