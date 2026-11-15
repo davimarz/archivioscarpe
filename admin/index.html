@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Amministrazione · Archivio Scarpe</title>
+<link rel="icon" href="../assets/archivio-scarpe-logo.svg">
+<style>
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}body{margin:0;background:#08172f;color:#f1f5f9;min-height:100vh;display:grid;place-items:center;padding:20px;box-sizing:border-box}main{width:min(100%,470px);border:1px solid #34506b;border-radius:20px;background:#13243d;padding:24px;box-sizing:border-box}h1{font-size:23px;margin:0 0 8px}p{color:#cbd5e1;line-height:1.5}label{display:block;margin:18px 0 7px;font-size:14px;font-weight:700}input{width:100%;padding:13px;border-radius:10px;background:#fff;color:#172033;border:1px solid #64748b;box-sizing:border-box;font-size:16px}button{background:#0b79a5;color:white;border:0;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:wait}a{color:#93d9ff}#message{min-height:25px}#dashboard[hidden],#login[hidden]{display:none}.panel{background:#1d3452;border-radius:12px;padding:16px;margin:14px 0}.muted{font-size:13px;color:#b8c9d9}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}#signout{background:#475569}#status{font-weight:700}
+</style></head><body><main>
+<a href="../">← Torna ad Archivio Scarpe</a>
+<div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
+<section id="login">
+<p>Accesso riservato all'amministratore. Richiedi un collegamento temporaneo alla tua casella email.</p>
+<form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><p><button type="submit" id="send">Invia link di accesso</button></p></form>
+<p class="muted">Se il collegamento non riporta a questa pagina, occorre autorizzare l'URL nelle impostazioni Supabase Auth.</p>
+</section>
+<section id="dashboard" hidden>
+<div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
+<div class="panel"><strong id="status">Accesso verificato</strong><p>Area riservata attiva. Le statistiche centralizzate delle campagne verranno aggiunte nella seconda fase, dopo la tua verifica.</p></div>
+<div class="panel"><p>Le visite Instagram, i clic sui prodotti affiliati e i dati sulle commissioni non sono ancora raccolti da questa pagina.</p></div>
+</section>
+<p id="message" role="status" aria-live="polite"></p>
+</main>
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.84.0';
+const client = createClient('https://psjnqiqobidvyljrzjuh.supabase.co','sb_publishable_GEV4zSghYUbUbpQeEpeySg__rbHWeZ5');
+const login=document.getElementById('login'),dashboard=document.getElementById('dashboard'),message=document.getElementById('message');
+let checkVersion=0;
+async function check(){
+ const version=++checkVersion;
+ dashboard.hidden=true;login.hidden=true;message.textContent='Verifica accesso in corso…';
+ try {
+  const {data:{user},error}=await client.auth.getUser();
+  if(error || !user){if(version===checkVersion){login.hidden=false;message.textContent='';}return;}
+  const {data,error:accessError}=await client.from('admin_access').select('id').eq('id',1).maybeSingle();
+  if(version!==checkVersion)return;
+  if(accessError || !data){login.hidden=false;message.textContent='Account non autorizzato.';return;}
+  document.getElementById('identity').textContent=user.email || 'Amministratore';
+  dashboard.hidden=false;message.textContent='';
+ } catch {if(version===checkVersion){login.hidden=false;message.textContent='Impossibile verificare l’accesso. Riprova.';}}
+}
+document.getElementById('loginForm').addEventListener('submit',async event=>{
+ event.preventDefault();const email=document.getElementById('email').value.trim().toLowerCase();
+ if(email!=='davimarz.app@gmail.com'){message.textContent='Indirizzo non autorizzato.';return;}
+ const button=document.getElementById('send');button.disabled=true;message.textContent='Invio in corso…';
+ const {error}=await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:true}});
+ message.textContent=error?'Invio non riuscito: '+error.message:'Controlla la posta e apri il link di accesso sullo stesso browser.';
+ button.disabled=false;
+});
+document.getElementById('signout').addEventListener('click',async()=>{await client.auth.signOut();await check();});
+client.auth.onAuthStateChange(()=>{setTimeout(check,0);});
+check();
+</script></body></html>
