@@ -275,6 +275,11 @@
     footer,footer p,footer a{color:#bcd2e9!important}
     #apiKeyModal,#editShoeModal,#shoeGalleryModal{color:#f1f8ff!important}
     #apiKeyModal .text-slate-400,#editShoeModal .text-slate-400,#shoeGalleryModal .text-slate-400{color:#bcd4eb!important}
+
+    /* Prezzo di listino verificato, sconto e fascia di prezzo Awin. */
+    .awin-discount-badge{display:inline-flex;align-self:flex-start;border-radius:7px;padding:3px 8px;background:#008e63;color:#fff!important;font-size:12px;font-weight:800}
+    .awin-original-price{font-size:12px;color:#c5d5e8!important;text-decoration:line-through}
+    .awin-price-band{font-size:11px;color:#b8d9ed!important;font-weight:600}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -2332,6 +2337,45 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const value = Number(decimal);
         return Number.isFinite(value) && value > 0 ? value : Infinity;
       };
+      // Prezzi promozionali: il solo prezzo attuale non dimostra uno sconto.
+      const readMoney = value => {
+        if (value === null || value === undefined || String(value).trim() === '') return NaN;
+        const raw = String(value).replace(/[^\d,.]/g, '');
+        if (!raw) return NaN;
+        const lastComma = raw.lastIndexOf(',');
+        const lastDot = raw.lastIndexOf('.');
+        let normalized;
+        if (lastComma >= 0 && lastDot >= 0) {
+          normalized = lastComma > lastDot ? raw.replace(/\./g, '').replace(',', '.') : raw.replace(/,/g, '');
+        } else if (lastComma >= 0) {
+          normalized = raw.replace(',', '.');
+        } else {
+          normalized = raw;
+        }
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : NaN;
+      };
+      const originalPriceOf = product => {
+        const fields = ['originalPrice', 'original_price', 'priceOriginal', 'price_original',
+          'oldPrice', 'old_price', 'previousPrice', 'previous_price', 'regularPrice',
+          'regular_price', 'retailPrice', 'retail_price', 'rrp', 'listPrice', 'list_price',
+          'product_price_old', 'product_price_original', 'priceBeforeDiscount', 'price_before_discount'];
+        for (const field of fields) {
+          const value = readMoney(product[field]);
+          if (Number.isFinite(value)) return value;
+        }
+        return NaN;
+      };
+      const discountFor = product => {
+        const current = numericPrice(product);
+        const original = originalPriceOf(product);
+        if (!Number.isFinite(current) || !Number.isFinite(original) || original <= current) return null;
+        const percent = Math.round((original - current) / original * 100);
+        return percent >= 1 && percent <= 99 ? { original, current, percent } : null;
+      };
+      const byDiscount = (a, b) => discountFor(b).percent - discountFor(a).percent || numericPrice(a) - numericPrice(b);
+      const formatEuro = amount => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(amount);
+      const priceBand = product => numericPrice(product) < 50 ? 'Sotto 50 €' : numericPrice(product) <= 150 ? '50–150 €' : 'Oltre 150 €';
       let products = catalogProducts;
       try {
         const response = await fetch('./catalogo-awin.json', { cache: 'no-store' });
@@ -2357,28 +2401,23 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       products = products.filter(product =>
         !disabledMerchants.has(String(product.merchant ?? '').trim().toLowerCase().replace(/\s+/g, ' '))
       );
-      const shuffle = items => {
-        for (let i = items.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [items[i], items[j]] = [items[j], items[i]];
-        }
-        return items;
-      };
-      const slot = document.getElementById('cisalfaProducts');
+      // Il catalogo completo resta nel JSON; soltanto banner e Promozioni usano gli scontati.
+      products = products.filter(product => discountFor(product) !== null).sort(byDiscount);
+       const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
       if (!products.length) {
         const ad = document.getElementById('affiliateAdSlot');
         if (ad) ad.classList.add('hidden');
         const promotionsStatus = document.getElementById('promotionsStatus');
-        if (promotionsStatus) promotionsStatus.textContent = 'Nessuna promozione disponibile.';
+        if (promotionsStatus) promotionsStatus.textContent = 'Nessuna offerta con sconto verificabile disponibile nei listini attuali.';
         return;
       }
       const bannerBands = [
-        shuffle(products.filter(product => numericPrice(product) < 50)),
-        shuffle(products.filter(product => {
+        products.filter(product => numericPrice(product) < 50),
+        products.filter(product => {
           const price = numericPrice(product);
           return Number.isFinite(price) && price >= 50;
-        }))
+        })
       ];
       const pageCount = bannerBands.every(band => band.length)
         ? Math.max(...bannerBands.map(band => band.length)) : 1;
@@ -2423,7 +2462,18 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const options = [];
         if (product.colorCount > 1) options.push(product.colorCount + ' colori');
         if (product.sizeCount > 1) options.push(product.sizeCount + ' taglie');
-        card.append(img, merchant, name, price);
+        const offer = discountFor(product);
+        const discountBadge = document.createElement('span');
+        discountBadge.className = 'awin-discount-badge';
+        discountBadge.textContent = '−' + offer.percent + '%';
+        const previous = document.createElement('del');
+        previous.className = 'awin-original-price';
+        previous.textContent = formatEuro(offer.original);
+        const band = document.createElement('small');
+        band.className = 'awin-price-band';
+        band.textContent = priceBand(product);
+        price.textContent = formatEuro(offer.current);
+        card.append(img, merchant, discountBadge, name, previous, price, band);
         if (details.length || options.length) {
           const note = document.createElement('small');
           note.className = 'text-[11px]';
@@ -2511,16 +2561,16 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (!Number.isFinite(price)) continue;
           bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
         }
-        bands.forEach(shuffle);
+        bands.forEach(band => band.sort(byDiscount));
         const ordered = [];
         // Blocchi completi: due offerte per fascia, senza ripetizioni.
         while (bands.every(band => band.length >= 2)) {
           const group = bands.flatMap(band => band.splice(0, 2));
-          ordered.push(...shuffle(group));
+          ordered.push(...group);
         }
         // Se una fascia si esaurisce, usa solo prodotti realmente disponibili:
         // nessun articolo fittizio e nessuna ripetizione per riempire sei posti.
-        const remaining = shuffle(bands.flat());
+        const remaining = bands.flat().sort(byDiscount);
         while (remaining.length) ordered.push(...remaining.splice(0, pageSize));
         return ordered;
       };
