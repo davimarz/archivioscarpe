@@ -8,9 +8,8 @@
 <a href="../">← Torna ad Archivio Scarpe</a>
 <div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
 <section id="login">
-<p>Accesso riservato all'amministratore. Accedi con la password dell’account amministratore oppure richiedi un link via email.</p>
-<form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><label for="password">Password amministratore</label><input id="password" type="password" autocomplete="current-password"><p><button type="submit" id="passwordSignIn">Accedi con password</button> <button type="submit" id="send">Invia link di accesso</button></p><p><button type="button" id="recover">Password dimenticata?</button></p></form>
-<p class="muted">Se il collegamento non riporta a questa pagina, occorre autorizzare l'URL nelle impostazioni Supabase Auth.</p>
+<p>Accesso riservato all'amministratore. Accedi con l’email e la password dell’account amministratore.</p>
+<form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><label for="password">Password amministratore</label><input id="password" type="password" autocomplete="current-password"><p><button type="submit" id="passwordSignIn">Accedi con password</button></p><p><button type="button" id="recover">Password dimenticata?</button></p></form>
 </section>
 <form id="recoveryForm" hidden>
 <label for="newPassword">Nuova password</label><input id="newPassword" type="password" autocomplete="new-password" minlength="12" required>
@@ -51,22 +50,15 @@ async function check(){
 document.getElementById('loginForm').addEventListener('submit',async event=>{
  event.preventDefault();const email=document.getElementById('email').value.trim().toLowerCase();
  if(email!=='davimarz.app@gmail.com'){message.textContent='Indirizzo non autorizzato.';return;}
- const byLink=event.submitter?.id==='send';
  const password=document.getElementById('password');
- if(!byLink && !password.value){message.textContent='Inserisci la password dell’account amministratore.';password.focus();return;}
- const buttons=[document.getElementById('send'),document.getElementById('passwordSignIn')];
- buttons.forEach(button=>{button.disabled=true;});
- message.textContent=byLink?'Invio in corso…':'Accesso in corso…';
+ if(!password.value){message.textContent='Inserisci la password dell’account amministratore.';password.focus();return;}
+ const button=document.getElementById('passwordSignIn');
+ button.disabled=true;
+ message.textContent='Accesso in corso…';
  try {
-  const {error}=byLink
-   ? await client.auth.signInWithOtp({email,options:{emailRedirectTo:location.origin+location.pathname,shouldCreateUser:false}})
-   : await client.auth.signInWithPassword({email,password:password.value});
+  const {error}=await client.auth.signInWithPassword({email,password:password.value});
   if(error){
-   message.textContent=byLink && (error.code==='over_email_send_rate_limit' || /email rate limit/i.test(error.message))
-    ? 'Limite di invio email raggiunto. Puoi accedere con la password.'
-    : byLink?'Invio non riuscito: '+error.message:'Accesso non riuscito. Verifica la password e riprova.';
-  }else if(byLink){
-   message.textContent='Controlla la posta e apri il link di accesso sullo stesso browser.';
+   message.textContent='Accesso non riuscito. Verifica la password e riprova.';
   }else{
    password.value='';
    await check();
@@ -74,7 +66,7 @@ document.getElementById('loginForm').addEventListener('submit',async event=>{
  }catch{
   message.textContent='Impossibile contattare il servizio di accesso. Riprova.';
  }finally{
-  buttons.forEach(button=>{button.disabled=false;});
+  button.disabled=false;
  }
 });
 document.getElementById('signout').addEventListener('click',async()=>{await client.auth.signOut();await check();});
