@@ -287,11 +287,14 @@
     #affiliateAdSlot h3{font-size:12px!important;line-height:1.2}
     #cisalfaProducts{gap:7px!important}
     #affiliateAdSlot .cisalfa-product-card{padding:6px!important;gap:3px!important;border-radius:10px!important}
-    #affiliateAdSlot .cisalfa-product-card img{height:84px!important;aspect-ratio:auto!important;object-fit:contain!important}
+    #affiliateAdSlot .cisalfa-product-card img{height:104px!important;aspect-ratio:auto!important;object-fit:contain!important}
     #affiliateAdSlot .cisalfa-product-name{font-size:11px!important;min-height:0!important;-webkit-line-clamp:2!important}
     #affiliateAdSlot .cisalfa-product-price{font-size:13px!important}
     #affiliateAdSlot .cisalfa-product-card .text-\\[10px\\]{font-size:9px!important}
-    @media(max-width:410px){#affiliateAdSlot .cisalfa-product-card img{height:72px!important}}
+    @media(max-width:410px){#affiliateAdSlot .cisalfa-product-card img{height:90px!important}}
+      #affiliateAdSlot .banner-rotation-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:4px 10px;border:1px solid #5e9ac8;border-radius:999px;background:#174779;color:#eaf6ff;font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer}
+    #affiliateAdSlot .banner-rotation-toggle[hidden]{display:none!important}
+    #affiliateAdSlot .banner-rotation-toggle:focus-visible{outline:2px solid #59d5ff;outline-offset:2px}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -317,11 +320,11 @@
     <section id="view-archive" class="space-y-4">
       <!-- Prodotti Cisalfa Sport IT estratti dal feed Awin del 10/11/2026. Prezzi indicativi: verificare sul negozio. -->
       <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="rounded-xl px-3 py-3">
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <div><p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p><h3 class="text-sm font-bold">Offerte scarpe dai negozi partner</h3></div>
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
+          <button type="button" id="bannerRotationButton" class="banner-rotation-toggle" aria-pressed="false" hidden>Pausa rotazione</button>
         </div>
         <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
-        <button type="button" id="bannerRotationButton" class="mt-2 min-h-11 rounded-lg px-2 text-xs font-semibold text-sky-800" hidden>Pausa rotazione</button>
         
       </aside>
       <div class="flex items-center justify-between gap-2">
@@ -2575,6 +2578,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         rotationButton.addEventListener('click', () => {
           rotationPaused = !rotationPaused;
           rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
+          rotationButton.setAttribute('aria-pressed', String(rotationPaused));
           scheduleRotation();
         });
         scheduleRotation();
