@@ -40,7 +40,7 @@
 <div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
 <div class="panel">
 <strong>Commissioni Awin</strong>
-<p class="muted">Commissioni per data di transazione. I dati storici senza riferimento del sito sono inclusi solo nei totali dell’account.</p>
+<p class="muted">Solo transazioni attribuite ad Archivio Scarpe, per data di transazione.</p>
 <p id="awinStatus" role="status"></p>
 <div id="awinTotals"></div>
 </div>
@@ -91,21 +91,17 @@ async function loadAwinStats(since,current){
      : 'Report Awin non disponibile. Premi Aggiorna per riprovare.';
    return;
   }
-  status.textContent='';
-  for(const [label,report] of [['Archivio Scarpe',data.site],['Intero account Awin',data]]){
-   const heading=document.createElement('strong');
-   heading.textContent=label;
-   const count=document.createElement('p');
-   count.textContent=report.transactions ? formatNumber.format(report.transactions)+' transazioni' : 'Nessuna transazione nel periodo.';
-   totals.append(heading,count);
-   for(const row of report.commissions){
+  const report=data.site;
+  status.textContent=report.transactions
+   ? formatNumber.format(report.transactions)+(report.transactions===1?' transazione':' transazioni')
+   : 'Nessuna transazione attribuita ad Archivio Scarpe nel periodo.';
+  for(const row of report.commissions){
    const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:row.currency});
    const line=document.createElement('p');
    const parts=[['Approvate',row.approved],['In attesa',row.pending],['Rifiutate',row.declined]];
    if(row.other)parts.push(['Altri stati',row.other]);
    line.textContent=parts.map(([label,amount])=>label+': '+money.format(amount)).join(' · ');
-    totals.append(line);
-   }
+   totals.append(line);
   }
  }catch{
   if(current())status.textContent='Report Awin non disponibile. Premi Aggiorna per riprovare.';
