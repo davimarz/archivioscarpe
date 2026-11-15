@@ -2388,7 +2388,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           clearTimeout(timeout);
         }
         if (!response.ok) throw new Error('Catalogo non disponibile');
-        const imported = await response.json();
+        const imported = await Promise.race([
+          response.json(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout lettura catalogo Awin')), 6500))
+        ]);
         if (Array.isArray(imported) && imported.length) {
           products = imported.filter(item => item && typeof item.name === 'string' &&
             typeof item.merchant === 'string' && typeof item.url === 'string' &&
