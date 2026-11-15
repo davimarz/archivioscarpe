@@ -1,6 +1,6 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v4';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html'];
+const CACHE = 'archivio-scarpe-shell-v5';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html', './assets/archivio-scarpe-logo.svg'];
 const EXTERNAL = [
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
