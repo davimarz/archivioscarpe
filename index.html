@@ -2415,7 +2415,16 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const discountedProducts = products.filter(product => discountFor(product) !== null).sort(byDiscount);
       // Se i feed non espongono il prezzo originale, non lasciare vuota l'app:
       // mostra i prezzi disponibili senza attribuire sconti inesistenti.
-      products = discountedProducts.length ? discountedProducts : products.sort((a, b) => numericPrice(a) - numericPrice(b));
+      products = discountedProducts.length ? discountedProducts : products;
+      const hasVerifiedDiscounts = discountedProducts.length > 0;
+      const shuffleProducts = items => {
+        const copy = [...items];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
        const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
       if (!products.length) {
@@ -2426,11 +2435,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return;
       }
       const bannerBands = [
-        products.filter(product => numericPrice(product) < 50),
-        products.filter(product => {
+        (hasVerifiedDiscounts ? products.filter(product => numericPrice(product) < 50) : shuffleProducts(products.filter(product => numericPrice(product) < 50))),
+        (hasVerifiedDiscounts ? products.filter(product => {
           const price = numericPrice(product);
           return Number.isFinite(price) && price >= 50;
-        })
+        }) : shuffleProducts(products.filter(product => {
+          const price = numericPrice(product);
+          return Number.isFinite(price) && price >= 50;
+        })))
       ];
       const pageCount = bannerBands.every(band => band.length)
         ? Math.max(...bannerBands.map(band => band.length)) : 1;
@@ -2571,7 +2583,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (!Number.isFinite(price)) continue;
           bands[price < 50 ? 0 : price <= 150 ? 1 : 2].push(product);
         }
-        bands.forEach(band => band.sort(byDiscount));
+        bands.forEach((band, index) => {
+          bands[index] = hasVerifiedDiscounts ? band.sort(byDiscount) : shuffleProducts(band);
+        });
         const ordered = [];
         // Blocchi completi: due offerte per fascia, senza ripetizioni.
         while (bands.every(band => band.length >= 2)) {
@@ -2580,7 +2594,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
         // Se una fascia si esaurisce, usa solo prodotti realmente disponibili:
         // nessun articolo fittizio e nessuna ripetizione per riempire sei posti.
-        const remaining = bands.flat().sort(byDiscount);
+        const remaining = hasVerifiedDiscounts ? bands.flat().sort(byDiscount) : shuffleProducts(bands.flat());
         while (remaining.length) ordered.push(...remaining.splice(0, pageSize));
         return ordered;
       };
