@@ -1,5 +1,5 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v16';
+const CACHE = 'archivio-scarpe-shell-v17';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html', './assets/archivio-scarpe-logo.svg'];
 const EXTERNAL = [
   'https://cdn.tailwindcss.com',
@@ -37,6 +37,12 @@ function cacheable(request, url) {
 self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
+  const adminUrl = new URL('./admin/', self.registration.scope);
+  if (request.method === 'GET' && url.origin === adminUrl.origin &&
+      (url.pathname === adminUrl.pathname.slice(0, -1) || url.pathname.startsWith(adminUrl.pathname))) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
   if (isAppNavigation(request, url)) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
