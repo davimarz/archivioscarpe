@@ -43,7 +43,7 @@
     const instagram = filtered.filter(e => e.source === 'instagram');
     const map = {
       statVisits: count(instagram,'visit'),
-      statArchive: count(instagram,'archive_open'),
+      statArchive: count(instagram,'shoe_saved'),
       statCheck: count(instagram,'check_open'),
       statPromotions: count(instagram,'promotions_open'),
       statAffiliate: count(instagram,'affiliate_click'),
@@ -110,11 +110,13 @@
   };
   document.addEventListener('DOMContentLoaded', () => {
     try {
-      if (!sessionStorage.getItem('archivioscarpe_visit_counted_v1')) {
+      const visitKey = 'archivioscarpe_visit_counted_v1_' + current.source + '_' + current.content;
+      if (!sessionStorage.getItem(visitKey)) {
         record('visit');
-        sessionStorage.setItem('archivioscarpe_visit_counted_v1','1');
+        sessionStorage.setItem(visitKey,'1');
       }
     } catch { record('visit'); }
+    document.addEventListener('archivioscarpe-shoe-saved', () => record('shoe_saved'));
     document.getElementById('campaignPeriod')?.addEventListener('change',render);
     document.getElementById('campaignCreative')?.addEventListener('input',createLink);
     document.addEventListener('click',event => {
