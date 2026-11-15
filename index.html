@@ -297,6 +297,12 @@
     #affiliateAdSlot .banner-rotation-toggle[aria-pressed="true"]{background:#c2410c!important;border-color:#9a3412!important;color:#fff!important}
     #affiliateAdSlot .banner-rotation-toggle[hidden]{display:none!important}
     #affiliateAdSlot .banner-rotation-toggle:focus-visible{outline:2px solid #59d5ff;outline-offset:2px}
+      /* Home: due schede visivamente separate. */
+    #view-archive #affiliateAdSlot{background:linear-gradient(145deg,#dff5ff,#bce9fa)!important;border:1px solid #8ccde7!important;box-shadow:0 6px 20px #03152b24!important}
+    #view-archive #affiliateAdSlot>div:first-child p{color:#174d68!important;font-weight:800!important}
+    #view-archive #personalArchiveCard{background:linear-gradient(145deg,#112c50,#0c213f)!important;border:1px solid #42719e!important;border-radius:16px;padding:12px;box-shadow:0 8px 22px #0005}
+    #view-archive #personalArchiveCard>div:first-child{margin-bottom:2px}
+    @media(max-width:410px){#view-archive #personalArchiveCard{padding:10px}}
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
@@ -329,6 +335,7 @@
         <div id="cisalfaProducts" class="grid grid-cols-2 gap-3" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
         
       </aside>
+      <div id="personalArchiveCard" class="space-y-3">
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2><p class="text-xs text-slate-400">Cerca, apri o modifica una scarpa</p></div>
         <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
@@ -378,6 +385,7 @@
         <button id="emptyArchiveAction" onclick="switchTab('add')" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl mt-2">
           <i class="fa-solid fa-plus"></i> Aggiungi ora
         </button>
+      </div>
       </div>
     </section>
 
