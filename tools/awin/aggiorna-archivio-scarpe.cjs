@@ -23,14 +23,14 @@ async function readJoinedAdvertisers(page) {
   const first = await readAdvertiserPage(page);
   const names = new Set(first.names);
 
-  async function waitForNewRows() {
-    const deadline = Date.now() + 10000;
+  async function waitForNewRows(timeout = 10000) {
+    const deadline = Date.now() + timeout;
     do {
       const current = await page.evaluate(inspectPersonalAdvertisers, false).catch(() => null);
       const additions = current?.names?.filter(name => !names.has(name));
       if (additions?.length) return additions;
       await new Promise(resolve => setTimeout(resolve, 250));
-    } while (Date.now() < deadline);
+    } while (!page.isClosed() && Date.now() < deadline);
     return [];
   }
 
@@ -58,8 +58,18 @@ async function readJoinedAdvertisers(page) {
     }
     if (!additions.length) {
       console.log('Paginazione Awin: apertura diretta di pagina ' + number + '.');
-      await open(page, route);
-      additions = await waitForNewRows();
+      try {
+        await open(page, route);
+        additions = await waitForNewRows();
+      } catch {
+        console.log('Awin non ha aperto direttamente la pagina ' + number + '.');
+      }
+    }
+    if (!additions.length && !page.isClosed()) {
+      console.log('Awin non ha cambiato pagina in automatico.');
+      console.log('Nella finestra Awin aperta, in «Iscritto», imposta «Risultati per pagina» su 25 o più, se disponibile, oppure clicca sulla pagina ' + number + '.');
+      console.log('Lo script attende nuovi advertiser per 2 minuti e riprende automaticamente.');
+      additions = await waitForNewRows(120000);
     }
     if (!additions.length) {
       console.error('Pagina ' + number + ': nessun nuovo advertiser. Letti ' + names.size + ' di ' + first.total + '.');

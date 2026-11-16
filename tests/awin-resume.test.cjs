@@ -62,7 +62,7 @@ test('waits for the eleventh advertiser after clicking the paginator', async () 
     filter: () => locator, or: () => locator, count: async () => 1, click: async () => { clicks++; }
   };
   const page = {
-    getByText: () => locator, getByRole: () => locator,
+    getByText: () => locator, getByRole: () => locator, isClosed: () => false,
     evaluate: async () => ({ names: ++reads === 1 ? first : ['Undicesimo'] })
   };
   const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
@@ -72,4 +72,28 @@ test('waits for the eleventh advertiser after clicking the paginator', async () 
   assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
   assert.equal(clicks, 1);
   assert.equal(reads, 2);
+});
+
+test('resumes once the user reveals the missing advertiser in Awin', async () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync('tools/awin/aggiorna-archivio-scarpe.cjs', 'utf8');
+  const block = source.match(/^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m)[0];
+  const first = Array.from({ length: 10 }, (_, i) => 'Negozio ' + i);
+  const locator = { filter: () => locator, or: () => locator, count: async () => 0 };
+  let now = 0, manual = false, navigations = 0;
+  const page = {
+    getByText: () => locator, getByRole: () => locator, isClosed: () => false,
+    evaluate: async () => ({ names: manual ? [...first, 'Undicesimo'] : first })
+  };
+  const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
+    readAdvertiserPage: async () => ({ names: first, total: 11 }),
+    inspectPersonalAdvertisers() {},
+    open: async () => { navigations++; },
+    console: { log(message) { if (message.includes('2 minuti')) manual = true; } },
+    Date: { now: () => now },
+    setTimeout(resolve, delay) { now += delay; resolve(); }
+  });
+  assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
+  assert.equal(navigations, 1);
+  assert.equal(manual, true);
 });
