@@ -213,7 +213,7 @@ function limitCatalogVariants(products) {
     const second = ranked.filter(item => item !== first).reduce((best, item) =>
       !best || diversity(item) > diversity(best) ? item : best, null);
     for (const item of second ? [first, second] : [first]) {
-      const { family, key, current, shipping, auditSignature, ...card } = item;
+      const { family, key, current, auditSignature, ...card } = item;
       for (const field of ['brand', 'model', 'color', 'size']) if (!card[field]) delete card[field];
       if (colors.size > 1) card.colorCount = colors.size;
       if (sizes.size > 1) card.sizeCount = sizes.size;
@@ -252,24 +252,19 @@ function offer(record, merchant) {
     record.colour || record.color, record['fashion:size'] || record.size].map(normalize);
   const key = gtin ? 'gtin:' + JSON.stringify([gtin, ...variant.slice(2)])
     : variant.every(Boolean) ? 'variant:' + JSON.stringify(variant) : 'offer:' + url;
-  const shipping = cents(record.delivery_cost, currency);
-  return { key, current, shipping, name, price: euro(current),
+  return { key, current, name, price: euro(current),
     image: image.href, url, merchant, ...catalogVariant(record, name),
     ...(gtin && { gtin }), ...(originalPrice && { originalPrice: euro(originalPrice) }),
     ...(referencePrice && { referencePrice: euro(referencePrice) }) };
 }
 
 function cheapestOffers(offers) {
-  const groups = new Map();
+  const bestByProduct = new Map();
   for (const item of offers) {
-    if (!groups.has(item.key)) groups.set(item.key, []);
-    groups.get(item.key).push(item);
+    const best = bestByProduct.get(item.key);
+    if (!best || item.current < best.current) bestByProduct.set(item.key, item);
   }
-  return [...groups.values()].map(group => {
-    const withShipping = group.every(item => item.shipping !== null);
-    const total = item => item.current + (withShipping ? item.shipping : 0);
-    return group.reduce((best, item) => total(item) < total(best) ? item : best);
-  });
+  return [...bestByProduct.values()];
 }
 
 function printGroupingAudit(offers, products) {
