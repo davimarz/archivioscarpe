@@ -2459,6 +2459,61 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         ? bannerBands.map(band => band[pageIndex % band.length])
         : [];
       let page = 0;
+      function offerPhotoBounds(pixels, width, height) {
+        let left = width, right = -1, top = height, bottom = -1;
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
+            if (pixels[i + 3] < 16 || Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) >= 253) continue;
+            left = Math.min(left, x);
+            right = Math.max(right, x);
+            top = Math.min(top, y);
+            bottom = Math.max(bottom, y);
+          }
+        }
+
+        if (right < left || bottom < top) return null;
+        const inset = Math.max(2, Math.ceil(Math.max(right - left + 1, bottom - top + 1) * 0.04));
+        const cropLeft = Math.max(0, left - inset);
+        const cropTop = Math.max(0, top - inset);
+        const cropWidth = Math.min(width, right + 1 + inset) - cropLeft;
+        const cropHeight = Math.min(height, bottom + 1 + inset) - cropTop;
+        if (cropWidth < width * 0.18 || cropHeight < height * 0.18 ||
+            (cropWidth >= width * 0.9 && cropHeight >= height * 0.9)) return null;
+        return { x: cropLeft, y: cropTop, width: cropWidth, height: cropHeight };
+      }
+
+      async function trimOfferPhoto(img) {
+        if (!img.isConnected || !img.naturalWidth || !img.naturalHeight) return;
+        const source = new Image();
+        source.crossOrigin = 'anonymous';
+        source.src = img.currentSrc || img.src;
+        try {
+          await source.decode();
+          if (!img.isConnected) return;
+          const scale = Math.min(1, 640 / Math.max(source.naturalWidth, source.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(source.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(source.naturalHeight * scale));
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (!ctx) return;
+          ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const crop = offerPhotoBounds(pixels.data, pixels.width, pixels.height);
+          if (!crop) return;
+
+          const thumbnail = document.createElement('canvas');
+          thumbnail.width = crop.width;
+          thumbnail.height = crop.height;
+          const output = thumbnail.getContext('2d');
+          if (!output) return;
+          output.drawImage(canvas, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+          img.src = thumbnail.toDataURL('image/webp', 0.9);
+        } catch {
+          // Merchants can disallow access to image pixels. Keep their original.
+        }
+      }
+
       const createCard = (product) => {
         const card = document.createElement('a');
         card.href = /^https:\/\//i.test(String(product.url || '')) ? product.url : '#';
@@ -2479,6 +2534,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         img.alt = '';
         img.loading = 'lazy';
         img.decoding = 'async';
+        img.addEventListener('load', () => { void trimOfferPhoto(img); }, { once: true });
         img.addEventListener('error', () => {
           const placeholder = document.createElement('div');
           placeholder.className = 'aspect-square rounded-xl bg-slate-100 grid place-items-center p-2 text-center text-xs text-slate-600';
