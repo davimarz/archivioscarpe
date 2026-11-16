@@ -62,7 +62,7 @@ test('waits for the eleventh advertiser after clicking the paginator', async () 
     filter: () => locator, or: () => locator, count: async () => 1, click: async () => { clicks++; }
   };
   const page = {
-    getByText: () => locator, getByRole: () => locator, isClosed: () => false,
+    getByText: label => String(label).includes('Risultati per pagina') ? {filter: () => ({count: async () => 0})} : locator, getByRole: () => locator, isClosed: () => false,
     evaluate: async () => ({ names: ++reads === 1 ? first : ['Undicesimo'] })
   };
   const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
@@ -96,4 +96,28 @@ test('resumes once the user reveals the missing advertiser in Awin', async () =>
   assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
   assert.equal(navigations, 1);
   assert.equal(manual, true);
+});
+
+test('shows all eleven advertisers using the results-per-page menu', async () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync('tools/awin/aggiorna-archivio-scarpe.cjs', 'utf8');
+  const block = source.match(/^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m)[0];
+  const first = Array.from({ length: 10 }, (_, i) => 'Negozio ' + i);
+  let menu = false, expanded = false;
+  const control = (count, click) => ({ count: async () => count(), click: async () => click(), filter() { return this; } });
+  const current = control(() => 1, () => { menu = true; });
+  const label = { ...control(() => 1, () => {}), locator: () => ({ getByText: () => current }) };
+  const page = {
+    getByText(value) {
+      if (value instanceof RegExp || String(value).includes('Risultati per pagina')) return label;
+      return control(() => Number(menu && value === '25'), () => { expanded = true; });
+    },
+    evaluate: async () => ({ names: expanded ? [...first, 'Undicesimo'] : first })
+  };
+  const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
+    readAdvertiserPage: async () => ({ names: first, total: 11 }),
+    inspectPersonalAdvertisers() {}, console: { log() {} }
+  });
+  assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
+  assert.equal(expanded, true);
 });

@@ -34,12 +34,37 @@ async function readJoinedAdvertisers(page) {
     return [];
   }
 
+  if (names.size && first.total > names.size) {
+    const sizeLabel = page.getByText(/^Risultati per pagina\s*:?$/i).filter({ visible: true });
+    if (await sizeLabel.count() === 1) {
+      const currentValue = sizeLabel.locator('xpath=..').getByText(String(first.names.length), { exact: true })
+        .filter({ visible: true });
+      try {
+        await (await currentValue.count() === 1 ? currentValue : sizeLabel).click({ timeout: 5000 });
+        for (const size of [100, 50, 25, 20]) {
+          if (size <= first.names.length) continue;
+          const value = page.getByText(String(size), { exact: true }).filter({ visible: true });
+          if (await value.count() !== 1) continue;
+          console.log('Paginazione Awin: imposta «Risultati per pagina» su ' + size + '.');
+          await value.click({ timeout: 5000 });
+          const additions = await waitForNewRows();
+          additions.forEach(name => names.add(name));
+          if (additions.length) console.log('Advertiser letti: ' + names.size + ' di ' + first.total + '.');
+          break;
+        }
+      } catch {
+        // The pagination controls below remain available as a fallback.
+      }
+    }
+  }
+
   for (let number = 2; names.size && first.total > names.size; number++) {
     const route = '/merchant-directory/index/tab/active/page/' + number;
     const nextLabel = /^(successiv[ao]|next)(?:\s*[›»→])?$/i;
     const pageLabel = new RegExp('^' + number + '$');
     const controls = [
       ['Successivo', page.getByText(nextLabel, { exact: true }).filter({ visible: true })],
+      ['numero ' + number, page.getByText(String(number), { exact: true }).filter({ visible: true })],
       ['pagina ' + number, page.getByRole('link', { name: pageLabel }).or(
         page.getByRole('button', { name: pageLabel })
       ).filter({ visible: true })]
