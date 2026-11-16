@@ -94,7 +94,7 @@ test('resumes once the user reveals the missing advertiser in Awin', async () =>
     setTimeout(resolve, delay) { now += delay; resolve(); }
   });
   assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
-  assert.equal(navigations, 1);
+  assert.equal(navigations, 0);
   assert.equal(manual, true);
 });
 
@@ -109,9 +109,11 @@ test('shows all eleven advertisers using the results-per-page menu', async () =>
   const label = { ...control(() => 1, () => {}), locator: () => ({ getByText: () => current }) };
   const page = {
     getByText(value) {
-      if (value instanceof RegExp || String(value).includes('Risultati per pagina')) return label;
+      if (String(value).includes('Risultati per pagina')) return label;
       return control(() => Number(menu && value === '25'), () => { expanded = true; });
     },
+    getByRole: () => ({ ...control(() => 0, () => {}), or() { return this; } }),
+    isClosed: () => false,
     evaluate: async () => ({ names: expanded ? [...first, 'Undicesimo'] : first })
   };
   const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {

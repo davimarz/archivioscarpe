@@ -34,7 +34,7 @@ async function readJoinedAdvertisers(page) {
     return [];
   }
 
-  if (names.size && first.total > names.size) {
+  async function expandResults() {
     const sizeLabel = page.getByText(/^Risultati per pagina\s*:?$/i).filter({ visible: true });
     if (await sizeLabel.count() === 1) {
       const currentValue = sizeLabel.locator('xpath=..').getByText(String(first.names.length), { exact: true })
@@ -48,22 +48,23 @@ async function readJoinedAdvertisers(page) {
           console.log('Paginazione Awin: imposta «Risultati per pagina» su ' + size + '.');
           await value.click({ timeout: 5000 });
           const additions = await waitForNewRows();
-          additions.forEach(name => names.add(name));
-          if (additions.length) console.log('Advertiser letti: ' + names.size + ' di ' + first.total + '.');
-          break;
+          return additions;
         }
       } catch {
-        // The pagination controls below remain available as a fallback.
+        // Manual recovery remains available.
       }
     }
+    return [];
   }
 
   for (let number = 2; names.size && first.total > names.size; number++) {
-    const route = '/merchant-directory/index/tab/active/page/' + number;
     const nextLabel = /^(successiv[ao]|next)(?:\s*[›»→])?$/i;
     const pageLabel = new RegExp('^' + number + '$');
     const controls = [
-      ['Successivo', page.getByText(nextLabel, { exact: true }).filter({ visible: true })],
+      ['Successivo', page.getByText(nextLabel).filter({ visible: true })],
+      ['Successivo', page.getByRole('button', { name: nextLabel }).or(
+        page.getByRole('link', { name: nextLabel })
+      ).filter({ visible: true })],
       ['numero ' + number, page.getByText(String(number), { exact: true }).filter({ visible: true })],
       ['pagina ' + number, page.getByRole('link', { name: pageLabel }).or(
         page.getByRole('button', { name: pageLabel })
@@ -78,18 +79,10 @@ async function readJoinedAdvertisers(page) {
         additions = await waitForNewRows();
         if (additions.length) break;
       } catch {
-        // Try the other visible control or direct navigation.
+        // If the control changed, try the next visible control.
       }
     }
-    if (!additions.length) {
-      console.log('Paginazione Awin: apertura diretta di pagina ' + number + '.');
-      try {
-        await open(page, route);
-        additions = await waitForNewRows();
-      } catch {
-        console.log('Awin non ha aperto direttamente la pagina ' + number + '.');
-      }
-    }
+    if (!additions.length && number === 2 && !page.isClosed()) additions = await expandResults();
     if (!additions.length && !page.isClosed()) {
       console.log('Awin non ha cambiato pagina in automatico.');
       console.log('Nella finestra Awin aperta, in «Iscritto», imposta «Risultati per pagina» su 25 o più, se disponibile, oppure clicca sulla pagina ' + number + '.');
