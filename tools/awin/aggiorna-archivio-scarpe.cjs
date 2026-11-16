@@ -121,6 +121,29 @@ async function openAwinRoute(page, route) {
   }
 }
 
+function addOfficialFeedRecovery(source) {
+  return source
+    .replace("['onestreet', 'voghion global'].includes",
+      "['onestreet', 'voghion global', 'yesshop', 'perletti - ombrelli per passione it', 'marco cerullo'].includes")
+    .replace(
+      "  await button.waitFor({ state: 'visible' });\n  if (name.trim()",
+      "  try {\n    await button.waitFor({ state: 'visible' });\n  } catch (error) {\n" +
+      "    if (!listUrl || error?.name !== 'TimeoutError') throw error;\n" +
+      "    setStage('Recupero tramite Scarica lista Feed');\n" +
+      "    console.log(name + ' | pagina di esportazione lenta: cerco il link nella lista ufficiale Awin');\n" +
+      "    return saveListedFeed(page, name, setStage, listUrl);\n" +
+      "  }\n  if (name.trim()"
+    )
+    .replace("  setStage('Verifica del nome del file');",
+      "  return saveFeedFile(exportFile, name, setStage);\n}\n\n" +
+      "async function saveListedFeed(page, name, setStage, listUrl) {\n" +
+      "  const url = await findListedFeed(page, listUrl, name);\n" +
+      "  const exportFile = await fetchGeneratedExport(page, name, enhancedUiExportUrl(url) || url);\n" +
+      "  return saveFeedFile(exportFile, name, setStage);\n}\n\n" +
+      "async function saveFeedFile(exportFile, name, setStage) {\n" +
+      "  setStage('Verifica del nome del file');");
+}
+
 async function downloadScript(revision, name, destination) {
   const response = await fetch(rawBase + revision + '/tools/awin/' + name, {
     redirect: 'error',
@@ -140,7 +163,7 @@ async function downloadScript(revision, name, destination) {
       'Impossibile aprire la scheda Iscritto. Controlla che il profilo Playwright sia libero e che Awin sia raggiungibile.',
       "' + (String(error?.message).startsWith('Navigazione Awin — ') ? error.message : /launchPersistentContext|ProcessSingleton|user data directory|profile.*in use/i.test(String(error?.message)) ? 'Avvio di Playwright fallito. Chiudi le finestre Awin aperte da questo script e controlla che il browser Playwright sia installato.' : /ERR_|page\\.goto|Pagina Awin non disponibile/i.test(String(error?.message)) ? 'Navigazione Awin fallita prima del download.' : 'Errore Playwright prima di completare il download.') + '"
     );
-  fs.writeFileSync(destination, patched, { flag: 'wx' });
+  fs.writeFileSync(destination, addOfficialFeedRecovery(patched), { flag: 'wx' });
   run(process.execPath, ['--check', destination]);
 }
 
