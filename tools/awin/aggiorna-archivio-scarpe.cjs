@@ -121,8 +121,31 @@ async function openAwinRoute(page, route) {
   }
 }
 
+async function clickCreateFeedNext(page) {
+  if (!/\/datafeed\/step-one\/?$/.test(new URL(page.url()).pathname)) {
+    throw new Error('Il passaggio iniziale di Create-a-Feed non è aperto');
+  }
+  const name = 'Successivo';
+  const candidates = page.getByRole('button', { name, exact: true })
+    .or(page.getByRole('link', { name, exact: true }))
+    .or(page.getByText(name, { exact: true })).filter({ visible: true });
+  await candidates.first().waitFor({ state: 'visible' });
+  const index = await candidates.evaluateAll(elements => elements
+    .map((element, index) => ({ index, rect: element.getBoundingClientRect() }))
+    .filter(({ rect }) => rect.right > document.documentElement.clientWidth / 2)
+    .sort((a, b) => a.rect.top - b.rect.top || b.rect.right - a.rect.right)[0]?.index ?? -1);
+  if (index < 0) throw new Error('Pulsante Successivo in alto a destra non trovato');
+  await candidates.nth(index).click({ timeout: 15000 });
+}
+
 function addOfficialFeedRecovery(source) {
   return source
+    .replace(/^async function downloadBatch\(/m, () =>
+      clickCreateFeedNext.toString() + '\n\nasync function downloadBatch(')
+    .replace("  await control(page, 'Successivo').click();\n  console.log(name + ' | premuto Successivo');",
+      "  await clickCreateFeedNext(page);\n  console.log(name + ' | clic su Successivo in alto a destra');")
+    .replace("  const safeErrors = [",
+      "  const safeErrors = [\n    'Il passaggio iniziale di Create-a-Feed non è aperto',\n    'Pulsante Successivo in alto a destra non trovato',")
     .replace("['onestreet', 'voghion global'].includes",
       "['onestreet', 'voghion global', 'yesshop', 'perletti - ombrelli per passione it', 'marco cerullo'].includes")
     .replace(

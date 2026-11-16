@@ -152,3 +152,24 @@ test('retries a transient Awin navigation and reports a terminal status without 
   await assert.rejects(() => open({ ...page, goto: async () => ({ ok: () => false, status: () => 403 }) },
     '/merchant-directory'), /Iscritto: HTTP 403$/);
 });
+
+test('clicks the upper-right Successivo in Create-a-Feed', async () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync('tools/awin/aggiorna-archivio-scarpe.cjs', 'utf8');
+  const block = source.match(/^async function clickCreateFeedNext\(page\) \{[\s\S]*?^\}/m)[0];
+  const clickNext = vm.runInNewContext(block + ';clickCreateFeedNext', {
+    URL, document: { documentElement: { clientWidth: 1200 } }
+  });
+  const clicked = [];
+  const boxes = [{ top: 20, right: 400 }, { top: 550, right: 1100 }, { top: 110, right: 1100 }];
+  const locator = {
+    or: () => locator, filter: () => locator, first: () => locator, waitFor: async () => {},
+    evaluateAll: async run => run(boxes.map(rect => ({ getBoundingClientRect: () => rect }))),
+    nth: index => ({ click: async () => clicked.push(index) })
+  };
+  await clickNext({
+    url: () => 'https://ui.awin.com/awin/affiliate/3150312/datafeed/step-one',
+    getByRole: () => locator, getByText: () => locator
+  });
+  assert.deepEqual(clicked, [2]);
+});
