@@ -43,6 +43,12 @@ async function readJoinedAdvertisers(page) {
     const fromFiles = run('--da-listini', retained);
     assert.match(fromFiles.stdout, /2\/3 Aggiornamento catalogo/);
 
+    const completed = run('--completa-listini', retained, 'Marco Cerullo');
+    assert.match(completed.stdout, /Listini aggiornati: 3/);
+    assert.match(completed.stdout, /2\/3 Aggiornamento catalogo/);
+    assert.deepEqual(fs.readdirSync(retained).sort(),
+      ['Cisalfa Sport IT.csv.gz', 'Marco Cerullo.csv.gz', 'OneStreet.csv.gz']);
+
     const selected = run('--advertiser', 'Cisalfa Sport IT', 'OneStreet');
     assert.match(selected.stdout, /Listini aggiornati: 2/);
     assert.match(selected.stdout, /2\/3 Aggiornamento catalogo/);

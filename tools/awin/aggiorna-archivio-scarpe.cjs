@@ -108,7 +108,13 @@ async function downloadScript(revision, name, destination) {
   const source = await response.text();
   const pagination = /^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m;
   if (!pagination.test(source)) throw new Error('La versione del downloader Awin non contiene il blocco di paginazione atteso.');
-  fs.writeFileSync(destination, source.replace(pagination, () => readJoinedAdvertisers.toString()), { flag: 'wx' });
+  const patched = source.replace(pagination, () => readJoinedAdvertisers.toString())
+    .replace('main().catch(() => {', 'main().catch(error => {')
+    .replace(
+      'Impossibile aprire la scheda Iscritto. Controlla che il profilo Playwright sia libero e che Awin sia raggiungibile.',
+      "' + (/launchPersistentContext|ProcessSingleton|user data directory|profile.*in use/i.test(String(error?.message)) ? 'Avvio di Playwright fallito. Chiudi le finestre Awin aperte da questo script e controlla che il browser Playwright sia installato.' : /ERR_|page\\.goto|Pagina Awin non disponibile/i.test(String(error?.message)) ? 'Navigazione Awin fallita prima del download.' : 'Errore Playwright prima di completare il download.') + '"
+    );
+  fs.writeFileSync(destination, patched, { flag: 'wx' });
   run(process.execPath, ['--check', destination]);
 }
 
@@ -173,11 +179,13 @@ async function verifyOnline(repo) {
 async function main() {
   const [publisher, option, ...values] = process.argv.slice(2);
   if (!/^\d+$/.test(publisher || '')) throw new Error('Specifica il tuo Publisher ID Awin.');
-  const advertisers = option === '--advertiser' ? values.map(name => name.trim()) : [];
+  const resume = option === '--completa-listini';
+  const recovery = resume && values[0]?.trim() ? path.resolve(values[0]) : null;
+  const advertisers = option === '--advertiser' || resume ? values.slice(resume ? 1 : 0).map(name => name.trim()) : [];
   const source = option === '--da-listini' && values.length === 1 && values[0].trim() ? path.resolve(values[0]) : null;
-  if (option !== undefined && !source && (!advertisers.length || advertisers.some(name => !name || name.startsWith('--')) ||
-      new Set(advertisers.map(name => name.toLowerCase())).size !== advertisers.length)) {
-    throw new Error('Uso: node aggiorna-archivio-scarpe.cjs <publisher-id> [--advertiser <nome> ... | --da-listini <cartella>]');
+  if ((resume && !recovery) || (option !== undefined && !source && (!advertisers.length || advertisers.some(name => !name || name.startsWith('--')) ||
+      new Set(advertisers.map(name => name.toLowerCase())).size !== advertisers.length))) {
+    throw new Error('Uso: node aggiorna-archivio-scarpe.cjs <publisher-id> [--advertiser <nome> ... | --da-listini <cartella> | --completa-listini <cartella> <nome> ...]');
   }
   const working = fs.mkdtempSync(path.join(os.tmpdir(), 'archivioscarpe-awin-'));
   const staging = path.join(working, 'listini');
@@ -188,6 +196,7 @@ async function main() {
   let preserveWorking = false;
   try {
     fs.mkdirSync(staging);
+    if (recovery && !fs.statSync(recovery).isDirectory()) throw new Error('Cartella di recupero non valida.');
     if (source) {
       phase = '1/3 Lettura dei listini esistenti';
       console.log(phase + ' | ' + source);
@@ -205,7 +214,12 @@ async function main() {
           throw new Error('Il numero di listini ricevuti non coincide con gli advertiser richiesti.');
         }
       } catch (error) {
-        if (fs.readdirSync(staging).some(name => feedExtension.test(name))) {
+        if (recovery && fs.readdirSync(staging).some(name => feedExtension.test(name))) {
+          preserveWorking = true;
+          keepLocalFeeds(staging, recovery);
+          preserveWorking = false;
+          console.error('Nuovi listini salvati in ' + recovery);
+        } else if (fs.readdirSync(staging).some(name => feedExtension.test(name))) {
           const recoveries = path.join(__dirname, 'LISTINI-PARZIALI');
           try {
             fs.mkdirSync(recoveries, { recursive: true });
@@ -219,6 +233,13 @@ async function main() {
         }
         throw error;
       }
+    }
+    if (recovery) {
+      preserveWorking = true;
+      keepLocalFeeds(staging, recovery);
+      preserveWorking = false;
+      fs.rmSync(staging, { recursive: true });
+      keepLocalFeeds(recovery, staging);
     }
     const local = path.join(__dirname, 'LISTINI');
     const count = keepLocalFeeds(staging, local);
