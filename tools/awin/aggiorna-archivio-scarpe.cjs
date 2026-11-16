@@ -19,13 +19,70 @@ function run(command, args, options = {}) {
   }
 }
 
+async function readJoinedAdvertisers(page) {
+  const first = await readAdvertiserPage(page);
+  const names = new Set(first.names);
+
+  async function waitForNewRows() {
+    const deadline = Date.now() + 10000;
+    do {
+      const current = await page.evaluate(inspectPersonalAdvertisers, false).catch(() => null);
+      const additions = current?.names?.filter(name => !names.has(name));
+      if (additions?.length) return additions;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    } while (Date.now() < deadline);
+    return [];
+  }
+
+  for (let number = 2; names.size && first.total > names.size; number++) {
+    const route = '/merchant-directory/index/tab/active/page/' + number;
+    const nextPage = page.locator('a[href]').filter({ visible: true }).and(
+      page.locator('a[href*="/tab/active/page/' + number + '"]')
+    ).filter({ hasText: new RegExp('^\\s*' + number + '\\s*$') }).first();
+    let additions = [];
+    if (await nextPage.isVisible()) {
+      try {
+        await nextPage.click({ timeout: 5000 });
+        additions = await waitForNewRows();
+      } catch {
+        // Try direct navigation if the paginator changed before the click.
+      }
+    } else {
+      const next = page.getByRole('link', { name: /^(successiv[ao]|next)(?:\s*[›»→])?$/i })
+        .filter({ visible: true });
+      if (await next.count() === 1) {
+        try {
+          await next.click({ timeout: 5000 });
+          additions = await waitForNewRows();
+        } catch {
+          // Try direct navigation if the paginator was not actionable.
+        }
+      }
+    }
+    if (!additions.length) {
+      await open(page, route);
+      additions = await waitForNewRows();
+    }
+    if (!additions.length) {
+      console.error('Pagina ' + number + ': nessun nuovo advertiser. Letti ' + names.size + ' di ' + first.total + '.');
+      return [];
+    }
+    additions.forEach(name => names.add(name));
+    console.log('Pagina ' + number + ': advertiser letti ' + names.size + ' di ' + first.total + '.');
+  }
+  return [...names];
+}
+
 async function downloadScript(revision, name, destination) {
   const response = await fetch(rawBase + revision + '/tools/awin/' + name, {
     redirect: 'error',
     signal: AbortSignal.timeout(30000)
   });
   if (!response.ok) throw new Error('Impossibile scaricare ' + name + ' da GitHub (HTTP ' + response.status + ')');
-  fs.writeFileSync(destination, await response.text(), { flag: 'wx' });
+  const source = await response.text();
+  const pagination = /^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m;
+  if (!pagination.test(source)) throw new Error('La versione del downloader Awin non contiene il blocco di paginazione atteso.');
+  fs.writeFileSync(destination, source.replace(pagination, () => readJoinedAdvertisers.toString()), { flag: 'wx' });
   run(process.execPath, ['--check', destination]);
 }
 

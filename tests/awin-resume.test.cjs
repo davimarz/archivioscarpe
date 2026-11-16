@@ -16,6 +16,9 @@ test('an incomplete download is recoverable and an explicit list can proceed to 
       const run = children.spawnSync;
       children.spawnSync = (cmd, ...args) => cmd === 'git' ? {status: 1} : run(cmd, ...args);
       global.fetch = async () => new Response(\`
+async function readJoinedAdvertisers(page) {
+  return [];
+}
         const fs = require('node:fs');
         const path = require('node:path');
         const names = process.argv.slice(3);
@@ -47,4 +50,27 @@ test('an incomplete download is recoverable and an explicit list can proceed to 
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('waits for the eleventh advertiser after clicking the paginator', async () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync('tools/awin/aggiorna-archivio-scarpe.cjs', 'utf8');
+  const block = source.match(/^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m)[0];
+  const first = Array.from({ length: 10 }, (_, i) => 'Negozio ' + i);
+  let clicks = 0, reads = 0;
+  const locator = {
+    filter: () => locator, and: () => locator, first: () => locator,
+    isVisible: async () => true, click: async () => { clicks++; }
+  };
+  const page = {
+    locator: () => locator,
+    evaluate: async () => ({ names: ++reads === 1 ? first : ['Undicesimo'] })
+  };
+  const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
+    readAdvertiserPage: async () => ({ names: first, total: 11 }),
+    inspectPersonalAdvertisers() {}, console: { log() {} }, setTimeout: resolve => resolve()
+  });
+  assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
+  assert.equal(clicks, 1);
+  assert.equal(reads, 2);
 });
