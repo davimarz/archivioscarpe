@@ -99,6 +99,28 @@ async function readJoinedAdvertisers(page) {
   return [...names];
 }
 
+async function openAwinRoute(page, route) {
+  const label = route.startsWith('/merchant-directory') ? 'Iscritto' : 'Create-a-Feed';
+  const temporary = /^(?:HTTP (?:408|429|5\d\d)|ERR_(?:ABORTED|TIMED_OUT|CONNECTION_RESET|CONNECTION_CLOSED|CONNECTION_TIMED_OUT|NETWORK_CHANGED|INTERNET_DISCONNECTED|NAME_NOT_RESOLVED)|TIMEOUT)$/;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let reason;
+    try {
+      const response = await page.goto(account + route, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      if (response?.ok()) return;
+      const status = response?.status();
+      reason = Number.isInteger(status) ? 'HTTP ' + status : 'nessuna risposta HTTP';
+    } catch (error) {
+      const info = String(error?.message);
+      reason = info.match(/\bERR_[A-Z0-9_]+\b/)?.[0] ||
+        (error?.name === 'TimeoutError' ? 'TIMEOUT' : page.isClosed() ? 'finestra chiusa' : 'errore del browser');
+    }
+    const message = 'Navigazione Awin — ' + label + ': ' + reason;
+    if (attempt === 3 || page.isClosed() || !temporary.test(reason)) throw new Error(message);
+    console.log(message + ' (tentativo ' + attempt + ' di 3; riprovo).');
+    await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+  }
+}
+
 async function downloadScript(revision, name, destination) {
   const response = await fetch(rawBase + revision + '/tools/awin/' + name, {
     redirect: 'error',
@@ -109,10 +131,14 @@ async function downloadScript(revision, name, destination) {
   const pagination = /^async function readJoinedAdvertisers\(page\) \{[\s\S]*?^\}/m;
   if (!pagination.test(source)) throw new Error('La versione del downloader Awin non contiene il blocco di paginazione atteso.');
   const patched = source.replace(pagination, () => readJoinedAdvertisers.toString())
+    .replace(/^async function open\(page, route\) \{[\s\S]*?^\}/m,
+      () => openAwinRoute.toString().replace('function openAwinRoute(', 'function open('))
+    .replace('const message = safeErrors.includes(error.message) ?',
+      "const message = error.message.startsWith('Navigazione Awin — ') || safeErrors.includes(error.message) ?")
     .replace('main().catch(() => {', 'main().catch(error => {')
     .replace(
       'Impossibile aprire la scheda Iscritto. Controlla che il profilo Playwright sia libero e che Awin sia raggiungibile.',
-      "' + (/launchPersistentContext|ProcessSingleton|user data directory|profile.*in use/i.test(String(error?.message)) ? 'Avvio di Playwright fallito. Chiudi le finestre Awin aperte da questo script e controlla che il browser Playwright sia installato.' : /ERR_|page\\.goto|Pagina Awin non disponibile/i.test(String(error?.message)) ? 'Navigazione Awin fallita prima del download.' : 'Errore Playwright prima di completare il download.') + '"
+      "' + (String(error?.message).startsWith('Navigazione Awin — ') ? error.message : /launchPersistentContext|ProcessSingleton|user data directory|profile.*in use/i.test(String(error?.message)) ? 'Avvio di Playwright fallito. Chiudi le finestre Awin aperte da questo script e controlla che il browser Playwright sia installato.' : /ERR_|page\\.goto|Pagina Awin non disponibile/i.test(String(error?.message)) ? 'Navigazione Awin fallita prima del download.' : 'Errore Playwright prima di completare il download.') + '"
     );
   fs.writeFileSync(destination, patched, { flag: 'wx' });
   run(process.execPath, ['--check', destination]);

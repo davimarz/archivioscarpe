@@ -129,3 +129,26 @@ test('shows all eleven advertisers using the results-per-page menu', async () =>
   assert.deepEqual(Array.from(await read(page)), [...first, 'Undicesimo']);
   assert.equal(expanded, true);
 });
+
+test('retries a transient Awin navigation and reports a terminal status without the URL', async () => {
+  const vm = require('node:vm');
+  const source = fs.readFileSync('tools/awin/aggiorna-archivio-scarpe.cjs', 'utf8');
+  const block = source.match(/^async function openAwinRoute\(page, route\) \{[\s\S]*?^\}/m)[0];
+  const messages = [];
+  const open = vm.runInNewContext(block + ';openAwinRoute', {
+    account: 'https://example.test/secret',
+    console: { log: message => messages.push(message) },
+    setTimeout: resolve => resolve()
+  });
+  let attempts = 0;
+  const page = { isClosed: () => false, goto: async () => {
+    if (++attempts === 1) throw new Error('net::ERR_ABORTED https://example.test/secret');
+    return { ok: () => true };
+  } };
+  await open(page, '/merchant-directory');
+  assert.equal(attempts, 2);
+  assert.match(messages[0], /Iscritto: ERR_ABORTED/);
+  assert.doesNotMatch(messages[0], /https|secret/);
+  await assert.rejects(() => open({ ...page, goto: async () => ({ ok: () => false, status: () => 403 }) },
+    '/merchant-directory'), /Iscritto: HTTP 403$/);
+});
