@@ -36,30 +36,28 @@ async function readJoinedAdvertisers(page) {
 
   for (let number = 2; names.size && first.total > names.size; number++) {
     const route = '/merchant-directory/index/tab/active/page/' + number;
-    const nextPage = page.locator('a[href]').filter({ visible: true }).and(
-      page.locator('a[href*="/tab/active/page/' + number + '"]')
-    ).filter({ hasText: new RegExp('^\\s*' + number + '\\s*$') }).first();
+    const nextLabel = /^(successiv[ao]|next)(?:\s*[›»→])?$/i;
+    const pageLabel = new RegExp('^' + number + '$');
+    const controls = [
+      ['Successivo', page.getByText(nextLabel, { exact: true }).filter({ visible: true })],
+      ['pagina ' + number, page.getByRole('link', { name: pageLabel }).or(
+        page.getByRole('button', { name: pageLabel })
+      ).filter({ visible: true })]
+    ];
     let additions = [];
-    if (await nextPage.isVisible()) {
+    for (const [label, control] of controls) {
+      if (await control.count() !== 1) continue;
       try {
-        await nextPage.click({ timeout: 5000 });
+        console.log('Paginazione Awin: clic su «' + label + '».');
+        await control.click({ timeout: 5000 });
         additions = await waitForNewRows();
+        if (additions.length) break;
       } catch {
-        // Try direct navigation if the paginator changed before the click.
-      }
-    } else {
-      const next = page.getByRole('link', { name: /^(successiv[ao]|next)(?:\s*[›»→])?$/i })
-        .filter({ visible: true });
-      if (await next.count() === 1) {
-        try {
-          await next.click({ timeout: 5000 });
-          additions = await waitForNewRows();
-        } catch {
-          // Try direct navigation if the paginator was not actionable.
-        }
+        // Try the other visible control or direct navigation.
       }
     }
     if (!additions.length) {
+      console.log('Paginazione Awin: apertura diretta di pagina ' + number + '.');
       await open(page, route);
       additions = await waitForNewRows();
     }

@@ -59,11 +59,10 @@ test('waits for the eleventh advertiser after clicking the paginator', async () 
   const first = Array.from({ length: 10 }, (_, i) => 'Negozio ' + i);
   let clicks = 0, reads = 0;
   const locator = {
-    filter: () => locator, and: () => locator, first: () => locator,
-    isVisible: async () => true, click: async () => { clicks++; }
+    filter: () => locator, or: () => locator, count: async () => 1, click: async () => { clicks++; }
   };
   const page = {
-    locator: () => locator,
+    getByText: () => locator, getByRole: () => locator,
     evaluate: async () => ({ names: ++reads === 1 ? first : ['Undicesimo'] })
   };
   const read = vm.runInNewContext(block + ';readJoinedAdvertisers', {
