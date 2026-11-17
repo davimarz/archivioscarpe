@@ -1,12 +1,12 @@
 :root {
-  --night: #121e18;
-  --forest: #1c2c23;
-  --moss: #32493a;
-  --cream: #f8f0dd;
-  --sage: #bdd1b7;
-  --citrus: #d9ed96;
+  --page: #f7f8f3;
+  --panel: #fff;
+  --panel-border: #d4ded4;
+  --ink: #20322a;
+  --muted: #465951;
+  --accent: #dceccf;
 }
-html, body.bg-slate-950 { background: var(--night) !important; color: var(--cream) !important; }
+html, body.bg-slate-950 { background: var(--page) !important; color: var(--ink) !important; }
 body { font-family: "Instrument Sans", system-ui, sans-serif; padding-bottom: 0; }
 
 body > header {
@@ -15,15 +15,15 @@ body > header {
   padding: clamp(20px, 5vw, 48px) clamp(16px, 5vw, 44px);
   margin: 0 auto;
   border: 0;
-  border-bottom: 1px solid #52634c !important;
-  background: radial-gradient(ellipse at 94% 18%, #3a513b 0%, transparent 55%), var(--night) !important;
+  border-bottom: 1px solid #d4ded4 !important;
+  background: radial-gradient(ellipse at 94% 18%, #dfead9 0%, transparent 55%), var(--page) !important;
   box-shadow: none !important;
 }
 body > header > div { gap: clamp(10px, 3vw, 24px); }
 body > header .brand-mark {
   width: clamp(42px, 8vw, 78px) !important;
   height: clamp(42px, 8vw, 78px) !important;
-  border: 1px solid var(--sage);
+  border: 1px solid var(--muted);
   border-radius: 50%;
   box-shadow: none;
 }
@@ -33,22 +33,22 @@ body > header h1 {
   font-size: clamp(1.65rem, 5.4vw, 4rem) !important;
   font-weight: 500;
   line-height: 1.02;
-  color: var(--cream) !important;
+  color: var(--ink) !important;
   letter-spacing: -.045em;
 }
-body > header p { color: var(--sage) !important; }
-#headerSettingsButton { background: var(--forest) !important; color: var(--citrus) !important; border-color: #617658 !important; right: 16px; top: 16px; }
+body > header p { color: var(--muted) !important; }
+#headerSettingsButton { background: var(--panel) !important; color: var(--ink) !important; border-color: #81948a !important; right: 16px; top: 16px; }
 
-body > main { padding: 22px clamp(12px, 3vw, 28px) 36px !important; }
+body > main { padding: 22px clamp(12px, 3vw, 28px) calc(112px + env(safe-area-inset-bottom)) !important; }
 body > footer { margin-bottom: calc(94px + env(safe-area-inset-bottom)); }
 main h2, main h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; }
 main section h2, #view-archive #personalArchiveCard h2, #view-promotions h2 {
-  color: var(--cream) !important;
+  color: var(--ink) !important;
   font-size: clamp(1.3rem, 4vw, 1.9rem);
 }
 #view-archive .personal-archive-panel {
-  background: var(--forest) !important;
-  border: 1px solid var(--moss) !important;
+  background: var(--panel) !important;
+  border: 1px solid var(--panel-border) !important;
   box-shadow: none;
   padding: clamp(12px, 3vw, 24px);
   border-radius: 22px;
@@ -75,16 +75,16 @@ main section h2, #view-archive #personalArchiveCard h2, #view-promotions h2 {
   color: #23382a !important;
 }
 #affiliateAdSlot .awin-discount-badge, #promotionsGrid .awin-discount-badge { background: #284a32; color: #f1f6dd !important; }
-#view-archive #usageGuideButton { background: var(--citrus) !important; color: var(--night) !important; border: 0; box-shadow: none !important; }
-#shoesCountBadge { background: var(--moss) !important; color: var(--cream) !important; border-color: #546a56 !important; }
-#view-archive #emptyArchiveAction { background: var(--citrus) !important; color: var(--night) !important; min-height: 44px; }
+#view-archive #usageGuideButton { background: var(--accent) !important; color: var(--ink) !important; border: 0; box-shadow: none !important; }
+#shoesCountBadge { background: var(--panel-border) !important; color: var(--ink) !important; border-color: #81948a !important; }
+#view-archive #emptyArchiveAction { background: var(--accent) !important; color: var(--ink) !important; min-height: 44px; }
 #addDropZone, #checkDropZone { border-color: #8da786 !important; }
-#view-promotions .promotion-filters button[aria-pressed="true"] { background: var(--citrus) !important; color: var(--night) !important; }
+#view-promotions .promotion-filters button[aria-pressed="true"] { background: var(--accent) !important; color: var(--ink) !important; }
 body nav[aria-label="Navigazione principale"] {
   width: min(680px, calc(100% - 20px));
   bottom: max(8px, env(safe-area-inset-bottom));
-  border: 1px solid #51654e !important;
-  background: #1b2a22 !important;
+  border: 1px solid #81948a !important;
+  background: #fff !important;
   border-radius: 22px;
   padding: 6px !important;
   gap: 3px !important;
@@ -95,22 +95,60 @@ body nav[aria-label="Navigazione principale"] button[id] {
   border: 0 !important;
   border-radius: 16px !important;
   background: transparent !important;
-  color: var(--sage) !important;
+  color: var(--muted) !important;
   box-shadow: none !important;
 }
 body nav[aria-label="Navigazione principale"] button i { color: inherit !important; }
-body nav[aria-label="Navigazione principale"] button[aria-current="page"],
-body nav[aria-label="Navigazione principale"] #tab-archive:not([aria-current]) {
-  background: var(--citrus) !important;
-  color: var(--night) !important;
+body nav[aria-label="Navigazione principale"] button[aria-current="page"] {
+  background: var(--accent) !important;
+  color: var(--ink) !important;
   filter: none;
   outline: none !important;
 }
-body nav[aria-label="Navigazione principale"] button:focus-visible { outline: 2px solid var(--cream) !important; outline-offset: -2px !important; }
+body nav[aria-label="Navigazione principale"] button:focus-visible { outline: 2px solid var(--ink) !important; outline-offset: -2px !important; }
 @media (max-width: 420px) {
   body > header > div { gap: 8px; }
   body > header h1 { font-size: clamp(1.42rem, 6.3vw, 2rem) !important; }
   #headerSettingsButton { width: 40px; height: 40px; top: 13px; right: 10px; }
 }
-dialog.archivio-camera { background: var(--forest); color: var(--cream); border-color: var(--moss); }
-dialog.archivio-camera button { background: var(--citrus); color: var(--night); }
+dialog.archivio-camera { background: var(--panel); color: var(--ink); border-color: var(--panel-border); }
+dialog.archivio-camera button { background: var(--accent); color: var(--ink); }
+
+/* Contrasto dei campi, anche nei moduli aperti dopo il caricamento. */
+:root { color-scheme: light; --field-border: #72857a; --focus: #176145; }
+body :is(input:not([type="file"], [type="hidden"], [type="checkbox"], [type="radio"]), textarea, select),
+#archiveSearchPanel input, #archiveFiltersDetails select {
+  background: #fff !important;
+  color: var(--ink) !important;
+  -webkit-text-fill-color: currentColor;
+  caret-color: var(--ink);
+  border-color: var(--field-border) !important;
+}
+:is(input, textarea)::placeholder { color: #52645b; opacity: 1; -webkit-text-fill-color: currentColor; }
+select :is(option, optgroup) { background: #fff; color: var(--ink); }
+input:autofill { -webkit-text-fill-color: var(--ink); }
+body :is(input, textarea, select):focus-visible,
+body :is(button, a, summary):focus-visible {
+  outline: 2px solid var(--focus) !important;
+  outline-offset: 3px;
+}
+
+:is(#apiKeyModal, #editShoeModal) > div { background: var(--panel); color: var(--ink); border-color: var(--panel-border); }
+:is(#apiKeyModal, #editShoeModal) :is(.text-slate-100, .text-slate-200, .text-slate-300, h3) { color: var(--ink); }
+:is(#apiKeyModal, #editShoeModal) .text-slate-400 { color: var(--muted); }
+:is(#apiKeyModal, #editShoeModal) .bg-slate-800 { background: #edf3ea; color: var(--ink); }
+:is(#apiKeyModal, #editShoeModal) .bg-amber-500 { background: var(--focus); color: #fff; }
+#apiKeyModal .bg-emerald-950\/30 { background: #edf6ed; }
+#apiKeyModal .text-emerald-300 { color: #176145; }
+#aiTestResult, #quickSearchResults { background: #f0f5ee; color: var(--ink); }
+#quickSearchResults button:hover { background: #e2ede0; }
+#affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link { color: #205440 !important; }
+#view-promotions .promotion-filters button[aria-pressed="true"] { border-color: var(--focus); }
+#view-archive #affiliateAdSlot .banner-rotation-toggle:focus-visible { outline-color: var(--focus); }
+main :is(.text-amber-200, .text-amber-300) { color: #754a08; }
+main :is(.text-emerald-300, .text-emerald-400) { color: #176145; }
+main :is(.text-red-400, .text-red-500) { color: #a22532; }
+main .text-indigo-400 { color: #4338a1; }
+main :is(.bg-emerald-950\/30, .bg-slate-950\/70, .bg-slate-900\/80) { background: #edf3ea; }
+main :is(#addErrorOverlay, #checkErrorOverlay) .text-red-400 { color: #fcb4b4; }
+#quickAddButton { background: var(--focus); }

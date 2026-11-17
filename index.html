@@ -13,9 +13,9 @@
   <meta property="og:image:height" content="512">
   <meta property="og:image:alt" content="Archivio Scarpe, il tuo armadio e le offerte di calzature">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#121e18">
+  <meta name="theme-color" content="#f7f8f3">
   <meta name="application-name" content="Archivio Scarpe">
-  <link rel="manifest" href="./manifest.webmanifest?v=3">
+  <link rel="manifest" href="./manifest.webmanifest?v=4">
   <link rel="icon" type="image/png" href="./assets/archivio-scarpe-blu-192.png">
   <link rel="apple-touch-icon" href="./assets/archivio-scarpe-blu-180.png">
   <meta name="description" content="Organizza la tua collezione di scarpe e verifica i nuovi acquisti con il riconoscimento AI.">
@@ -28,7 +28,7 @@
     .promotion-filters button[aria-pressed="true"]{background:#2b7958;border-color:#d4c15c;color:#fff}
     #promotionsMore{min-height:44px}
 
-    :root { color-scheme: dark; --surface:#182620; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
+    :root { --surface:#182620; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
     html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
     body { background:radial-gradient(ellipse 90% 28% at 50% -4%,rgba(79,70,229,.16),transparent 70%),#0d1713; letter-spacing:.005em; }
     body::before { content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;background:radial-gradient(circle at 95% 65%,rgba(245,158,11,.035),transparent 38%); }
@@ -74,19 +74,17 @@
     html,body,body.bg-slate-950{background:#fcfcf9!important;color:#23312b!important}
     body::before{display:none}
     header{background:#fff!important;border-color:#eeece5!important;box-shadow:0 2px 14px #233f330a!important}
-    header h1{color:#1f2d27!important}header p{color:#6e7f78!important}
+    header h1{color:#1f2d27!important}header p{color:#465951!important}
     header .bg-gradient-to-tr{background:linear-gradient(135deg,#369e72,#3d8b6a)!important}
     #headerSettingsButton{background:#f8f7f2!important;color:#2b4238!important;border-color:#ebeae3!important}
     main{padding-top:16px!important}main section{color:#2d3f37}
     main section h2,main section h3{color:#20322a!important}
     main .text-white,main .text-slate-100,main .text-slate-200,main .text-slate-300{color:#2f423a!important}
-    main .text-slate-400,main .text-slate-500{color:#6e8078!important}
+    main .text-slate-400,main .text-slate-500{color:#465951!important}
     main .text-amber-400,main .text-indigo-300{color:#2c7f5c!important}
     main .bg-slate-950,main .bg-slate-900,main .bg-slate-800{background:#fff!important}
     main .border-slate-800,main .border-slate-700,main .border-slate-600{border-color:#ebeae2!important}
-    main .bg-amber-500,main .bg-indigo-600{background:#399a71!important;color:white!important}
-    input:not([type=file]),select,textarea{background:#fff!important;color:#2a3e36!important;border-color:#e9e7df!important;border-radius:12px}
-    input::placeholder,textarea::placeholder{color:#9b9887!important}
+    main .bg-amber-500,main .bg-indigo-600{background:#176145!important;color:white!important}
     button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #33956c!important}
     #archiveSearchPanel input{background:#f9f8f4!important;border-radius:999px!important;box-shadow:0 4px 12px #28493b0d}
     #usageGuideButton{background:#005f2d;border:2px solid #39ff14;color:#fff;box-shadow:0 0 8px #39ff1466;font-size:.875rem}
@@ -111,7 +109,7 @@
     #shoesGrid button[data-view-shoe-photos]{background:#fff!important;color:#354e43!important;border-color:#e8e7df!important}
     #view-add>div:first-child,#view-check>div:first-child{background:#fff!important;border-color:#ecebe3!important}
     #addDropZone,#checkDropZone{background:#f9f8f3!important;border-color:#dfdbc4!important}
-    .help-text{color:#6a7c74!important}
+    .help-text{color:#465951!important}
     nav{background:#fff!important;border-color:#ebeae2!important;box-shadow:0 -4px 20px #20382e0d!important}
     nav button{color:#6b7d75!important}
     nav button.text-amber-400{color:#2d845f!important;background:#f8f7ed!important}
@@ -134,7 +132,7 @@
     #view-settings details,#view-add details,#view-check details {color:#2e4139!important}
     #view-settings .text-slate-400,#view-add .text-slate-400,#view-check .text-slate-400 {color:#60756c!important}
     #view-settings .border-slate-700,#view-add .border-slate-700,#view-check .border-slate-700 {border-color:#e9e7df!important}
-    #view-settings .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500 {background:#399870!important;color:#fff!important}
+    #view-settings .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500 {background:#176145!important;color:#fff!important}
     #view-settings button.bg-slate-800,#view-add button.bg-slate-800,#view-check button.bg-slate-800 {background:#f8f6ef!important;color:#30624d!important}
     #view-settings .bg-slate-900\/80,#view-add .bg-slate-900\/80 {background:#fff!important}
     #view-settings .help-text,#view-add .help-text,#view-check .help-text {color:#5e726a!important}
@@ -182,120 +180,9 @@
     #view-promotions button{min-height:44px;background:#f8f7ed;color:#29694e}
     nav[aria-label="Navigazione principale"] button{min-width:0}
 
-    /* Identità visiva 2026: blu profondo, accenti elettrici e schede da app mobile. */
-    :root{color-scheme:dark!important;--surface:#1d362b;--line:rgba(132,183,237,.22);--gold:#d5be46}
-    html,body,body.bg-slate-950{background:#0f1f18!important;color:#fcfbf4!important}
-    body{background:radial-gradient(ellipse 90% 48% at 50% -12%,#387c5f55,transparent 70%),linear-gradient(180deg,#152c22,#0f1f18 60%)!important}
-    header{background:rgba(8,25,51,.97)!important;border-color:#3a6452!important;box-shadow:0 6px 28px #07110d55!important}
-    header h1{color:#fefdf8!important;font-size:1.17rem!important;letter-spacing:-.025em}
-    header p{color:#d9d3b5!important}
-    .brand-mark{width:52px;height:52px;border-radius:15px;box-shadow:0 6px 20px #0b1a14a6}
-    #headerSettingsButton{background:#254638!important;color:#fbf8ec!important;border-color:#466f5e!important}
-    main section,main section h2,main section h3{color:#fcfbf3!important}
-    main .text-white,main .text-slate-100,main .text-slate-200,main .text-slate-300{color:#fcfaf0!important}
-    main .text-slate-400,main .text-slate-500{color:#d2ccaf!important}
-    main .text-amber-400,main .text-indigo-300{color:#dfcd71!important}
-    main .bg-slate-950,main .bg-slate-900,main .bg-slate-800{background:#213d31!important}
-    main .border-slate-800,main .border-slate-700,main .border-slate-600{border-color:#426657!important}
-    main .bg-amber-500,main .bg-indigo-600{background:linear-gradient(110deg,#c9b23b,#3eaf7f)!important;color:#fff!important}
-    button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid #e0d078!important;outline-offset:3px}
-    #affiliateAdSlot{background:linear-gradient(145deg,#2c5f4a,#1b382c 68%,#172c23)!important;border:1px solid #4d7f6a!important;border-radius:24px!important;box-shadow:0 14px 36px #0009!important}
-    #affiliateAdSlot p{color:#eee8cd!important}
-    #affiliateAdSlot h3{color:#fff!important}
-    #affiliateAdSlot .cisalfa-product-card,#promotionsGrid .cisalfa-product-card{background:#203e31!important;border:1px solid #4b7966!important;color:#fdfcf5!important;box-shadow:0 6px 18px #0b1b1455}
-    #affiliateAdSlot .cisalfa-product-name,#promotionsGrid .cisalfa-product-name{color:#fbf9ed!important}
-    #affiliateAdSlot .cisalfa-product-price,#promotionsGrid .cisalfa-product-price{color:#e3d381!important;font-weight:800}
-    #affiliateAdSlot .cisalfa-product-link,#promotionsGrid .cisalfa-product-link{background:linear-gradient(110deg,#40af80,#37a174)!important;color:white!important}
-    #affiliateAdSlot .cisalfa-product-card img,#promotionsGrid .cisalfa-product-card img{background:#f7f5ed!important}
-    #shoesCountBadge{background:#2c5a47!important;color:#e7d993!important;border-color:#548e76!important}
-    #usageGuideButton{background:#076b43!important;border:1px solid #22d885!important;color:#fff!important;box-shadow:0 5px 16px #0d2219a6!important}
-    #archiveSearchPanel input{background:#1f3a2f!important;color:#fcfaf2!important;border:1px solid #497060!important;box-shadow:0 5px 15px #0003!important}
-    input:not([type=file]),select,textarea{background:#1f3a2f!important;color:#fcfaf2!important;border-color:#497060!important}
-    input::placeholder,textarea::placeholder{color:#cbc6aa!important}
-    #archiveFiltersDetails{background:linear-gradient(120deg,#2b5644,#1e3f31)!important;border:1px solid #4c7866!important;color:#fbf9ed!important}
-    #archiveFiltersDetails summary,#archiveFiltersDetails label,#archiveFiltersDetails #archiveResultCount{color:#fbf9ee!important}
-    #archiveFiltersDetails>div{border-color:#456d5c!important}
-    #archiveFiltersDetails select{background:#193529!important;color:#fcfbf4!important;border-color:#598573!important}
-    #archiveFiltersDetails select option,#archiveFiltersDetails select optgroup{background:#1f3a2f!important;color:#fff!important}
-    #archiveFiltersDetails button:not(.cat-pill){background:#30604c!important;color:#faf7e9!important;border-color:#578d76!important}
-    .cat-pill{background:#2c5343!important;color:#f7f3dc!important;border-color:#50836e!important}
-    .cat-pill[aria-pressed=true]{background:#38966e!important;color:#fff!important;border-color:#d5c46e!important}
-    #shoesGrid>div,#shoesGrid>.shoe-card{background:linear-gradient(145deg,#244638,#1c362b)!important;border:1px solid #46705e!important;box-shadow:0 7px 23px #08171166!important}
-    #shoesGrid .shoe-card-info{color:#fcfbf4!important}
-    #shoesGrid .shoe-card-info h3{color:#fefdf9!important}
-    #shoesGrid .shoe-card-photo{background:#f4f1e2!important}
-    #shoesGrid .bg-slate-800{background:#33614e!important;border-color:#51826d!important}
-    #shoesGrid .absolute.top-2.left-2{background:#2a5141!important;color:#fff!important;border-color:#53826e!important}
-    #view-add>div:first-child,#view-check>div:first-child,#view-settings .bg-slate-900,#view-add .bg-slate-900,#view-check .bg-slate-900,#view-settings .bg-slate-800,#view-add .bg-slate-800,#view-check .bg-slate-800{background:linear-gradient(145deg,#254437,#1a3329)!important;border-color:#466e5d!important}
-    #view-settings .text-slate-100,#view-settings .text-slate-200,#view-settings .text-slate-300,#view-add .text-slate-100,#view-add .text-slate-200,#view-add .text-slate-300,#view-check .text-slate-100,#view-check .text-slate-200,#view-check .text-slate-300{color:#fbf9ed!important}
-    #view-settings .text-slate-400,#view-add .text-slate-400,#view-check .text-slate-400,#view-settings .help-text,#view-add .help-text,#view-check .help-text{color:#d9d4ba!important}
-    #view-settings details,#view-add details,#view-check details,#view-settings summary,#view-add summary,#view-check summary{color:#fcfaf0!important}
-    #view-settings .border-slate-700,#view-add .border-slate-700,#view-check .border-slate-700{border-color:#4b7362!important}
-    #view-settings button.bg-slate-800,#view-add button.bg-slate-800,#view-check button.bg-slate-800{background:#30604c!important;color:#f9f6e5!important}
-    #addDropZone,#checkDropZone{background:#1a352a!important;border:2px dashed #a79a5a!important}
-    .help-text{color:#dcd7be!important}
-    #view-promotions button{background:#2f614c!important;color:#fbf8ec!important}
-    #view-promotions h2{color:#fcfbf3!important}
-    nav{background:#142c22!important;border-top:1px solid #436e5c!important;box-shadow:0 -9px 32px #06110caa!important}
-    nav button{color:#d9d3b4!important}
-    nav button.text-amber-400{color:#fff!important;background:linear-gradient(145deg,#429f78,#3aa578)!important;box-shadow:0 4px 18px #2e88625c}
-    nav button.text-slate-400{color:#d9d3b4!important}
-    #quickAddButton{background:linear-gradient(135deg,#cbb43e,#3ca97b)!important;box-shadow:0 8px 24px #2f836088!important}
-    @media(max-width:390px){.brand-mark{width:46px;height:46px}header h1{font-size:1.04rem!important}#usageGuideButton{font-size:11px!important;padding-inline:9px!important}#shoesCountBadge{padding-inline:9px!important}}
-
-    /* Navigazione in quattro pulsanti illustrati, come nel mockup promozionale. */
-    nav[aria-label="Navigazione principale"]{gap:8px!important;padding:9px 10px max(12px,env(safe-area-inset-bottom))!important;background:#11251d!important}
-    nav[aria-label="Navigazione principale"] button{min-width:0!important;min-height:64px!important;border-radius:15px!important;border:1px solid #ffffff38!important;box-shadow:0 5px 12px #08140f77!important;display:flex;flex-direction:column;gap:5px!important;align-items:center;justify-content:center;color:#fff!important;transition:transform .18s ease,filter .18s ease,box-shadow .18s ease}
-    nav[aria-label="Navigazione principale"] button i{font-size:21px!important;color:white!important;filter:drop-shadow(0 2px 3px #0004)}
-    nav[aria-label="Navigazione principale"] button span{font-size:11px!important;font-weight:800!important;letter-spacing:-.01em;line-height:1.15}
-    nav[aria-label="Navigazione principale"] #tab-archive{background:linear-gradient(145deg,#d3bc3f,#35946c)!important}
-    nav[aria-label="Navigazione principale"] #tab-add{background:linear-gradient(145deg,#4ab286,#2b7657)!important}
-    nav[aria-label="Navigazione principale"] #tab-check{background:linear-gradient(145deg,#39906b,#23674a)!important}
-    nav[aria-label="Navigazione principale"] #tab-promotions{background:linear-gradient(145deg,#c3b464,#417d64)!important}
-    nav[aria-label="Navigazione principale"] button[aria-current="page"]{outline:2px solid #fdfcf5!important;outline-offset:1px!important;box-shadow:0 0 0 4px #decc6c38,0 8px 22px #0008!important;filter:brightness(1.13)}
-    nav[aria-label="Navigazione principale"] button:active{transform:scale(.96)}
-    main{padding-bottom:calc(135px + env(safe-area-inset-bottom))!important}
-    #quickAddButton{bottom:calc(103px + env(safe-area-inset-bottom))!important}
-    @media(max-width:359px){nav[aria-label="Navigazione principale"]{gap:5px!important;padding-inline:6px!important}nav[aria-label="Navigazione principale"] button span{font-size:10px!important}nav[aria-label="Navigazione principale"] button{min-height:60px!important}}
-
-    /* Contrasto leggibile su tutte le superfici scure e contenuti dinamici. */
-    body .text-slate-950,body .text-slate-700,body .text-slate-600,
-    body .text-sky-800,body .text-cyan-700{color:#faf7e9!important}
-    body .text-indigo-400,body .text-indigo-300{color:#e8db97!important}
-    body .text-slate-500,body .text-slate-400{color:#dedac1!important}
-    body .text-amber-200,body .text-amber-300{color:#ffe3a3!important}
-    main p,main label,main summary,main h2,main h3,main h4,main dt,main dd,
-    main li,main strong,main small{color:#fbf8eb}
-    main .help-text,main .text-xs.text-slate-400,main .text-sm.text-slate-400{color:#dedac1!important}
-    #view-archive,#view-check,#view-add,#view-settings,#view-promotions{color:#fcfaf0!important}
-    #shoesGrid .shoe-card-info *,#quickSearchResults *,#archiveFiltersDetails *,
-    #promotionsGrid .cisalfa-product-card *,#affiliateAdSlot .cisalfa-product-card *{color:#fbf9ee}
-    #shoesGrid .shoe-card-info .text-slate-400,#quickSearchResults .text-slate-400{color:#e3dec4!important}
-    #affiliateAdSlot .cisalfa-product-link,#promotionsGrid .cisalfa-product-link,
-    #view-archive .bg-amber-500,#view-add .bg-amber-500,#view-check .bg-amber-500,
-    #view-settings .bg-amber-500{color:#fff!important}
-    #usageGuideButton,nav[aria-label="Navigazione principale"] button,
-    #affiliateAdSlot a.cisalfa-product-link,#promotionsGrid a.cisalfa-product-link{color:#fff!important}
-    #shoesGrid button,#view-check button,#view-add button,#view-settings button{color:#fbf9ee}
-    #view-settings .bg-white,#view-add .bg-white,#view-check .bg-white,
-    #view-archive .bg-white,#view-promotions .bg-white{background:#264639!important;color:#fcfaf2!important}
-    #view-settings .bg-slate-50,#view-add .bg-slate-50,#view-check .bg-slate-50,
-    #view-archive .bg-slate-50,#view-promotions .bg-slate-50{background:#244336!important;color:#fcfaf2!important}
-    #view-settings .bg-slate-100,#view-add .bg-slate-100,#view-check .bg-slate-100,
-    #view-archive .bg-slate-100,#view-promotions .bg-slate-100{background:#284b3c!important;color:#fcfaf2!important}
-    #view-settings .bg-slate-200,#view-add .bg-slate-200,#view-check .bg-slate-200,
-    #view-archive .bg-slate-200,#view-promotions .bg-slate-200{background:#305747!important;color:#fcfaf2!important}
-    input[type="date"]{color-scheme:dark}
-    select option,select optgroup{background:#1e3b2f!important;color:#fdfcf6!important}
-    #quickSearchResults{background:#204033!important;color:#fbf9ee!important}
-    #quickSearchResults button{color:#fbf9ee!important}
-    footer,footer p,footer a{color:#e1dcc4!important}
-    #apiKeyModal,#editShoeModal,#shoeGalleryModal{color:#fcfbf4!important}
-    #apiKeyModal .text-slate-400,#editShoeModal .text-slate-400,#shoeGalleryModal .text-slate-400{color:#e2dec5!important}
-
     /* Prezzo di listino verificato, sconto e fascia di prezzo Awin. */
-    .awin-discount-badge{display:inline-flex;align-self:flex-start;border-radius:7px;padding:3px 8px;background:#008e63;color:#fff!important;font-size:12px;font-weight:800}
-    .awin-original-price{font-size:12px;color:#e2decb!important;text-decoration:line-through}
+    .awin-discount-badge{display:inline-flex;align-self:flex-start;border-radius:7px;padding:3px 8px;background:#126144;color:#fff!important;font-size:12px;font-weight:800}
+    .awin-original-price{font-size:12px;color:#4d6056!important;text-decoration:line-through}
 
     /* Banner delle offerte, dopo la ricerca dell’armadio. */
     #view-archive{gap:10px}
@@ -310,7 +197,7 @@
       /* Home: due schede visivamente separate. */
     #view-archive #affiliateAdSlot{background:linear-gradient(145deg,#f9f6e5,#efe8c7)!important;border:0!important;padding:8px 0!important;box-shadow:inset 0 0 0 1px #d6cd9d,0 6px 20px #0d211924!important}
     #view-archive #affiliateAdSlot>div:first-child p{color:#2c5343!important;font-weight:800!important}
-    #view-archive .personal-archive-panel{background:linear-gradient(145deg,#214033,#193227)!important;border:1px solid #598774!important;border-radius:16px;padding:12px;box-shadow:0 8px 22px #0005}
+    #view-archive .personal-archive-panel{background:#fff!important;border:1px solid #d4ded4!important;border-radius:16px;padding:12px;box-shadow:0 8px 22px #0005}
     #view-archive #personalArchiveCard>div:first-child{margin-bottom:2px}
     @media(max-width:410px){#view-archive .personal-archive-panel{padding:10px}}
     /* Contrasto icone dei comandi nelle schede Armadio. */
@@ -336,7 +223,7 @@
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
   </style>
   <link rel="stylesheet" href="./assets/camera.css">
-  <link rel="stylesheet" href="./assets/guardaroba.css?v=1">
+  <link rel="stylesheet" href="./assets/guardaroba.css?v=2">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
 
