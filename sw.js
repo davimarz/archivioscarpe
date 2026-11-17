@@ -1,7 +1,7 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v32';
-const SHELL = ['./', './index.html', './manifest.webmanifest?v=4', './privacy.html', './cookie.html',
-  './assets/archivio-scarpe-blu-192.png', './assets/app.css', './assets/guardaroba.css?v=2', './assets/camera.css', './assets/camera.js?v=2', './assets/master-core.js?v=5', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js?v=5'];
+const CACHE = 'archivio-scarpe-shell-v33';
+const SHELL = ['./', './index.html', './manifest.webmanifest?v=5', './privacy.html', './cookie.html',
+  './assets/archivio-scarpe-blu-192.png', './assets/app.css', './assets/guardaroba.css?v=3', './assets/fonts/ClashDisplay-Bold.ttf', './assets/fonts/Satoshi-Regular.ttf', './assets/fonts/Satoshi-Bold.ttf', './assets/fonts/Feather.ttf', './assets/camera.css', './assets/camera.js?v=2', './assets/master-core.js?v=5', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js?v=5'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
