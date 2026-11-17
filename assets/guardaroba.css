@@ -84,7 +84,7 @@ body :is(button,input,select,textarea,a,summary):focus-visible { outline: 2px so
 
 #view-archive .personal-archive-panel { background: var(--paper) !important; border: 0 !important; border-radius: 0; padding: 0; box-shadow: none; }
 #view-archive #affiliateAdSlot {
-  background: var(--wash) !important;
+  background: var(--paper) !important;
   border-block: 2px solid var(--ink) !important;
   border-radius: 0 !important;
   box-shadow: none !important;

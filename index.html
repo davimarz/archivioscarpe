@@ -222,7 +222,7 @@
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
   </style>
   <link rel="stylesheet" href="./assets/camera.css">
-  <link rel="stylesheet" href="./assets/guardaroba.css?v=5">
+  <link rel="stylesheet" href="./assets/guardaroba.css?v=6">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
 
@@ -822,7 +822,7 @@
     // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=24', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=25', { scope: './', updateViaCache: 'none' })
           .catch(error => console.warn('Cache offline non disponibile:', error));
       });
     }
