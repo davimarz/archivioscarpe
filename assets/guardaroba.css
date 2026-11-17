@@ -99,7 +99,18 @@ body :is(button,input,select,textarea,a,summary):focus-visible { outline: 2px so
   color: var(--ink);
   position: relative;
 }
-:is(#affiliateAdSlot,#promotionsGrid) .cisalfa-product-card img { background: var(--paper); border-radius: 0; border-bottom: 2px solid var(--ink); }
+:is(#affiliateAdSlot,#promotionsGrid) .product-photo-frame {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--paper);
+  border-bottom: 2px solid var(--ink);
+}
+:is(#affiliateAdSlot,#promotionsGrid) .product-photo-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 :is(#affiliateAdSlot,#promotionsGrid) .cisalfa-product-price { color: var(--ink); font: 700 20px/1.25 "Clash Display", sans-serif; }
 :is(#affiliateAdSlot,#promotionsGrid) .cisalfa-product-name { color: var(--ink); }
 :is(#affiliateAdSlot,#promotionsGrid) .awin-discount-badge { background: var(--accent); color: var(--ink) !important; border-radius: 0; position: absolute; top: 0; left: 0; }
