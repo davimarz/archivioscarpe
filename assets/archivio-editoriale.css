@@ -1,0 +1,266 @@
+:root {
+  --ink: #141414;
+  --paper: #fff;
+  --wash: #f3f3f3;
+  --muted: #565656;
+  --rule: #d1d1d1;
+  --accent: #9a3900;
+  --rail: max(16px, calc((100% - 1160px) / 2));
+}
+
+html, body.bg-slate-950 {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+}
+
+body { font-family: "Instrument Sans", Arial, sans-serif; padding-bottom: 0; }
+
+header, body > main, body > footer, nav[aria-label="Navigazione principale"] {
+  max-width: none !important;
+}
+
+body > header {
+  padding-inline: var(--rail);
+  background: var(--paper) !important;
+  border-color: var(--ink) !important;
+  box-shadow: none !important;
+}
+
+header h1, main h2, #emptyArchiveTitle {
+  font-family: "Archivo Black", "Arial Black", system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -.045em;
+  text-transform: uppercase;
+}
+
+body > header h1 { color: var(--ink) !important; font-size: 1.4rem !important; }
+body > header p { color: var(--muted) !important; }
+header .brand-mark { border-radius: 0; box-shadow: none; }
+#headerSettingsButton { display: none; }
+
+body > main {
+  padding: 18px var(--rail) 32px !important;
+}
+
+body > footer {
+  margin-bottom: calc(72px + env(safe-area-inset-bottom));
+  border-color: var(--rule);
+}
+
+body footer, body footer p, body footer a { color: var(--muted) !important; }
+
+main :is(section, h2, h3, h4, p, label, summary, dt, dd, li, strong, small),
+main :is(.text-white, .text-slate-100, .text-slate-200, .text-slate-300),
+main section[id] { color: var(--ink) !important; }
+
+main :is(.text-slate-400, .text-slate-500, .text-slate-600, .help-text),
+main section[id] :is(.text-slate-400, .help-text) { color: var(--muted) !important; }
+
+main section[id] :is(.bg-slate-900, .bg-slate-800, .bg-slate-50, .bg-slate-100, .bg-white, details),
+#view-add > div:first-child, #view-check > div:first-child {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border-color: var(--rule) !important;
+  box-shadow: none !important;
+}
+
+main :is(button, input, select, textarea, details, .rounded-2xl, .rounded-xl),
+#view-add > div:first-child, #view-check > div:first-child { border-radius: 0 !important; }
+
+main :is(input:not([type=file]), select, textarea), main select :is(option, optgroup),
+#archiveFiltersDetails select :is(option, optgroup) {
+  color-scheme: light;
+  background: var(--paper) !important;
+  border-color: var(--ink) !important;
+  color: var(--ink) !important;
+}
+
+main input::placeholder, main textarea::placeholder { color: var(--muted) !important; }
+
+body :is(button, input, select, a, summary):focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 3px;
+}
+
+main section[id] :is(button.bg-amber-500, button.bg-indigo-600),
+#view-settings #settingsBackupCard button.bg-amber-500,
+#view-archive #emptyArchiveAction {
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+  box-shadow: none !important;
+}
+
+#view-settings button.bg-slate-800, #view-add button.bg-slate-800,
+#view-check button.bg-slate-800, #view-settings #settingsBackupCard button.bg-slate-800,
+#archiveFiltersDetails button:not(.cat-pill), #searchFromCompare {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--ink) !important;
+  box-shadow: none !important;
+}
+
+#addDropZone, #checkDropZone {
+  background: var(--wash) !important;
+  border: 2px dashed var(--muted) !important;
+}
+
+#archiveSearchPanel input {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+#quickSearchResults, #quickSearchResults button {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+}
+
+#view-archive #affiliateAdSlot {
+  background: var(--wash) !important;
+  border: solid var(--ink) !important;
+  border-width: 2px 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin-inline: calc(-1 * var(--rail));
+  padding: 16px var(--rail) 8px !important;
+}
+
+#affiliateAdSlot > div:first-child { padding: 0; }
+#affiliateAdSlot .show-all-offers { min-height: 44px; font-size: .75rem; font-weight: 800; text-decoration: underline; text-transform: uppercase; }
+.showcase-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#view-archive #affiliateAdSlot .showcase-meta p { font-size: .75rem; color: var(--muted) !important; }
+#view-archive #affiliateAdSlot #bannerRotationButton:not([hidden]) {
+  background: transparent !important;
+  color: var(--ink) !important;
+  border: 0 !important;
+  text-decoration: underline;
+}
+
+#cisalfaProducts {
+  grid-template-columns: repeat(2, minmax(0, 176px));
+  justify-content: start;
+}
+
+#affiliateAdSlot .cisalfa-product-card, #promotionsGrid .cisalfa-product-card {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 2px solid var(--ink) !important;
+  border-radius: 0 !important;
+  box-shadow: none;
+  position: relative;
+}
+
+#affiliateAdSlot .cisalfa-product-card :is(.cisalfa-product-name, .cisalfa-product-price),
+#promotionsGrid .cisalfa-product-card :is(.cisalfa-product-name, .cisalfa-product-price) {
+  color: var(--ink) !important;
+}
+#affiliateAdSlot .cisalfa-product-card img, #promotionsGrid .cisalfa-product-card img {
+  background: var(--paper) !important;
+  border-radius: 0;
+  padding: 0;
+}
+.cisalfa-product-card :is(.awin-original-price, small, .font-semibold) { color: var(--muted) !important; }
+.cisalfa-product-card .awin-discount-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--accent);
+  color: var(--paper) !important;
+  border-radius: 0;
+}
+.cisalfa-product-card:hover .cisalfa-product-name { text-decoration: underline; }
+
+#view-archive .personal-archive-panel {
+  background: var(--paper) !important;
+  border: 0 !important;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+}
+.archive-title { flex-wrap: wrap; }
+.archive-title h2 { font-size: 1.15rem; }
+#usageGuideButton, #shoesCountBadge {
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--ink) !important;
+  border-radius: 0;
+  box-shadow: none !important;
+}
+#usageGuideButton { font-size: .75rem; }
+#archiveFiltersDetails, #archiveFiltersDetails > div {
+  background: var(--paper) !important;
+  border-color: var(--rule) !important;
+}
+#archiveFiltersDetails :is(summary, label, #archiveResultCount, #activeFiltersBadge),
+#shoesGrid .shoe-card-info :is(h3, .text-slate-400),
+#quickSearchResults .text-slate-400 {
+  color: var(--ink) !important;
+}
+#shoesGrid > .shoe-card {
+  background: var(--paper) !important;
+  border-color: var(--rule) !important;
+  box-shadow: none !important;
+}
+#shoesGrid .shoe-card-info * { color: var(--ink); }
+#shoesGrid .shoe-card-photo { background: var(--wash) !important; }
+#emptyArchiveMsg { padding: 54px 12px 64px; }
+#emptyArchiveMsg > div:first-child { display: none; }
+#emptyArchiveTitle { font-size: 1.28rem; }
+
+#view-promotions button {
+  background: var(--paper) !important;
+  border: 1px solid var(--ink) !important;
+  color: var(--ink) !important;
+}
+#view-promotions button[aria-pressed="true"], #view-promotions #promotionsMore {
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+}
+#promotionsGrid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+body nav[aria-label="Navigazione principale"] {
+  background: var(--paper) !important;
+  border-top: 2px solid var(--ink) !important;
+  box-shadow: none !important;
+  padding: 0 var(--rail) env(safe-area-inset-bottom) !important;
+  gap: 2px !important;
+}
+body nav[aria-label="Navigazione principale"] button[id] {
+  background: var(--paper) !important;
+  color: var(--muted) !important;
+  border: 0 !important;
+  border-top: 3px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 62px !important;
+}
+body nav[aria-label="Navigazione principale"] button[aria-current="page"] {
+  color: var(--ink) !important;
+  border-top-color: var(--ink) !important;
+  outline: none !important;
+  filter: none;
+}
+body nav[aria-label="Navigazione principale"] button:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: -3px !important; }
+body nav[aria-label="Navigazione principale"] button i {
+  color: inherit !important;
+  filter: none;
+  font-size: 17px !important;
+}
+.archive-quick-add {
+  position: fixed;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  right: var(--rail);
+  z-index: 39;
+  width: 52px;
+  height: 52px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 21px;
+}
+
+@media (max-width: 520px) {
+  #promotionsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #affiliateAdSlot .cisalfa-product-card, #promotionsGrid .cisalfa-product-card { padding: 6px; }
+}
