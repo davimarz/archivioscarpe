@@ -50,7 +50,7 @@ body > header h1, main h2, #emptyArchiveTitle, #editShoeTitle {
 }
 body > header h1 { color: var(--ink) !important; font-size: clamp(1.2rem, 5.5vw, 1.5rem) !important; }
 body > header p { color: var(--muted) !important; }
-body > header .brand-mark { border-radius: 0; }
+body > header .brand-mark { width: 66px !important; height: 66px !important; border-radius: 0; }
 #headerSettingsButton { background: var(--paper) !important; border: 2px solid var(--ink) !important; color: var(--ink) !important; border-radius: 0; }
 body > main { padding: 18px var(--gutter) !important; }
 body > footer { margin-bottom: calc(86px + env(safe-area-inset-bottom)); }
@@ -181,7 +181,7 @@ body nav[aria-label="Navigazione principale"] i { color: inherit !important; fon
 #tab-promotions .fa-solid::before { content: "\f1ec"; }
 
 @media (max-width: 420px) {
-  body > header .brand-mark { width: 34px !important; height: 34px !important; }
+  body > header .brand-mark { width: 52px !important; height: 52px !important; }
   #headerSettingsButton { right: 12px; }
   #usageGuideButton { padding-inline: 8px; }
 }

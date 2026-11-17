@@ -223,14 +223,14 @@
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
   </style>
   <link rel="stylesheet" href="./assets/camera.css">
-  <link rel="stylesheet" href="./assets/guardaroba.css?v=3">
+  <link rel="stylesheet" href="./assets/guardaroba.css?v=4">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
 
   <!-- Header -->
   <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-40 w-full max-w-5xl mx-auto">
     <div class="flex items-center space-x-2.5 min-w-0">
-      <img src="./assets/archivio-scarpe-blu-192.png" alt="" class="brand-mark shrink-0" width="44" height="44">
+      <img src="./assets/archivio-scarpe-blu-192.png" alt="" class="brand-mark shrink-0" width="66" height="66">
       <div class="truncate">
         <h1 class="font-bold text-base leading-tight tracking-tight text-white">Archivio Scarpe</h1>
         <p class="text-xs text-slate-400">Le tue scarpe, sempre a portata di mano</p>
@@ -823,7 +823,7 @@
     // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=22', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=23', { scope: './', updateViaCache: 'none' })
           .catch(error => console.warn('Cache offline non disponibile:', error));
       });
     }
@@ -2418,6 +2418,31 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (!ctx) return;
           ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
           const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          // Sample the original perimeter before cropping so letterboxing blends into the photo.
+          const edgeColors = new Map();
+          let samples = 0;
+          for (let step = 0; step < 32; step++) {
+            const x = Math.round(step * (pixels.width - 1) / 31);
+            const y = Math.round(step * (pixels.height - 1) / 31);
+            for (const offset of [x, (pixels.height - 1) * pixels.width + x, y * pixels.width, y * pixels.width + pixels.width - 1]) {
+              samples++;
+              const i = offset * 4;
+              const [r, g, b, alpha] = pixels.data.subarray(i, i + 4);
+              if (alpha < 250 || Math.min(r, g, b) < 225 || Math.max(r, g, b) - Math.min(r, g, b) > 14) continue;
+              const bucket = [r, g, b].map(channel => Math.floor(channel / 4)).join(',');
+              const color = edgeColors.get(bucket) || { count: 0, r: 0, g: 0, b: 0 };
+              color.count++;
+              color.r += r;
+              color.g += g;
+              color.b += b;
+              edgeColors.set(bucket, color);
+            }
+          }
+          const background = [...edgeColors.values()].sort((a, b) => b.count - a.count)[0];
+          if (background && background.count >= samples / 2) {
+            const rgb = [background.r, background.g, background.b].map(total => Math.round(total / background.count));
+            img.style.backgroundColor = `rgb(${rgb.join(', ')})`;
+          }
           const crop = offerPhotoBounds(pixels.data, pixels.width, pixels.height);
           if (!crop) return;
 
