@@ -1,7 +1,7 @@
 /* Archivio Scarpe - service worker v4 */
-const CACHE = 'archivio-scarpe-shell-v23';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './privacy.html', './cookie.html',
-  './assets/archivio-scarpe-logo.svg', './assets/app.css', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js?v=2'];
+const CACHE = 'archivio-scarpe-shell-v31';
+const SHELL = ['./', './index.html', './manifest.webmanifest?v=3', './privacy.html', './cookie.html',
+  './assets/archivio-scarpe-blu-192.png', './assets/app.css', './assets/guardaroba.css?v=1', './assets/camera.css', './assets/camera.js?v=2', './assets/master-core.js?v=5', './assets/icons.css', './assets/icons.ttf', './assets/catalogo.js?v=5'];
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);

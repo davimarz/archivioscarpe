@@ -1,0 +1,116 @@
+:root {
+  --night: #121e18;
+  --forest: #1c2c23;
+  --moss: #32493a;
+  --cream: #f8f0dd;
+  --sage: #bdd1b7;
+  --citrus: #d9ed96;
+}
+html, body.bg-slate-950 { background: var(--night) !important; color: var(--cream) !important; }
+body { font-family: "Instrument Sans", system-ui, sans-serif; padding-bottom: 0; }
+
+body > header {
+  position: relative;
+  max-width: 1080px !important;
+  padding: clamp(20px, 5vw, 48px) clamp(16px, 5vw, 44px);
+  margin: 0 auto;
+  border: 0;
+  border-bottom: 1px solid #52634c !important;
+  background: radial-gradient(ellipse at 94% 18%, #3a513b 0%, transparent 55%), var(--night) !important;
+  box-shadow: none !important;
+}
+body > header > div { gap: clamp(10px, 3vw, 24px); }
+body > header .brand-mark {
+  width: clamp(42px, 8vw, 78px) !important;
+  height: clamp(42px, 8vw, 78px) !important;
+  border: 1px solid var(--sage);
+  border-radius: 50%;
+  box-shadow: none;
+}
+body > header h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  margin-bottom: 4px;
+  font-size: clamp(1.65rem, 5.4vw, 4rem) !important;
+  font-weight: 500;
+  line-height: 1.02;
+  color: var(--cream) !important;
+  letter-spacing: -.045em;
+}
+body > header p { color: var(--sage) !important; }
+#headerSettingsButton { background: var(--forest) !important; color: var(--citrus) !important; border-color: #617658 !important; right: 16px; top: 16px; }
+
+body > main { padding: 22px clamp(12px, 3vw, 28px) 36px !important; }
+body > footer { margin-bottom: calc(94px + env(safe-area-inset-bottom)); }
+main h2, main h3 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; }
+main section h2, #view-archive #personalArchiveCard h2, #view-promotions h2 {
+  color: var(--cream) !important;
+  font-size: clamp(1.3rem, 4vw, 1.9rem);
+}
+#view-archive .personal-archive-panel {
+  background: var(--forest) !important;
+  border: 1px solid var(--moss) !important;
+  box-shadow: none;
+  padding: clamp(12px, 3vw, 24px);
+  border-radius: 22px;
+}
+#view-archive #affiliateAdSlot {
+  background: #eae4ce !important;
+  box-shadow: none !important;
+  color: #223427;
+  border-radius: 22px !important;
+}
+#view-archive #affiliateAdSlot > div:first-child p { color: #223427 !important; }
+#affiliateAdSlot .cisalfa-product-card, #promotionsGrid .cisalfa-product-card {
+  background: #f7f0de !important;
+  color: #223427 !important;
+  border: 1px solid #cec5ac !important;
+  border-radius: 17px;
+  padding: 8px;
+  box-shadow: none;
+}
+#affiliateAdSlot .cisalfa-product-card img, #promotionsGrid .cisalfa-product-card img { background: #fffdf5 !important; }
+#affiliateAdSlot .cisalfa-product-card *, #promotionsGrid .cisalfa-product-card *,
+#affiliateAdSlot .cisalfa-product-name, #promotionsGrid .cisalfa-product-name,
+#affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price {
+  color: #23382a !important;
+}
+#affiliateAdSlot .awin-discount-badge, #promotionsGrid .awin-discount-badge { background: #284a32; color: #f1f6dd !important; }
+#view-archive #usageGuideButton { background: var(--citrus) !important; color: var(--night) !important; border: 0; box-shadow: none !important; }
+#shoesCountBadge { background: var(--moss) !important; color: var(--cream) !important; border-color: #546a56 !important; }
+#view-archive #emptyArchiveAction { background: var(--citrus) !important; color: var(--night) !important; min-height: 44px; }
+#addDropZone, #checkDropZone { border-color: #8da786 !important; }
+#view-promotions .promotion-filters button[aria-pressed="true"] { background: var(--citrus) !important; color: var(--night) !important; }
+body nav[aria-label="Navigazione principale"] {
+  width: min(680px, calc(100% - 20px));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  border: 1px solid #51654e !important;
+  background: #1b2a22 !important;
+  border-radius: 22px;
+  padding: 6px !important;
+  gap: 3px !important;
+  box-shadow: 0 8px 22px #07110c85 !important;
+}
+body nav[aria-label="Navigazione principale"] button[id] {
+  min-height: 52px !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  background: transparent !important;
+  color: var(--sage) !important;
+  box-shadow: none !important;
+}
+body nav[aria-label="Navigazione principale"] button i { color: inherit !important; }
+body nav[aria-label="Navigazione principale"] button[aria-current="page"],
+body nav[aria-label="Navigazione principale"] #tab-archive:not([aria-current]) {
+  background: var(--citrus) !important;
+  color: var(--night) !important;
+  filter: none;
+  outline: none !important;
+}
+body nav[aria-label="Navigazione principale"] button:focus-visible { outline: 2px solid var(--cream) !important; outline-offset: -2px !important; }
+@media (max-width: 420px) {
+  body > header > div { gap: 8px; }
+  body > header h1 { font-size: clamp(1.42rem, 6.3vw, 2rem) !important; }
+  #headerSettingsButton { width: 40px; height: 40px; top: 13px; right: 10px; }
+}
+dialog.archivio-camera { background: var(--forest); color: var(--cream); border-color: var(--moss); }
+dialog.archivio-camera button { background: var(--citrus); color: var(--night); }

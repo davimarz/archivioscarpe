@@ -80,6 +80,23 @@
     };
   }
 
+  const liveCatalogUrl = 'https://davimarz.github.io/archivioscarpe/catalogo-awin.json';
+
+  async function loadCurrentAwinCatalog() {
+    for (const [url, origin] of [[liveCatalogUrl, 'online'], ['./catalogo-awin.json', 'snapshot']]) {
+      try {
+        const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(10000) });
+        if (!response.ok) continue;
+        const products = await response.json();
+        if (Array.isArray(products) && products.some(product =>
+          typeof product?.name === 'string' && typeof product.url === 'string')) return { products, origin };
+      } catch {
+        // If the online feed is unavailable, use the verified copy included with the site.
+      }
+    }
+    throw Error('Catalogo Awin temporaneamente non disponibile.');
+  }
+
   function shuffleProducts(items) {
     const copy = [...items];
     for (let i = copy.length - 1; i > 0; i--) {
@@ -185,7 +202,7 @@
   }
 
   const promotionRoutes = { all: '#promozioni', low: '#promozioni/sotto-50',
-    mid: '#promozioni/50-150', high: '#promozioni/oltre-150' };
+    mid: '#promozioni/50-150', midLower: '#promozioni/50-100', midUpper: '#promozioni/100-150', high: '#promozioni/oltre-150' };
 
   function promotionBandFromHash(hash) {
     return Object.keys(promotionRoutes).find(band => promotionRoutes[band] === hash);
@@ -196,7 +213,7 @@
     return /^[a-z0-9][a-z0-9_-]{0,47}$/.test(slug) ? slug : '';
   }
 
-  const api = { openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionRoutes, promotionBandFromHash, instagramCampaign, shuffleProducts };
+  const api = { loadCurrentAwinCatalog, openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionRoutes, promotionBandFromHash, instagramCampaign, shuffleProducts };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else window.awinCatalog = api;
 })();

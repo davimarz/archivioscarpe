@@ -1,0 +1,22 @@
+.archivio-camera {
+  width: min(90vw, 560px);
+  max-height: 90dvh;
+  padding: 20px;
+  color: #171717;
+  background: #fff;
+  border: 2px solid #171717;
+  font: 16px system-ui, sans-serif;
+}
+.archivio-camera::backdrop { background: rgb(0 0 0 / 70%); }
+.archivio-camera h2 { margin: 0 0 12px; font-size: 22px; }
+.archivio-camera video { width: 100%; max-height: 58dvh; background: #171717; }
+.archivio-camera button {
+  min-height: 44px;
+  margin: 12px 8px 0 0;
+  padding: 8px 16px;
+  color: #171717;
+  background: #fff;
+  border: 2px solid #171717;
+  cursor: pointer;
+}
+.archivio-camera button:disabled { opacity: .5; cursor: default; }
