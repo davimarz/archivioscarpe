@@ -18,7 +18,7 @@
     margin: 0 auto;
     border: 2px solid var(--ink);
   }
-  main:has(#dashboard:not([hidden])) { width: min(100%, 780px); }
+  main:has(#dashboard:not([hidden])) { width: min(100%, 1160px); padding: clamp(12px, 3vw, 28px); }
   h1, h2, #dashboardMetrics dd {
     font-family: "Clash Display", Satoshi, sans-serif;
     font-weight: 700;
@@ -35,6 +35,25 @@
   .admin-header img { display: block; flex: none; }
   .top, .stats-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .stats-actions { flex-wrap: wrap; }
+  .period-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+  .period-tools label { margin: 0 0 4px; font-size: .875rem; }
+  .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .dashboard-grid > .panel { margin: 0; min-width: 0; }
+  .panel-wide { grid-column: 1 / -1; }
+  .panel p { margin: 6px 0; }
+  .panel ul { margin: 6px 0 0; }
+  #statsStatus:empty, #trendStatus:empty { display: none; }
+  .trend-scroll { overflow-x: auto; }
+  .trend-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .trend-table th, .trend-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule); }
+  .trend-table :first-child { text-align: left; }
+  .trend-table tbody th { font-weight: 400; white-space: nowrap; }
+  .panel details { margin-top: 8px; }
+  .panel summary { cursor: pointer; font-weight: 700; }
+  @media (max-width: 600px) {
+    .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+    .period-tools, .period-tools > div { flex: 1 1 auto; }
+  }
   label { display: block; font-weight: 700; margin: 16px 0 5px; }
   input, select, button { box-sizing: border-box; min-height: 44px; padding: 9px 12px; font: inherit; }
   input, select { width: 100%; }
@@ -57,8 +76,8 @@
   .panel { margin: 14px 0; }
   #dashboardMetrics {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 8px;
     margin: 14px 0;
   }
   #dashboardMetrics dt { color: var(--muted); font-size: .875rem; }
@@ -88,7 +107,7 @@
 </form>
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
-<div class="stats-actions"><h2>Statistiche</h2><button type="button" id="refreshStats">Aggiorna</button></div>
+<div class="stats-actions"><h2>Statistiche</h2><div class="period-tools"><div>
 <label for="statsPeriod">Periodo</label>
 <select id="statsPeriod">
 <option value="7">Ultimi 7 giorni</option>
@@ -97,32 +116,45 @@
 <option value="60">Ultimi 60 giorni</option>
 <option value="months:6">Ultimi 6 mesi</option>
 <option value="months:12">Ultimo anno</option>
-</select>
+</select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
 <div><dt>Visite totali</dt><dd id="statVisits">—</dd></div>
 <div><dt>Visite da Instagram</dt><dd id="statInstagram">—</dd></div>
 <div><dt>Clic affiliati Awin</dt><dd id="statClicks">—</dd></div>
 <div><dt>Aperture delle sezioni</dt><dd id="statSections">—</dd></div>
+<div><dt>Quota visite da Instagram</dt><dd id="statInstagramShare">—</dd></div>
+<div><dt>Clic Awin ogni 100 visite</dt><dd id="statClicksPerVisit">—</dd></div>
 </dl>
-<section class="panel" aria-labelledby="footwearHeading">
+<div class="dashboard-grid">
+<section class="panel panel-wide" aria-labelledby="footwearHeading">
 <h2 id="footwearHeading">Acquisti di calzature Awin</h2>
 <p class="muted">Ordini da Archivio Scarpe presso gli advertiser Awin a cui sei iscritto.</p>
 <p id="footwearStatus" role="status"></p>
 <div class="awin-store-list" id="footwearStores"></div>
 <p class="muted" id="footwearNotes"></p>
 </section>
+<section class="panel" aria-labelledby="trendHeading">
+<h2 id="trendHeading">Andamento del traffico</h2>
+<p id="trendStatus" class="muted" role="status"></p>
+<div id="trendTable" class="trend-scroll"></div>
+</section>
 <div class="panel">
-<strong>Commissioni Awin</strong>
+<h2>Commissioni Awin</h2>
 <p class="muted">Solo transazioni attribuite ad Archivio Scarpe, per data di transazione.</p>
 <p id="awinStatus" role="status"></p>
 <div id="awinTotals"></div>
 </div>
-<div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
+<div class="panel"><h2>Aperture per sezione</h2><ul id="sectionCounts"></ul></div>
 <div class="panel">
-<strong>Campagne Instagram</strong>
+<h2>Campagne Instagram</h2>
 <p class="muted" id="instagramCampaignStatus" role="status">Caricamento delle campagne…</p>
 <ul id="instagramCampaigns"></ul>
+</div>
+<section class="panel panel-wide" aria-labelledby="qualityHeading">
+<h2 id="qualityHeading">Controllo dei dati</h2>
+<p id="dataCheck" role="status">Verifica delle statistiche…</p>
+</section>
 </div>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
@@ -234,6 +266,52 @@ async function loadAwinStats(since,current){
   }
  }
 }
+const ratioFormat=new Intl.NumberFormat('it-IT',{maximumFractionDigits:1});
+const trendDate=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
+const trendMonth=new Intl.DateTimeFormat('it-IT',{month:'short',year:'numeric',timeZone:'UTC'});
+async function loadTrend(since,until,current){
+ const status=document.getElementById('trendStatus');
+ const container=document.getElementById('trendTable');
+ status.textContent='Caricamento dell’andamento…';
+ container.replaceChildren();
+ try{
+  const {data,error}=await client.rpc('dashboard_event_trend',{since,until_at:until});
+  if(!current())return;
+  if(error)throw error;
+  if(!data.length){
+   status.textContent='Nessuna visita o clic Awin nel periodo.';
+   return;
+  }
+  const monthly=data[0].bucket.length===7;
+  const details=document.createElement('details');
+  appendText(details,'summary',monthly?'Tutti i mesi con attività':'Tutti i giorni con attività');
+  const makeTable=rows=>{
+   const table=document.createElement('table');
+   table.className='trend-table';
+   const header=table.createTHead().insertRow();
+   for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Clic Awin']){
+    appendText(header,'th',label).scope='col';
+   }
+   const body=table.createTBody();
+   for(const row of rows){
+    const line=body.insertRow();
+    const date=new Date(monthly?row.bucket+'-01':row.bucket);
+    appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';
+    for(const key of ['visits','instagram','clicks'])appendText(line,'td',formatNumber.format(row[key]));
+   }
+   return table;
+  };
+  const rows=[...data].reverse();
+  status.textContent=rows.length>5?'Ultimi cinque '+(monthly?'mesi':'giorni')+' con attività.':'';
+  container.append(makeTable(rows.slice(0,5)));
+  if(rows.length>5){
+   details.append(makeTable(rows));
+   container.append(details);
+  }
+ }catch{
+  if(current())status.textContent='Andamento non disponibile.';
+ }
+}
 async function loadStats(){
  const version=++statsVersion;
  const authVersion=checkVersion;
@@ -243,8 +321,17 @@ async function loadStats(){
  const campaignList=document.getElementById('instagramCampaigns');
  const campaignStatus=document.getElementById('instagramCampaignStatus');
  const metrics=['statVisits','statInstagram','statClicks','statSections'];
- const since=periodStart(statsPeriod.value);
+ const ratios=['statInstagramShare','statClicksPerVisit'];
+ const check=document.getElementById('dataCheck');
+ const now=new Date();
+ const since=periodStart(statsPeriod.value,now);
+ for(const id of [...metrics,...ratios])document.getElementById(id).textContent='—';
+ list.replaceChildren();
+ campaignList.replaceChildren();
+ campaignStatus.textContent='Caricamento delle campagne…';
+ check.textContent='Verifica delle statistiche…';
  void loadAwinStats(since,current);
+ void loadTrend(since,now.toISOString(),current);
  refreshStats.disabled=true;
  status.textContent='Caricamento delle statistiche…';
  try{
@@ -268,17 +355,23 @@ async function loadStats(){
    return row;
   };
   list.replaceChildren(...sectionEntries.map(([,name],index)=>countRow(name,counts[index])));
+  document.getElementById(ratios[0]).textContent=visits?ratioFormat.format(100*instagram/visits)+'%':'—';
+  document.getElementById(ratios[1]).textContent=visits?ratioFormat.format(100*clicks/visits):'—';
   const campaigns=data.filter(row=>row.event_type==='instagram_campaign')
    .sort((a,b)=>Number(b.total)-Number(a.total) || a.dimension.localeCompare(b.dimension,'it'));
   campaignList.replaceChildren(...campaigns.map(row=>countRow(row.dimension,Number(row.total))));
   campaignStatus.textContent=campaigns.length?'Visite per campagna':'Nessuna visita associata a una campagna nel periodo selezionato.';
   status.textContent=totals.some(Boolean)?'':'Nessun evento registrato nel periodo selezionato.';
+  const assigned=campaigns.reduce((sum,row)=>sum+Number(row.total),0);
+  const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
+  check.textContent='Statistiche aggiornate il '+updated+'. Visite Instagram con campagna identificata: '+formatNumber.format(assigned)+' su '+formatNumber.format(instagram)+'.';
  }catch{
   if(current()){
    metrics.forEach(id=>{document.getElementById(id).textContent='—';});
    list.replaceChildren();
    campaignList.replaceChildren();
    campaignStatus.textContent='Campagne non disponibili.';
+   check.textContent='Dati di traffico non disponibili.';
    status.textContent='Statistiche non disponibili. Premi Aggiorna per riprovare.';
   }
  }finally{
