@@ -150,13 +150,11 @@
 <div class="stats-actions"><h2>Statistiche</h2><div class="period-tools"><div>
 <label for="statsPeriod">Periodo</label>
 <select id="statsPeriod">
-<option value="1">Oggi</option>
-<option value="7">Ultimi 7 giorni</option>
-<option value="15">Ultimi 15 giorni</option>
-<option value="30" selected>Ultimi 30 giorni</option>
-<option value="60">Ultimi 60 giorni</option>
-<option value="months:6">Ultimi 6 mesi</option>
-<option value="months:12">Ultimo anno</option>
+<option value="today">Oggi</option>
+<option value="yesterday">Ieri</option>
+<option value="week">Questa settimana</option>
+<option value="month" selected>Questo mese</option>
+<option value="year">Quest'anno</option>
 </select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
@@ -208,18 +206,21 @@ let recovering=false;
 let checkVersion=0;
 const refreshStats=document.getElementById('refreshStats');
 const statsPeriod=document.getElementById('statsPeriod');
-function periodStart(value, now=new Date()){
- const start=new Date(now);
- if(value.startsWith('months:')){
-  const day=start.getUTCDate();
-  start.setUTCDate(1);
-  start.setUTCMonth(start.getUTCMonth()-Number(value.split(':')[1]));
-  const lastDay=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,0)).getUTCDate();
-  start.setUTCDate(Math.min(day,lastDay));
- }else{
-  start.setUTCDate(start.getUTCDate()-Number(value));
+const romeDateFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'});
+const romeDateTimeFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+function dateParts(format,date){return Object.fromEntries(format.formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));}
+function romeMidnight(year,month,day){
+ const target=Date.UTC(year,month-1,day);
+ let instant=target;
+ for(let attempt=0;attempt<3;attempt++){
+  const parts=dateParts(romeDateTimeFormat,new Date(instant));
+  instant+=target-Date.UTC(parts.year,parts.month-1,parts.day,parts.hour,parts.minute,parts.second);
  }
- return start.toISOString();
+ return new Date(instant);
+}
+function moveCalendarDay(year,month,day,amount){
+ const shifted=new Date(Date.UTC(year,month-1,day+amount));
+ return {year:shifted.getUTCFullYear(),month:shifted.getUTCMonth()+1,day:shifted.getUTCDate()};
 }
 const formatNumber=new Intl.NumberFormat('it-IT');
 const sections={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
@@ -251,8 +252,20 @@ const metaAdsSnapshot={
 };
 let metaAdsData={...metaAdsSnapshot,live:false};
 function periodBounds(value,now=new Date()){
- const until=now.toISOString();
- const since=periodStart(value,now);
+ const current=dateParts(romeDateFormat,now);
+ const today=romeMidnight(current.year,current.month,current.day);
+ let start=today,untilDate=now;
+ if(value==='yesterday'){
+  const previous=moveCalendarDay(current.year,current.month,current.day,-1);
+  start=romeMidnight(previous.year,previous.month,previous.day);untilDate=today;
+ }else if(value==='week'){
+  const weekday=new Date(Date.UTC(current.year,current.month-1,current.day)).getUTCDay()||7;
+  const monday=moveCalendarDay(current.year,current.month,current.day,1-weekday);
+  start=romeMidnight(monday.year,monday.month,monday.day);
+ }else if(value==='month')start=romeMidnight(current.year,current.month,1);
+ else if(value==='year')start=romeMidnight(current.year,1,1);
+ const until=untilDate.toISOString();
+ const since=start.toISOString();
  const duration=Date.parse(until)-Date.parse(since);
  return {since,until,previousSince:new Date(Date.parse(since)-duration).toISOString(),previousUntil:since};
 }

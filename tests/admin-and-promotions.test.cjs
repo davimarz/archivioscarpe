@@ -36,9 +36,14 @@ test('promotions expose brand and sorting controls with automatic rotation', () 
   assert.match(html, /schedulePromotionRotation/);
 });
 
-test('admin offers today and reports the Facebook traffic share', () => {
+test('admin offers calendar periods and reports the Facebook traffic share', () => {
   const html = fs.readFileSync('admin/index.html', 'utf8');
-  assert.match(html, /<option value="1">Oggi<\/option>/);
+  assert.match(html, /<option value="today">Oggi<\/option>/);
+  assert.match(html, /<option value="yesterday">Ieri<\/option>/);
+  assert.match(html, /<option value="week">Questa settimana<\/option>/);
+  assert.match(html, /<option value="month" selected>Questo mese<\/option>/);
+  assert.match(html, /<option value="year">Quest'anno<\/option>/);
+  assert.match(html, /timeZone:'Europe\/Rome'/);
   assert.match(html, /Quota Facebook/);
   assert.match(html, /currentReport\.facebook/);
 });
