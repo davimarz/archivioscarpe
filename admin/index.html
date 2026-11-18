@@ -56,6 +56,13 @@
   .panel summary { cursor: pointer; font-weight: 700; }
   .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .panel-head button { min-height: 36px; padding: 5px 9px; background: var(--paper); color: var(--ink); }
+  .meta-ads { margin: 10px 0 14px; padding: 12px; border: 1px solid var(--rule); background: var(--paper); }
+  .meta-ads-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .meta-ads-title h3 { margin: 0; font-size: 1rem; }
+  .meta-ads-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid #9bcab0; border-radius: 999px; color: #14723d; background: #effaf3; font-size: .78rem; font-weight: 700; }
+  .meta-ads-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #14723d; }
+  .meta-ads .insight-grid { margin-bottom: 10px; grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .meta-ads-note { margin: 8px 0 0 !important; font-size: .82rem; color: var(--muted); }
   .delta { display: block; min-height: 1.25em; margin-top: 5px; color: var(--muted); font: 600 .78rem/1.25 Satoshi, Arial, sans-serif; }
   .delta.positive { color: #14723d; }
   .delta.negative { color: #a33535; }
@@ -170,6 +177,7 @@
 </section>
 <section class="panel panel-wide" aria-labelledby="campaignHeading">
 <div class="panel-head"><div><h2 id="campaignHeading">Campagne social</h2><p class="muted" id="campaignStatus">Instagram e TikTok, dalla visita all’acquisto verificabile.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
+<div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
 <div id="campaignTable" class="trend-scroll"></div>
 </section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
@@ -233,6 +241,12 @@ const trendDate=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',yea
 const trendMonth=new Intl.DateTimeFormat('it-IT',{month:'short',year:'numeric',timeZone:'UTC'});
 const sectionNames={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
 const exportData={campaigns:[],awin:[]};
+const metaAdsSnapshot={
+ accountId:'1621100199686666',campaign:'Instagram Post',channel:'Instagram',
+ period:'19 ott 2026 – 17 nov 2026',status:'Non attiva',budgetDaily:3,spend:2.73,
+ results:16,resultLabel:'Visite al profilo',reach:425,frequency:1.09,impressions:465,
+ linkClicks:17,cpc:0.16,ctr:3.66,cpm:5.87,costPerResult:0.17,updatedAt:'18 nov 2026'
+};
 function periodBounds(value,now=new Date()){
  const until=now.toISOString();
  const since=periodStart(value,now);
@@ -350,7 +364,20 @@ function renderTraffic(currentReport,previousReport){
  productList.replaceChildren(...(currentReport.products.length?currentReport.products.map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
 }
 function commissionArrayText(rows){return rows?.map(row=>formatMoney(row.currency,row.approved)).join(' · ')||'—';}
+function renderMetaAds(){
+ const data=metaAdsSnapshot,container=document.getElementById('metaAdsOverview');container.replaceChildren();
+ const head=document.createElement('div');head.className='meta-ads-title';const title=document.createElement('h3');title.textContent='Meta Ads Manager · '+data.campaign;const badge=document.createElement('span');badge.className='meta-ads-badge';badge.textContent='Dati verificati';head.append(title,badge);container.append(head);
+ const grid=document.createElement('div');grid.className='insight-grid';
+ const money=value=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(value);
+ for(const [label,value] of [['Spesa',money(data.spend)],['Risultati',formatNumber.format(data.results)],['Copertura',formatNumber.format(data.reach)],['Impression',formatNumber.format(data.impressions)],['Clic sul link',formatNumber.format(data.linkClicks)],['CTR',ratioFormat.format(data.ctr)+'%'],['CPC',money(data.cpc)],['Costo per risultato',money(data.costPerResult)]])setInsight(grid,label,value);
+ container.append(grid);
+ const tableWrap=document.createElement('div');tableWrap.className='trend-scroll';const table=document.createElement('table');table.className='trend-table';const row=table.createTBody().insertRow();
+ for(const [label,value] of [['Periodo',data.period],['Budget',money(data.budgetDaily)+'/giorno'],['Frequenza',ratioFormat.format(data.frequency)],['CPM',money(data.cpm)],['Stato',data.status],['Account',data.accountId]]){const cell=row.insertCell();appendText(cell,'strong',label);cell.append(document.createElement('br'),document.createTextNode(value));}
+ tableWrap.append(table);container.append(tableWrap);
+ const note=document.createElement('p');note.className='meta-ads-note';note.textContent='Rilevazione da Meta Ads Manager aggiornata il '+data.updatedAt+'. Le visite al profilo sono risultati Meta; i clic e gli ordini Awin restano separati.';container.append(note);
+}
 function renderCampaigns(traffic,awin){
+ renderMetaAds();
  const merged=new Map();
  for(const row of traffic.campaigns){const key=(row.source||'other')+':'+row.name;merged.set(key,{campagna:row.name,canale:row.source||'other',visite:Number(row.visits),clic:Number(row.clicks),ordini:0,commissioni:'—'});}
  for(const row of awin?.footwearCampaigns||[]){const key=(row.source||'other')+':'+row.campaign;const item=merged.get(key)||{campagna:row.campaign,canale:row.source||'other',visite:0,clic:0,ordini:0,commissioni:'—'};item.ordini=Number(row.orders);item.commissioni=commissionArrayText(row.commissions);merged.set(key,item);}
@@ -417,7 +444,7 @@ async function loadStats(){
   if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
  }finally{if(version===statsVersion)refreshStats.disabled=false;}
 }
-document.getElementById('exportCampaigns').addEventListener('click',()=>downloadCsv('campagne-archivio-scarpe.csv',exportData.campaigns));
+document.getElementById('exportCampaigns').addEventListener('click',()=>downloadCsv('campagne-archivio-scarpe.csv',[{campagna:metaAdsSnapshot.campaign,canale:metaAdsSnapshot.channel,periodo:metaAdsSnapshot.period,spesa:metaAdsSnapshot.spend,risultati:metaAdsSnapshot.results,copertura:metaAdsSnapshot.reach,impression:metaAdsSnapshot.impressions,clic_link:metaAdsSnapshot.linkClicks,ctr_percentuale:metaAdsSnapshot.ctr,cpc:metaAdsSnapshot.cpc,cpm:metaAdsSnapshot.cpm,costo_risultato:metaAdsSnapshot.costPerResult,budget_giornaliero:metaAdsSnapshot.budgetDaily,stato:metaAdsSnapshot.status,account_meta:metaAdsSnapshot.accountId},...exportData.campaigns]));
 document.getElementById('exportAwin').addEventListener('click',()=>downloadCsv('awin-archivio-scarpe.csv',exportData.awin));
 refreshStats.addEventListener('click',loadStats);
 statsPeriod.addEventListener('change',loadStats);
