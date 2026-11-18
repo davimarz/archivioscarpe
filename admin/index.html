@@ -1,14 +1,77 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><title>Amministrazione · Archivio Scarpe</title>
-<link rel="icon" href="../assets/archivio-scarpe-logo.svg">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" type="image/png" href="../assets/archivio-scarpe-blu-192.png">
+<link rel="stylesheet" href="../assets/guardaroba.css?v=7">
 <style>
-:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}body{margin:0;background:#08172f;color:#f1f5f9;min-height:100vh;display:grid;place-items:center;padding:20px;box-sizing:border-box}main{width:min(100%,470px);border:1px solid #34506b;border-radius:20px;background:#13243d;padding:24px;box-sizing:border-box}h1{font-size:23px;margin:0 0 8px}p{color:#cbd5e1;line-height:1.5}label{display:block;margin:18px 0 7px;font-size:14px;font-weight:700}input{width:100%;padding:13px;border-radius:10px;background:#fff;color:#172033;border:1px solid #64748b;box-sizing:border-box;font-size:16px}button{background:#0b79a5;color:white;border:0;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:wait}a{color:#93d9ff}#message{min-height:25px}#dashboard[hidden],#login[hidden]{display:none}.panel{background:#1d3452;border-radius:12px;padding:16px;margin:14px 0}.muted{font-size:13px;color:#b8c9d9}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}#signout{background:#475569}#status{font-weight:700}
-#dashboardMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}#dashboardMetrics div{background:#1d3452;border-radius:12px;padding:12px}#dashboardMetrics dt{font-size:13px;color:#cbd5e1}#dashboardMetrics dd{font-size:24px;font-weight:700;margin:4px 0 0}#sectionCounts li,#instagramCampaigns li{display:flex;justify-content:space-between;padding:6px 0}#sectionCounts,#instagramCampaigns{padding-left:0;list-style:none}.stats-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.stats-actions h2{font-size:18px;margin:0}
-#statsPeriod{font:inherit;color:inherit;background:#1d3452;border:1px solid #64748b;border-radius:10px;padding:9px 12px;min-height:44px}
-</style></head><body><main>
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 16px/1.5 Satoshi, Arial, sans-serif;
+    padding: clamp(16px, 5vw, 48px);
+  }
+  main {
+    box-sizing: border-box;
+    width: min(100%, 480px);
+    margin: 0 auto;
+    border: 2px solid var(--ink);
+  }
+  main:has(#dashboard:not([hidden])) { width: min(100%, 780px); }
+  h1, h2, #dashboardMetrics dd {
+    font-family: "Clash Display", Satoshi, sans-serif;
+    font-weight: 700;
+  }
+  h1 { font-size: clamp(1.3rem, 5vw, 1.75rem); line-height: 1.1; margin: 0; }
+  h2 { font-size: 1.35rem; margin: 0; }
+  p { margin: 12px 0; }
+  a { color: var(--ink); text-underline-offset: 3px; }
+  .admin-header {
+    border-bottom: 2px solid var(--ink);
+    padding: 12px 0;
+    margin-bottom: 16px;
+  }
+  .admin-header img { display: block; flex: none; }
+  .top, .stats-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .stats-actions { flex-wrap: wrap; }
+  label { display: block; font-weight: 700; margin: 16px 0 5px; }
+  input, select, button { box-sizing: border-box; min-height: 44px; padding: 9px 12px; font: inherit; }
+  input, select { width: 100%; }
+  button {
+    background: var(--ink);
+    color: var(--paper);
+    border: 2px solid var(--ink);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .65; cursor: wait; }
+  #recover, #signout { background: var(--paper); color: var(--ink); }
+  #identity { min-width: 0; overflow-wrap: anywhere; }
+  .muted { color: var(--muted); font-size: .875rem; }
+  .panel, #dashboardMetrics > div {
+    background: var(--wash);
+    border: 1px solid var(--rule);
+    padding: 12px;
+  }
+  .panel { margin: 14px 0; }
+  #dashboardMetrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+  #dashboardMetrics dt { color: var(--muted); font-size: .875rem; }
+  #dashboardMetrics dd { font-size: 1.5rem; margin: 4px 0 0; }
+  #sectionCounts, #instagramCampaigns { padding: 0; list-style: none; }
+  #sectionCounts li, #instagramCampaigns li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; }
+  #instagramCampaigns li > span { min-width: 0; overflow-wrap: anywhere; }
+  #message:empty { margin: 0; }
+</style>
+</head>
+<body><main>
 <a href="../">← Torna ad Archivio Scarpe</a>
-<div style="margin-top:22px" class="top"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-logo.svg" width="46" height="46" alt=""></div>
+<div class="top admin-header"><h1>Amministrazione</h1><img src="../assets/archivio-scarpe-blu-192.png" width="52" height="52" alt=""></div>
 <section id="login">
 <p>Accesso riservato all'amministratore. Accedi con l’email e la password dell’account amministratore.</p>
 <form id="loginForm"><label for="email">Email amministratore</label><input id="email" type="email" value="davimarz.app@gmail.com" autocomplete="email" required><label for="password">Password amministratore</label><input id="password" type="password" autocomplete="current-password"><p><button type="submit" id="passwordSignIn">Accedi con password</button></p><p><button type="button" id="recover">Password dimenticata?</button></p></form>
