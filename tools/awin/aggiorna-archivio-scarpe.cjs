@@ -8,7 +8,7 @@ const { setTimeout: delay } = require('node:timers/promises');
 const repository = 'https://github.com/davimarz/archivioscarpe.git';
 const publicSite = 'https://davimarz.github.io/archivioscarpe/';
 const rawBase = 'https://raw.githubusercontent.com/davimarz/archivioscarpe/';
-const filesToPublish = ['catalogo-awin.json', 'catalogo-awin-indice.json'];
+const filesToPublish = ['catalogo-awin.json', 'catalogo-awin-indice.json', 'catalogo-awin-report.json'];
 const feedExtension = /\.(?:(?:csv|tsv|jsonl|ndjson)(?:\.gz)?|gz)$/i;
 
 function run(command, args, options = {}) {

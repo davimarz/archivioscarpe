@@ -8,7 +8,8 @@ const { catalogIndex } = require('./indicizza-catalogo-awin.cjs');
 const [repo, directory, publisher, ...options] = process.argv.slice(2);
 const catalogFile = 'catalogo-awin.json';
 const indexFile = 'catalogo-awin-indice.json';
-const trackedFiles = [catalogFile, indexFile];
+const reportFile = 'catalogo-awin-report.json';
+const trackedFiles = [catalogFile, indexFile, reportFile];
 const sourceExtension = /\.(?:csv|tsv|jsonl|ndjson)(?:\.gz)?$|\.gz$/i;
 const shoeTerms = /\b(?:scarpe|scarpa|calzature|sneakers?|shoes?|footwear|baskets?|chaussures?|stivaletti|stivali|sandali|mocassini|boots?|sandals?|ciabatte)\b/i;
 
@@ -327,6 +328,7 @@ function main() {
   if (!feeds.length) throw new Error('Nessun listino CSV, CSV gzip o JSONL trovato in LISTINI');
   if (files.some(entry => /\.zip$/i.test(entry.name))) throw new Error('Estrai i listini ZIP in LISTINI prima di avviare l’importazione');
   const allOffers = [];
+  const feedStats = [];
   for (const { name } of feeds) {
     const merchant = name.replace(sourceExtension, '');
     let rowCount = 0, offerCount = 0, skipped = 0;
@@ -352,6 +354,7 @@ function main() {
     if (!offerCount) throw new Error(merchant + ': nessuna calzatura in EUR con prezzo, immagine e link affiliato utilizzabile');
     console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + (rowCount + skipped) + ' righe' +
       (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
+    feedStats.push({ merchant, rows: rowCount + skipped, usable: offerCount, skipped });
   }
   const cheapest = cheapestOffers(allOffers);
   const band = card => {
@@ -370,7 +373,15 @@ function main() {
   const content = JSON.stringify(products) + '\n';
   if (Buffer.byteLength(content) > 95 * 1024 * 1024) throw new Error('Catalogo troppo grande per un singolo file GitHub');
   const index = JSON.stringify(catalogIndex(products, content)) + '\n';
-  for (const [name, data] of [[catalogFile, content], [indexFile, index]]) {
+  const report = JSON.stringify({
+    updatedAt: new Date().toISOString(),
+    feeds: feedStats,
+    sourceRows: feedStats.reduce((sum, feed) => sum + feed.rows, 0),
+    usableOffers: allOffers.length,
+    comparedOffers: cheapest.length,
+    publishedOffers: products.length,
+  }) + '\n';
+  for (const [name, data] of [[catalogFile, content], [indexFile, index], [reportFile, report]]) {
     const output = path.join(repo, name);
     const temp = output + '.' + process.pid + '.tmp';
     try {

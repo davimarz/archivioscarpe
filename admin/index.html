@@ -37,12 +37,16 @@
   .stats-actions { flex-wrap: wrap; }
   .period-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
   .period-tools label { margin: 0 0 4px; font-size: .875rem; }
-  .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .dashboard-grid > .panel { margin: 0; min-width: 0; }
-  .panel-wide { grid-column: 1 / -1; }
+  .dashboard-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
+  .dashboard-grid > .panel { margin: 0; min-width: 0; grid-column: span 6; }
+  .panel-wide { grid-column: 1 / -1 !important; }
+  .panel-traffic { grid-column: span 8 !important; }
+  .panel-control { grid-column: span 4 !important; }
+  .panel-ranking { grid-column: span 7 !important; }
+  .panel-catalog { grid-column: span 5 !important; }
   .panel p { margin: 6px 0; }
   .panel ul { margin: 6px 0 0; }
-  #statsStatus:empty, #trendStatus:empty { display: none; }
+  #statsStatus:empty, #trendStatus:empty, .empty-hide:empty { display: none; }
   .trend-scroll { overflow-x: auto; }
   .trend-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
   .trend-table th, .trend-table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule); }
@@ -50,8 +54,38 @@
   .trend-table tbody th { font-weight: 400; white-space: nowrap; }
   .panel details { margin-top: 8px; }
   .panel summary { cursor: pointer; font-weight: 700; }
+  .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .panel-head button { min-height: 36px; padding: 5px 9px; background: var(--paper); color: var(--ink); }
+  .delta { display: block; min-height: 1.25em; margin-top: 5px; color: var(--muted); font: 600 .78rem/1.25 Satoshi, Arial, sans-serif; }
+  .delta.positive { color: #14723d; }
+  .delta.negative { color: #a33535; }
+  .chart-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .chart-card { border: 1px solid var(--rule); background: var(--paper); padding: 10px; }
+  .chart-card h3 { margin: 0 0 6px; font-size: .92rem; }
+  .chart-card svg { display: block; width: 100%; height: 120px; overflow: visible; }
+  .chart-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-area { opacity: .1; }
+  .chart-zero { stroke: var(--rule); stroke-width: 1; }
+  .insight-grid, .catalog-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+  .insight { padding: 9px; border: 1px solid var(--rule); background: var(--paper); }
+  .insight strong { display: block; font-size: 1.08rem; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  .data-table th, .data-table td { border-bottom: 1px solid var(--rule); padding: 8px 6px; text-align: right; vertical-align: top; }
+  .data-table th:first-child, .data-table td:first-child { text-align: left; }
+  .data-table thead th { color: var(--muted); font-size: .78rem; }
+  .ranking-list { list-style: none; padding: 0; margin: 0; }
+  .ranking-list li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--rule); }
+  .ranking-list span { min-width: 0; overflow-wrap: anywhere; }
+  .quality-list { margin: 8px 0 0; padding-left: 19px; }
+  .quality-list li { margin: 5px 0; }
+  .status-good { color: #14723d; }
+  .status-attention { color: #925c0a; }
   @media (max-width: 600px) {
+    body { padding: 8px; }
+    main:has(#dashboard:not([hidden])) { padding: 12px; }
     .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+    .dashboard-grid > .panel, .panel-traffic, .panel-control, .panel-ranking, .panel-catalog { grid-column: 1 !important; }
+    .chart-grid { grid-template-columns: 1fr; }
     .period-tools, .period-tools > div { flex: 1 1 auto; }
   }
   label { display: block; font-weight: 700; margin: 16px 0 5px; }
@@ -80,11 +114,10 @@
     gap: 8px;
     margin: 14px 0;
   }
-  #dashboardMetrics dt { color: var(--muted); font-size: .875rem; }
+  #dashboardMetrics dt { color: var(--muted); font-size: .82rem; }
   #dashboardMetrics dd { font-size: 1.5rem; margin: 4px 0 0; }
-  #sectionCounts, #instagramCampaigns { padding: 0; list-style: none; }
-  #sectionCounts li, #instagramCampaigns li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; }
-  #instagramCampaigns li > span { min-width: 0; overflow-wrap: anywhere; }
+  #sectionCounts { padding: 0; list-style: none; }
+  #sectionCounts li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; }
   #message:empty { margin: 0; }
 .awin-store-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:12px}
 .awin-store{border:1px solid #d9e3ee;border-radius:14px;padding:14px;min-width:0;overflow-wrap:anywhere}
@@ -119,41 +152,37 @@
 </select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
-<div><dt>Visite totali</dt><dd id="statVisits">—</dd></div>
-<div><dt>Visite da Instagram</dt><dd id="statInstagram">—</dd></div>
-<div><dt>Clic affiliati Awin</dt><dd id="statClicks">—</dd></div>
-<div><dt>Aperture delle sezioni</dt><dd id="statSections">—</dd></div>
-<div><dt>Quota visite da Instagram</dt><dd id="statInstagramShare">—</dd></div>
-<div><dt>Clic Awin ogni 100 visite</dt><dd id="statClicksPerVisit">—</dd></div>
+<div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
+<div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
+<div><dt>Ordini con calzature</dt><dd id="statOrders">—</dd><small class="delta" id="deltaOrders"></small></div>
+<div><dt>Commissioni approvate</dt><dd id="statCommission">—</dd><small class="delta" id="deltaCommission"></small></div>
 </dl>
 <div class="dashboard-grid">
-<section class="panel panel-wide" aria-labelledby="footwearHeading">
-<h2 id="footwearHeading">Acquisti di calzature Awin</h2>
-<p class="muted">Ordini da Archivio Scarpe presso gli advertiser Awin a cui sei iscritto.</p>
-<p id="footwearStatus" role="status"></p>
-<div class="awin-store-list" id="footwearStores"></div>
-<p class="muted" id="footwearNotes"></p>
-</section>
-<section class="panel" aria-labelledby="trendHeading">
-<h2 id="trendHeading">Andamento del traffico</h2>
+<section class="panel panel-traffic" aria-labelledby="trendHeading">
+<div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
 <p id="trendStatus" class="muted" role="status"></p>
-<div id="trendTable" class="trend-scroll"></div>
+<div id="trendCharts" class="chart-grid"></div>
+<details><summary>Valori e aperture delle sezioni</summary><div id="trendTable" class="trend-scroll"></div><ul id="sectionCounts"></ul></details>
 </section>
-<div class="panel">
-<h2>Commissioni Awin</h2>
-<p class="muted">Solo transazioni attribuite ad Archivio Scarpe, per data di transazione.</p>
-<p id="awinStatus" role="status"></p>
-<div id="awinTotals"></div>
-</div>
-<div class="panel"><h2>Aperture per sezione</h2><ul id="sectionCounts"></ul></div>
-<div class="panel">
-<h2>Campagne Instagram</h2>
-<p class="muted" id="instagramCampaignStatus" role="status">Caricamento delle campagne…</p>
-<ul id="instagramCampaigns"></ul>
-</div>
-<section class="panel panel-wide" aria-labelledby="qualityHeading">
+<section class="panel panel-control" aria-labelledby="qualityHeading">
 <h2 id="qualityHeading">Controllo dei dati</h2>
-<p id="dataCheck" role="status">Verifica delle statistiche…</p>
+<p id="dataCheck" role="status">Verifica delle statistiche…</p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
+</section>
+<section class="panel panel-wide" aria-labelledby="campaignHeading">
+<div class="panel-head"><div><h2 id="campaignHeading">Campagne social</h2><p class="muted" id="campaignStatus">Instagram e TikTok, dalla visita all’acquisto verificabile.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
+<div id="campaignTable" class="trend-scroll"></div>
+</section>
+<section class="panel panel-wide" aria-labelledby="awinHeading">
+<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin">Esporta CSV</button></div>
+<p id="awinStatus" role="status"></p><div id="awinTotals"></div>
+<div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
+</section>
+<section class="panel panel-ranking" aria-labelledby="rankingHeading">
+<h2 id="rankingHeading">Negozi e prodotti più cliccati</h2><p class="muted">La classifica si popola con i nuovi clic registrati.</p>
+<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
+</section>
+<section class="panel panel-catalog" aria-labelledby="catalogHeading">
+<h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
 </section>
 </div>
 </section>
@@ -199,185 +228,197 @@ function appendText(parent,tag,value){
  parent.append(node);
  return node;
 }
-function renderFootwear(report,status,stores,notes){
- if(!report || report.unavailable){
-  status.textContent='Dettaglio delle calzature non disponibile. Premi Aggiorna per riprovare.';
-  return;
- }
- const orders=report.stores.reduce((sum,store)=>sum+store.orders,0);
- status.textContent=orders
-  ? formatNumber.format(orders)+(orders===1?' ordine con calzature':' ordini con calzature')
-  : 'Nessun ordine con calzature verificato nel periodo.';
- for(const store of report.stores){
-  const card=document.createElement('article');
-  card.className='awin-store';
-  appendText(card,'h3',store.name);
-  appendText(card,'p',formatNumber.format(store.orders)+(store.orders===1?' ordine':' ordini'));
-  const amounts=store.sales.map(row=>formatMoney(row.currency,row.amount)).join(' · ');
-  appendText(card,'p','Valore calzature: '+(amounts || 'dato non disponibile'));
-  for(const row of store.commissions)appendText(card,'p',commissionText(row));
-  if(!store.commissions.length)appendText(card,'p','Commissioni calzature: dato non disponibile');
-  stores.append(card);
- }
- const details=[];
- if(report.unknownOrders)details.push('Ordini con articoli non verificabili: '+formatNumber.format(report.unknownOrders));
- if(report.unpricedOrders)details.push('Ordini con calzature senza importo disponibile: '+formatNumber.format(report.unpricedOrders));
- if(report.ordersWithoutCommissionBreakdown)details.push('Ordini misti senza commissione separata per le calzature: '+formatNumber.format(report.ordersWithoutCommissionBreakdown));
- notes.textContent=details.join(' · ');
-}
-async function loadAwinStats(since,current){
- const status=document.getElementById('awinStatus');
- const totals=document.getElementById('awinTotals');
- const footwearStatus=document.getElementById('footwearStatus');
- const stores=document.getElementById('footwearStores');
- const notes=document.getElementById('footwearNotes');
- totals.replaceChildren();
- stores.replaceChildren();
- notes.textContent='';
- status.textContent='Caricamento delle commissioni…';
- footwearStatus.textContent='Caricamento degli acquisti…';
- const unavailable='Report Awin non disponibile. Premi Aggiorna per riprovare.';
- try{
-  const {data,error}=await client.functions.invoke('awin-commissions',{body:{since,includeFootwear:true}});
-  if(!current())return;
-  if(error){
-   const detail=await error.context?.json?.().catch(()=>null);
-   if(!current())return;
-   const message=detail?.code==='AWIN_NOT_CONFIGURED'
-    ? 'Awin in attesa del token API in Supabase.'
-    : detail?.code==='AWIN_AUTH'
-     ? 'Awin ha rifiutato il token API.'
-     : unavailable;
-   status.textContent=footwearStatus.textContent=message;
-   return;
-  }
-  const report=data.site;
-  status.textContent=report.transactions
-   ? formatNumber.format(report.transactions)+(report.transactions===1?' transazione':' transazioni')
-   : 'Nessuna transazione attribuita ad Archivio Scarpe nel periodo.';
-  for(const row of report.commissions)appendText(totals,'p',commissionText(row));
-  renderFootwear(data.footwear,footwearStatus,stores,notes);
- }catch{
-  if(current()){
-   totals.replaceChildren();
-   stores.replaceChildren();
-   notes.textContent='';
-   status.textContent=footwearStatus.textContent=unavailable;
-  }
- }
-}
 const ratioFormat=new Intl.NumberFormat('it-IT',{maximumFractionDigits:1});
 const trendDate=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 const trendMonth=new Intl.DateTimeFormat('it-IT',{month:'short',year:'numeric',timeZone:'UTC'});
-async function loadTrend(since,until,current){
- const status=document.getElementById('trendStatus');
- const container=document.getElementById('trendTable');
- status.textContent='Caricamento dell’andamento…';
- container.replaceChildren();
- try{
-  const {data,error}=await client.rpc('dashboard_event_trend',{since,until_at:until});
-  if(!current())return;
-  if(error)throw error;
-  if(!data.length){
-   status.textContent='Nessuna visita o clic Awin nel periodo.';
-   return;
-  }
-  const monthly=data[0].bucket.length===7;
-  const details=document.createElement('details');
-  appendText(details,'summary',monthly?'Tutti i mesi con attività':'Tutti i giorni con attività');
-  const makeTable=rows=>{
-   const table=document.createElement('table');
-   table.className='trend-table';
-   const header=table.createTHead().insertRow();
-   for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Clic Awin']){
-    appendText(header,'th',label).scope='col';
-   }
-   const body=table.createTBody();
-   for(const row of rows){
-    const line=body.insertRow();
-    const date=new Date(monthly?row.bucket+'-01':row.bucket);
-    appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';
-    for(const key of ['visits','instagram','clicks'])appendText(line,'td',formatNumber.format(row[key]));
-   }
-   return table;
-  };
-  const rows=[...data].reverse();
-  status.textContent=rows.length>5?'Ultimi cinque '+(monthly?'mesi':'giorni')+' con attività.':'';
-  container.append(makeTable(rows.slice(0,5)));
-  if(rows.length>5){
-   details.append(makeTable(rows));
-   container.append(details);
-  }
- }catch{
-  if(current())status.textContent='Andamento non disponibile.';
+const sectionNames={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
+const exportData={campaigns:[],awin:[]};
+function periodBounds(value,now=new Date()){
+ const until=now.toISOString();
+ const since=periodStart(value,now);
+ const duration=Date.parse(until)-Date.parse(since);
+ return {since,until,previousSince:new Date(Date.parse(since)-duration).toISOString(),previousUntil:since};
+}
+function delta(id,value,previous,{money=false}={}){
+ const node=document.getElementById(id);
+ node.className='delta';
+ if(!Number.isFinite(value)||!Number.isFinite(previous)){node.textContent='Confronto non disponibile';return;}
+ const difference=value-previous;
+ const sign=difference>0?'+':'';
+ node.classList.add(difference>0?'positive':difference<0?'negative':'');
+ if(previous===0){node.textContent=(money?formatMoney('EUR',difference):sign+formatNumber.format(difference))+' sul periodo precedente';return;}
+ node.textContent=sign+ratioFormat.format(100*difference/previous)+'% sul periodo precedente';
+}
+function footwearOrders(report){return report?.stores?.reduce((sum,row)=>sum+Number(row.orders||0),0)??NaN;}
+function approvedCommissions(report){
+ const values=new Map();
+ for(const store of report?.stores||[])for(const row of store.commissions||[]){
+  values.set(row.currency,(values.get(row.currency)||0)+Number(row.approved||0));
  }
+ return values;
+}
+function moneyMapText(values){return [...values].map(([currency,amount])=>formatMoney(currency,amount)).join(' · ')||'—';}
+function listRow(name,total){
+ const row=document.createElement('li');appendText(row,'span',name);appendText(row,'strong',formatNumber.format(total));return row;
+}
+function setInsight(parent,label,value){const box=document.createElement('div');box.className='insight';appendText(box,'strong',value);appendText(box,'span',label);parent.append(box);}
+function renderFootwear(report){
+ const stores=document.getElementById('footwearStores'),notes=document.getElementById('footwearNotes');
+ stores.replaceChildren();notes.textContent='';exportData.awin=[];
+ if(!report||report.unavailable){notes.textContent='Il dettaglio dei prodotti non è condiviso da Awin in questo momento.';return;}
+ for(const store of report.stores){
+  const card=document.createElement('article');card.className='awin-store';appendText(card,'h3',store.name);
+  appendText(card,'p',formatNumber.format(store.orders)+(store.orders===1?' ordine':' ordini'));
+  appendText(card,'p','Valore calzature: '+(store.sales.map(row=>formatMoney(row.currency,row.amount)).join(' · ')||'dato non disponibile'));
+  for(const row of store.commissions)appendText(card,'p',commissionText(row));
+  if(!store.commissions.length)appendText(card,'p','Commissioni calzature: dato non disponibile');
+  stores.append(card);
+  exportData.awin.push({negozio:store.name,ordini:store.orders,valore:store.sales.map(row=>formatMoney(row.currency,row.amount)).join(' | '),commissioni:store.commissions.map(commissionText).join(' | ')});
+ }
+ const details=[];
+ if(report.unknownOrders)details.push('Articoli non verificabili: '+formatNumber.format(report.unknownOrders));
+ if(report.unpricedOrders)details.push('Ordini senza importo: '+formatNumber.format(report.unpricedOrders));
+ if(report.ordersWithoutCommissionBreakdown)details.push('Ordini misti senza commissione separata: '+formatNumber.format(report.ordersWithoutCommissionBreakdown));
+ notes.textContent=details.join(' · ');
+}
+async function fetchAwin(range){
+ const {data,error}=await client.functions.invoke('awin-commissions',{body:{since:range.since,until:range.until,includeFootwear:true}});
+ if(error){const detail=await error.context?.json?.().catch(()=>null);throw new Error(detail?.code||'AWIN_UNAVAILABLE');}
+ return data;
+}
+async function loadAwinStats(range,current){
+ const status=document.getElementById('awinStatus'),totals=document.getElementById('awinTotals');
+ status.textContent='Caricamento degli acquisti e delle commissioni…';totals.replaceChildren();
+ const [now,previous]=await Promise.all([fetchAwin(range),fetchAwin({since:range.previousSince,until:range.previousUntil})]);
+ if(!current())return null;
+ const report=now.footwear,previousReport=previous.footwear;
+ const orders=footwearOrders(report),previousOrders=footwearOrders(previousReport);
+ document.getElementById('statOrders').textContent=Number.isFinite(orders)?formatNumber.format(orders):'—';
+ delta('deltaOrders',orders,previousOrders);
+ const commissions=approvedCommissions(report),previousCommissions=approvedCommissions(previousReport);
+ document.getElementById('statCommission').textContent=moneyMapText(commissions);
+ if(commissions.size===1&&commissions.has('EUR'))delta('deltaCommission',commissions.get('EUR'),previousCommissions.get('EUR')||0,{money:true});
+ else document.getElementById('deltaCommission').textContent=commissions.size>1?'Importi in più valute':'Confronto non disponibile';
+ status.textContent=now.site.transactions
+  ? formatNumber.format(now.site.transactions)+' transazioni attribuite al sito, '+formatNumber.format(orders)+' con calzature verificate.'
+  : 'Nessuna transazione attribuita ad Archivio Scarpe nel periodo.';
+ for(const row of now.site.commissions)appendText(totals,'p',commissionText(row));
+ renderFootwear(report);
+ return now;
+}
+function svgNode(tag,attributes={}){const node=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value] of Object.entries(attributes))node.setAttribute(key,value);return node;}
+function renderChart(rows,key,title,color){
+ const card=document.createElement('div');card.className='chart-card';appendText(card,'h3',title);
+ const svg=svgNode('svg',{viewBox:'0 0 420 120',role:'img','aria-label':title});
+ const values=rows.map(row=>Number(row[key]||0)),maximum=Math.max(1,...values),step=rows.length>1?400/(rows.length-1):0;
+ const points=values.map((value,index)=>[10+index*step,105-value/maximum*90]);
+ svg.append(svgNode('line',{x1:10,y1:105,x2:410,y2:105,class:'chart-zero'}));
+ if(points.length){
+  const area=[[points[0][0],105],...points,[points.at(-1)[0],105]].map(point=>point.join(',')).join(' ');
+  svg.append(svgNode('polygon',{points:area,fill:color,class:'chart-area'}));
+  const line=svgNode('polyline',{points:points.map(point=>point.join(',')).join(' '),stroke:color,class:'chart-line'});svg.append(line);
+  for(const [x,y] of points)svg.append(svgNode('circle',{cx:x,cy:y,r:2.5,fill:color}));
+ }
+ card.append(svg);appendText(card,'small','Massimo del periodo: '+formatNumber.format(maximum));return card;
+}
+function trendTable(rows){
+ const monthly=rows[0]?.bucket.length===7,table=document.createElement('table');table.className='data-table';
+ const head=table.createTHead().insertRow();for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Clic Awin'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();for(const row of rows){const line=body.insertRow(),date=new Date(monthly?row.bucket+'-01':row.bucket);appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';for(const key of ['visits','instagram','clicks'])appendText(line,'td',formatNumber.format(row[key]));}
+ return table;
+}
+async function loadTrend(range,current){
+ const status=document.getElementById('trendStatus'),charts=document.getElementById('trendCharts'),table=document.getElementById('trendTable');
+ status.textContent='Caricamento dell’andamento…';charts.replaceChildren();table.replaceChildren();
+ const {data,error}=await client.rpc('dashboard_event_trend',{since:range.since,until_at:range.until});
+ if(!current())return;if(error)throw error;
+ if(!data.length){status.textContent='Nessun dato nel periodo selezionato.';return;}
+ charts.append(renderChart(data,'visits','Visite','#173f6b'),renderChart(data,'clicks','Clic Awin','#0b9a9a'));
+ table.append(trendTable(data));status.textContent='Sono compresi anche i giorni senza attività.';
+}
+function renderTraffic(currentReport,previousReport){
+ document.getElementById('statVisits').textContent=formatNumber.format(currentReport.visits);delta('deltaVisits',currentReport.visits,previousReport.visits);
+ document.getElementById('statClicks').textContent=formatNumber.format(currentReport.clicks);delta('deltaClicks',currentReport.clicks,previousReport.clicks);
+ const sections=document.getElementById('sectionCounts');sections.replaceChildren(...currentReport.sections.map(row=>listRow(sectionNames[row.name]||row.name,row.total)));
+ const insights=document.getElementById('trafficInsights');insights.replaceChildren();
+ setInsight(insights,'Quota Instagram',currentReport.visits?ratioFormat.format(100*currentReport.instagram/currentReport.visits)+'%':'—');
+ setInsight(insights,'Quota TikTok',currentReport.visits?ratioFormat.format(100*currentReport.tiktok/currentReport.visits)+'%':'—');
+ setInsight(insights,'Clic ogni 100 visite',currentReport.visits?ratioFormat.format(100*currentReport.clicks/currentReport.visits):'—');
+ setInsight(insights,'Sessioni con almeno un clic',currentReport.visitSessions?ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%':'In raccolta');
+ const storeList=document.getElementById('storeRanking'),productList=document.getElementById('productRanking');
+ storeList.replaceChildren(...(currentReport.stores.length?currentReport.stores.map(row=>listRow(row.name,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
+ productList.replaceChildren(...(currentReport.products.length?currentReport.products.map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
+}
+function commissionArrayText(rows){return rows?.map(row=>formatMoney(row.currency,row.approved)).join(' · ')||'—';}
+function renderCampaigns(traffic,awin){
+ const merged=new Map();
+ for(const row of traffic.campaigns){const key=(row.source||'other')+':'+row.name;merged.set(key,{campagna:row.name,canale:row.source||'other',visite:Number(row.visits),clic:Number(row.clicks),ordini:0,commissioni:'—'});}
+ for(const row of awin?.footwearCampaigns||[]){const key=(row.source||'other')+':'+row.campaign;const item=merged.get(key)||{campagna:row.campaign,canale:row.source||'other',visite:0,clic:0,ordini:0,commissioni:'—'};item.ordini=Number(row.orders);item.commissioni=commissionArrayText(row.commissions);merged.set(key,item);}
+ const rows=[...merged.values()].sort((a,b)=>b.visite-a.visite||b.clic-a.clic||a.campagna.localeCompare(b.campagna,'it'));exportData.campaigns=rows;
+ const container=document.getElementById('campaignTable'),status=document.getElementById('campaignStatus');container.replaceChildren();
+ if(!rows.length){status.textContent='Nessuna campagna identificata nel periodo selezionato.';return;}
+ status.textContent='Ordini e commissioni compaiono quando Awin restituisce il riferimento della campagna.';
+ const table=document.createElement('table');table.className='data-table';const head=table.createTHead().insertRow();for(const label of ['Campagna','Canale','Visite','Clic','Ordini','Commissioni approvate'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();for(const row of rows){const line=body.insertRow();for(const value of [row.campagna,row.canale,formatNumber.format(row.visite),formatNumber.format(row.clic),formatNumber.format(row.ordini),row.commissioni])appendText(line,'td',value);}
+ container.append(table);
+}
+function renderQuality(report){
+ const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
+ document.getElementById('dataCheck').textContent='Aggiornato il '+updated;
+ const list=document.getElementById('qualityList'),social=Number(report.instagram)+Number(report.tiktok),tagged=report.campaigns.reduce((sum,row)=>sum+Number(row.visits),0),covered=report.stores.reduce((sum,row)=>sum+Number(row.clicks),0);
+ const entries=[
+  social?'Visite social con campagna identificata: '+formatNumber.format(tagged)+' su '+formatNumber.format(social):'Nessuna visita social nel periodo.',
+  report.clicks?'Clic con negozio e prodotto identificati: '+formatNumber.format(covered)+' su '+formatNumber.format(report.clicks):'Nessun clic Awin nel periodo.',
+  report.legacyVisits?'Il dettaglio delle sessioni manca per '+formatNumber.format(report.legacyVisits)+' visite registrate prima del nuovo tracciamento.':'Tutte le nuove visite includono un identificativo di sessione.',
+ ];
+ list.replaceChildren(...entries.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+}
+async function loadCatalogHealth(advertisers,current){
+ const status=document.getElementById('catalogStatus'),metrics=document.getElementById('catalogMetrics'),checks=document.getElementById('catalogChecks');
+ try{
+  const response=await fetch('../catalogo-awin-report.json',{cache:'no-store'});if(!response.ok)throw new Error();const report=await response.json();if(!current())return;
+  const date=new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date(report.updatedAt));
+  status.textContent='Ultimo aggiornamento: '+date;metrics.replaceChildren();
+  setInsight(metrics,'Offerte pubblicate',formatNumber.format(report.publishedOffers));setInsight(metrics,'Listini presenti',formatNumber.format(report.feeds.length));
+  const known=new Set(report.feeds.map(row=>row.merchant.toLocaleLowerCase('it'))),missing=(advertisers||[]).filter(name=>!known.has(name.toLocaleLowerCase('it')));
+  const skipped=report.feeds.reduce((sum,row)=>sum+Number(row.skipped||0),0),filtered=Number.isFinite(report.sourceRows)&&Number.isFinite(report.usableOffers)?report.sourceRows-report.usableOffers:null;
+  const messages=[missing.length?'Advertiser iscritti senza offerte pubblicate: '+missing.join(', '):'Tutti gli advertiser Awin rilevati hanno offerte nel catalogo.',skipped?'Record CSV non validi scartati: '+formatNumber.format(skipped):'Nessun record CSV strutturalmente non valido segnalato.'];
+  messages.push(filtered===null?'Il conteggio completo degli scarti sarà disponibile dal prossimo aggiornamento dei listini.':'Righe escluse perché non utilizzabili come calzature: '+formatNumber.format(filtered));
+  checks.replaceChildren(...messages.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+ }catch{if(current())status.textContent='Controllo catalogo non disponibile.';}
+}
+function csvCell(value){return '"'+String(value??'').replaceAll('"','""')+'"';}
+function downloadCsv(name,rows){
+ if(!rows.length)return;
+ const columns=Object.keys(rows[0]),content='\uFEFF'+[columns.join(';'),...rows.map(row=>columns.map(column=>csvCell(row[column])).join(';'))].join('\n');
+ const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function loadStats(){
- const version=++statsVersion;
- const authVersion=checkVersion;
- const current=()=>version===statsVersion && authVersion===checkVersion && !dashboard.hidden;
- const status=document.getElementById('statsStatus');
- const list=document.getElementById('sectionCounts');
- const campaignList=document.getElementById('instagramCampaigns');
- const campaignStatus=document.getElementById('instagramCampaignStatus');
- const metrics=['statVisits','statInstagram','statClicks','statSections'];
- const ratios=['statInstagramShare','statClicksPerVisit'];
- const check=document.getElementById('dataCheck');
- const now=new Date();
- const since=periodStart(statsPeriod.value,now);
- for(const id of [...metrics,...ratios])document.getElementById(id).textContent='—';
- list.replaceChildren();
- campaignList.replaceChildren();
- campaignStatus.textContent='Caricamento delle campagne…';
- check.textContent='Verifica delle statistiche…';
- void loadAwinStats(since,current);
- void loadTrend(since,now.toISOString(),current);
- refreshStats.disabled=true;
- status.textContent='Caricamento delle statistiche…';
+ const version=++statsVersion,authVersion=checkVersion,current=()=>version===statsVersion&&authVersion===checkVersion&&!dashboard.hidden;
+ const status=document.getElementById('statsStatus'),range=periodBounds(statsPeriod.value);
+ for(const id of ['statVisits','statClicks','statOrders','statCommission'])document.getElementById(id).textContent='—';
+ for(const id of ['deltaVisits','deltaClicks','deltaOrders','deltaCommission'])document.getElementById(id).textContent='';
+ refreshStats.disabled=true;status.textContent='Aggiornamento del pannello…';
  try{
-  const sectionEntries=Object.entries(sections);
-  const {data,error}=await client.rpc('dashboard_event_counts',{since});
-  if(error)throw error;
-  const count=(type,dimension)=>data.reduce((sum,row)=>
-   row.event_type===type && (!dimension || row.dimension===dimension) ? sum+Number(row.total) : sum,0);
-  const visits=count('visit'),instagram=count('visit','instagram'),clicks=count('affiliate_click');
-  const counts=sectionEntries.map(([section])=>count('section',section));
-  if(!current())return;
-  const totals=[visits,instagram,clicks,counts.reduce((sum,count)=>sum+count,0)];
-  metrics.forEach((id,index)=>{document.getElementById(id).textContent=formatNumber.format(totals[index]);});
-  const countRow=(name,total)=>{
-   const row=document.createElement('li');
-   const label=document.createElement('span');
-   const value=document.createElement('strong');
-   label.textContent=name;
-   value.textContent=formatNumber.format(total);
-   row.append(label,value);
-   return row;
-  };
-  list.replaceChildren(...sectionEntries.map(([,name],index)=>countRow(name,counts[index])));
-  document.getElementById(ratios[0]).textContent=visits?ratioFormat.format(100*instagram/visits)+'%':'—';
-  document.getElementById(ratios[1]).textContent=visits?ratioFormat.format(100*clicks/visits):'—';
-  const campaigns=data.filter(row=>row.event_type==='instagram_campaign')
-   .sort((a,b)=>Number(b.total)-Number(a.total) || a.dimension.localeCompare(b.dimension,'it'));
-  campaignList.replaceChildren(...campaigns.map(row=>countRow(row.dimension,Number(row.total))));
-  campaignStatus.textContent=campaigns.length?'Visite per campagna':'Nessuna visita associata a una campagna nel periodo selezionato.';
-  status.textContent=totals.some(Boolean)?'':'Nessun evento registrato nel periodo selezionato.';
-  const assigned=campaigns.reduce((sum,row)=>sum+Number(row.total),0);
-  const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
-  check.textContent='Statistiche aggiornate il '+updated+'. Visite Instagram con campagna identificata: '+formatNumber.format(assigned)+' su '+formatNumber.format(instagram)+'.';
- }catch{
-  if(current()){
-   metrics.forEach(id=>{document.getElementById(id).textContent='—';});
-   list.replaceChildren();
-   campaignList.replaceChildren();
-   campaignStatus.textContent='Campagne non disponibili.';
-   check.textContent='Dati di traffico non disponibili.';
-   status.textContent='Statistiche non disponibili. Premi Aggiorna per riprovare.';
+  const currentRequest=client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until});
+  const previousRequest=client.rpc('dashboard_admin_report',{since:range.previousSince,until_at:range.previousUntil});
+  const [currentResult,previousResult,awinSettled]=await Promise.all([currentRequest,previousRequest,Promise.allSettled([loadAwinStats(range,current)])]);
+  if(currentResult.error)throw currentResult.error;if(previousResult.error)throw previousResult.error;if(!current())return;
+  const awinResult=awinSettled[0].status==='fulfilled'?awinSettled[0].value:null;
+  if(!awinResult){
+   document.getElementById('awinStatus').textContent='Report Awin non disponibile. Premi Aggiorna per riprovare.';
+   document.getElementById('footwearStores').replaceChildren();
+   document.getElementById('footwearNotes').textContent='';
   }
- }finally{
-  if(version===statsVersion)refreshStats.disabled=false;
- }
+  renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);renderCampaigns(currentResult.data,awinResult);
+  void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
+  status.textContent=currentResult.data.visits||currentResult.data.clicks?'':'Nessuna attività nel periodo selezionato.';
+ }catch(error){
+  if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
+ }finally{if(version===statsVersion)refreshStats.disabled=false;}
 }
+document.getElementById('exportCampaigns').addEventListener('click',()=>downloadCsv('campagne-archivio-scarpe.csv',exportData.campaigns));
+document.getElementById('exportAwin').addEventListener('click',()=>downloadCsv('awin-archivio-scarpe.csv',exportData.awin));
 refreshStats.addEventListener('click',loadStats);
 statsPeriod.addEventListener('change',loadStats);
 async function check(){

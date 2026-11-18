@@ -95,6 +95,30 @@ function summarizeFootwear(sales, advertisers) {
   };
 }
 
+function summarizeFootwearCampaigns(sales, advertisers) {
+  const campaigns = new Map();
+  for (const sale of sales) {
+    if (!advertisers.has(String(sale.advertiserId))) continue;
+    const campaign = String(sale.clickRefs?.clickRef5 || '');
+    if (!/^[a-z0-9][a-z0-9_-]{0,47}$/.test(campaign)) continue;
+    const basket = Array.isArray(sale.basketProducts) ? sale.basketProducts : [];
+    const kinds = basket.map(productKind);
+    const shoes = basket.filter((_, index) => kinds[index] === 'footwear');
+    if (!shoes.length) continue;
+    const key = String(sale.clickRefs?.clickRef4 || 'other') + ':' + campaign;
+    if (!campaigns.has(key)) campaigns.set(key, {
+      campaign, source: String(sale.clickRefs?.clickRef4 || 'other'), orders: 0, commissionRows: [],
+    });
+    const row = campaigns.get(key);
+    row.orders++;
+    if (shoes.length === basket.length) row.commissionRows.push(sale);
+  }
+  return [...campaigns.values()].map(row => ({
+    campaign: row.campaign, source: row.source, orders: row.orders,
+    commissions: summarize(row.commissionRows).commissions,
+  })).sort((a, b) => b.orders - a.orders || a.campaign.localeCompare(b.campaign));
+}
+
 async function joinedAdvertisers(token) {
   const url = new URL('https://api.awin.com/publishers/3150312/programmes');
   url.search = new URLSearchParams({ relationship: 'joined', accessToken: token }).toString();
@@ -126,8 +150,9 @@ Deno.serve(async req => {
     let input;
     try { input = await req.json(); } catch { return reply(400, { code: 'INVALID_PERIOD' }); }
     const start = Math.floor(Date.parse(input?.since) / 1000) * 1000;
-    const end = Math.floor(Date.now() / 1000) * 1000;
-    if (!Number.isFinite(start) || start > end || end - start > 367 * 86400000) {
+    const now = Math.floor(Date.now() / 1000) * 1000;
+    const end = input?.until ? Math.floor(Date.parse(input.until) / 1000) * 1000 : now;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || end > now || end - start > 367 * 86400000) {
       return reply(400, { code: 'INVALID_PERIOD' });
     }
     const token = Deno.env.get('AWIN_API_TOKEN');
@@ -159,8 +184,10 @@ Deno.serve(async req => {
       const sales = site.filter(row => /^(sale|mobile sale|mobile app purchase)$/i.test(String(row.type)) &&
         String(row.commissionStatus).toLowerCase() !== 'deleted');
       try {
-        const advertisers = sales.length ? await joinedAdvertisers(token) : new Map();
+        const advertisers = await joinedAdvertisers(token);
+        report.advertisers = [...advertisers.values()].sort((a, b) => a.localeCompare(b, 'it'));
         report.footwear = summarizeFootwear(sales, advertisers);
+        report.footwearCampaigns = summarizeFootwearCampaigns(sales, advertisers);
       } catch {
         report.footwear = { unavailable: true };
       }

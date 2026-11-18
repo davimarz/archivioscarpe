@@ -2467,10 +2467,19 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (['www.awin1.com', 'awin1.com'].includes(affiliateUrl.hostname) &&
               (affiliateUrl.searchParams.get('a') === '3150312' || affiliateUrl.searchParams.get('awinaffid') === '3150312')) {
             affiliateUrl.searchParams.set('clickref6', 'archivioscarpe');
+            const tracking = new URLSearchParams(location.search);
+            const source = /^(instagram|tiktok)$/i.test(tracking.get('utm_source') || '')
+              ? tracking.get('utm_source').toLowerCase() : '';
+            const campaign = awinCatalog.instagramCampaign(tracking.get('utm_campaign'));
+            if (source) affiliateUrl.searchParams.set('clickref4', source);
+            if (campaign) affiliateUrl.searchParams.set('clickref5', campaign);
             card.href = affiliateUrl.href;
           }
         }
         card.dataset.productUrl = product.url;
+        card.dataset.merchant = String(product.merchant || '').slice(0, 120);
+        card.dataset.productId = String(product.gtin || product.model || product.name || '').slice(0, 120);
+        card.dataset.productName = String(product.name || '').slice(0, 240);
         card.target = '_blank';
         card.rel = 'sponsored noopener noreferrer';
         card.className = 'cisalfa-product-card';
@@ -2706,7 +2715,19 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       openAddress();
     })();
 
-    function recordAppEvent(event_type, dimension, campaign = '') {
+    function appSessionId() {
+      const key = 'archivio-scarpe-session';
+      try {
+        let id = sessionStorage.getItem(key);
+        if (!/^[a-f0-9-]{36}$/.test(id || '')) {
+          id = crypto.randomUUID();
+          sessionStorage.setItem(key, id);
+        }
+        return id;
+      } catch { return crypto.randomUUID(); }
+    }
+    const analyticsSessionId = appSessionId();
+    function recordAppEvent(event_type, dimension, campaign = '', details = {}) {
       if (location.hostname.endsWith('.chatgpt.site') || navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true) return;
       const key = event_type + ':' + dimension;
       const now = Date.now();
@@ -2715,7 +2736,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       fetch('https://psjnqiqobidvyljrzjuh.supabase.co/rest/v1/app_events', {
         method: 'POST',
         headers: { apikey: 'sb_publishable_GEV4zSghYUbUbpQeEpeySg__rbHWeZ5', 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ event_type, dimension, ...(campaign && { campaign }) }),
+        body: JSON.stringify({ event_type, dimension, session_id: analyticsSessionId,
+          ...(campaign && { campaign }), ...details }),
         keepalive: true,
         credentials: 'omit',
         referrerPolicy: 'no-referrer'
@@ -2728,15 +2750,25 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const params = new URLSearchParams(location.search);
       const source = params.get('utm_source') || '';
       const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
-      const campaign = fromInstagram ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
-      recordAppEvent('visit', fromInstagram ? 'instagram' : 'other', campaign);
+      const fromTikTok = /^tiktok$/i.test(source) || /(?:^|\.)tiktok\.com$/i.test(referrerHost);
+      const channel = fromInstagram ? 'instagram' : fromTikTok ? 'tiktok' : 'other';
+      const campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
+      recordAppEvent('visit', channel, campaign);
+      const recordAffiliateClick = link => recordAppEvent('affiliate_click', 'awin', campaign, {
+        source: channel,
+        ...(link.dataset.merchant && link.dataset.productId && link.dataset.productName ? {
+          merchant: link.dataset.merchant,
+          product_id: link.dataset.productId,
+          product_name: link.dataset.productName,
+        } : {})
+      });
       document.addEventListener('click', event => {
-        if (event.target.closest('a[rel~="sponsored"]')) recordAppEvent('affiliate_click', 'awin');
+        const link = event.target.closest('a[rel~="sponsored"]');
+        if (link) recordAffiliateClick(link);
       });
       document.addEventListener('auxclick', event => {
-        if (event.button === 1 && event.target.closest('a[rel~="sponsored"]')) {
-          recordAppEvent('affiliate_click', 'awin');
-        }
+        const link = event.target.closest('a[rel~="sponsored"]');
+        if (event.button === 1 && link) recordAffiliateClick(link);
       });
     })();
   </script>
