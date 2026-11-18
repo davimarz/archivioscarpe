@@ -67,6 +67,11 @@
   #sectionCounts li, #instagramCampaigns li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; }
   #instagramCampaigns li > span { min-width: 0; overflow-wrap: anywhere; }
   #message:empty { margin: 0; }
+.awin-store-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:12px}
+.awin-store{border:1px solid #d9e3ee;border-radius:14px;padding:14px;min-width:0;overflow-wrap:anywhere}
+.awin-store h3{margin:0 0 8px;font-size:1rem}
+.awin-store p{margin:5px 0}
+#footwearNotes:empty,#footwearStores:empty{display:none}
 </style>
 </head>
 <body><main>
@@ -100,17 +105,24 @@
 <div><dt>Clic affiliati Awin</dt><dd id="statClicks">—</dd></div>
 <div><dt>Aperture delle sezioni</dt><dd id="statSections">—</dd></div>
 </dl>
-<div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
-<div class="panel">
-<strong>Campagne Instagram</strong>
-<p class="muted" id="instagramCampaignStatus" role="status">Caricamento delle campagne…</p>
-<ul id="instagramCampaigns"></ul>
-</div>
+<section class="panel" aria-labelledby="footwearHeading">
+<h2 id="footwearHeading">Acquisti di calzature Awin</h2>
+<p class="muted">Ordini da Archivio Scarpe presso gli advertiser Awin a cui sei iscritto.</p>
+<p id="footwearStatus" role="status"></p>
+<div class="awin-store-list" id="footwearStores"></div>
+<p class="muted" id="footwearNotes"></p>
+</section>
 <div class="panel">
 <strong>Commissioni Awin</strong>
 <p class="muted">Solo transazioni attribuite ad Archivio Scarpe, per data di transazione.</p>
 <p id="awinStatus" role="status"></p>
 <div id="awinTotals"></div>
+</div>
+<div class="panel"><strong>Aperture per sezione</strong><ul id="sectionCounts"></ul></div>
+<div class="panel">
+<strong>Campagne Instagram</strong>
+<p class="muted" id="instagramCampaignStatus" role="status">Caricamento delle campagne…</p>
+<ul id="instagramCampaigns"></ul>
 </div>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
@@ -141,38 +153,85 @@ function periodStart(value, now=new Date()){
 const formatNumber=new Intl.NumberFormat('it-IT');
 const sections={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
 let statsVersion=0;
+function formatMoney(currency,amount){
+ return new Intl.NumberFormat('it-IT',{style:'currency',currency}).format(amount);
+}
+function commissionText(row){
+ const parts=[['Approvate',row.approved],['In attesa',row.pending],['Rifiutate',row.declined]];
+ if(row.other)parts.push(['Altri stati',row.other]);
+ return parts.map(([label,amount])=>label+': '+formatMoney(row.currency,amount)).join(' · ');
+}
+function appendText(parent,tag,value){
+ const node=document.createElement(tag);
+ node.textContent=value;
+ parent.append(node);
+ return node;
+}
+function renderFootwear(report,status,stores,notes){
+ if(!report || report.unavailable){
+  status.textContent='Dettaglio delle calzature non disponibile. Premi Aggiorna per riprovare.';
+  return;
+ }
+ const orders=report.stores.reduce((sum,store)=>sum+store.orders,0);
+ status.textContent=orders
+  ? formatNumber.format(orders)+(orders===1?' ordine con calzature':' ordini con calzature')
+  : 'Nessun ordine con calzature verificato nel periodo.';
+ for(const store of report.stores){
+  const card=document.createElement('article');
+  card.className='awin-store';
+  appendText(card,'h3',store.name);
+  appendText(card,'p',formatNumber.format(store.orders)+(store.orders===1?' ordine':' ordini'));
+  const amounts=store.sales.map(row=>formatMoney(row.currency,row.amount)).join(' · ');
+  appendText(card,'p','Valore calzature: '+(amounts || 'dato non disponibile'));
+  for(const row of store.commissions)appendText(card,'p',commissionText(row));
+  if(!store.commissions.length)appendText(card,'p','Commissioni calzature: dato non disponibile');
+  stores.append(card);
+ }
+ const details=[];
+ if(report.unknownOrders)details.push('Ordini con articoli non verificabili: '+formatNumber.format(report.unknownOrders));
+ if(report.unpricedOrders)details.push('Ordini con calzature senza importo disponibile: '+formatNumber.format(report.unpricedOrders));
+ if(report.ordersWithoutCommissionBreakdown)details.push('Ordini misti senza commissione separata per le calzature: '+formatNumber.format(report.ordersWithoutCommissionBreakdown));
+ notes.textContent=details.join(' · ');
+}
 async function loadAwinStats(since,current){
  const status=document.getElementById('awinStatus');
  const totals=document.getElementById('awinTotals');
+ const footwearStatus=document.getElementById('footwearStatus');
+ const stores=document.getElementById('footwearStores');
+ const notes=document.getElementById('footwearNotes');
  totals.replaceChildren();
+ stores.replaceChildren();
+ notes.textContent='';
  status.textContent='Caricamento delle commissioni…';
+ footwearStatus.textContent='Caricamento degli acquisti…';
+ const unavailable='Report Awin non disponibile. Premi Aggiorna per riprovare.';
  try{
-  const {data,error}=await client.functions.invoke('awin-commissions',{body:{since}});
+  const {data,error}=await client.functions.invoke('awin-commissions',{body:{since,includeFootwear:true}});
   if(!current())return;
   if(error){
    const detail=await error.context?.json?.().catch(()=>null);
    if(!current())return;
-   status.textContent=detail?.code==='AWIN_NOT_CONFIGURED'
+   const message=detail?.code==='AWIN_NOT_CONFIGURED'
     ? 'Awin in attesa del token API in Supabase.'
     : detail?.code==='AWIN_AUTH'
      ? 'Awin ha rifiutato il token API.'
-     : 'Report Awin non disponibile. Premi Aggiorna per riprovare.';
+     : unavailable;
+   status.textContent=footwearStatus.textContent=message;
    return;
   }
   const report=data.site;
   status.textContent=report.transactions
    ? formatNumber.format(report.transactions)+(report.transactions===1?' transazione':' transazioni')
    : 'Nessuna transazione attribuita ad Archivio Scarpe nel periodo.';
-  for(const row of report.commissions){
-   const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:row.currency});
-   const line=document.createElement('p');
-   const parts=[['Approvate',row.approved],['In attesa',row.pending],['Rifiutate',row.declined]];
-   if(row.other)parts.push(['Altri stati',row.other]);
-   line.textContent=parts.map(([label,amount])=>label+': '+money.format(amount)).join(' · ');
-   totals.append(line);
-  }
+  for(const row of report.commissions)appendText(totals,'p',commissionText(row));
+  renderFootwear(data.footwear,footwearStatus,stores,notes);
  }catch{
-  if(current())status.textContent='Report Awin non disponibile. Premi Aggiorna per riprovare.';
+  if(current()){
+   totals.replaceChildren();
+   stores.replaceChildren();
+   notes.textContent='';
+   status.textContent=footwearStatus.textContent=unavailable;
+  }
  }
 }
 async function loadStats(){
