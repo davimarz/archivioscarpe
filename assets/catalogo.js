@@ -180,6 +180,27 @@
     };
   }
 
+  function promotionProductKeys(product) {
+    const normalize = value => String(value || '').normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    const parts = product.name.split(/\s+[-–—|]\s+/);
+    const size = normalize(product.size);
+    const last = normalize(parts.at(-1));
+    if (parts.length > 1 && ((size && last === size) ||
+      /^(?:taglia\s+|eu\s+|uk\s+|us\s+)\d{1,2}(?:\s+\d{1,2})?$/.test(last) ||
+      /^(?:[1-6]\d(?:\s+\d{1,2})?|xxs|xs|s|m|l|xl|xxl|os)$/.test(last))) parts.pop();
+    const brand = normalize(product.brand);
+    const color = normalize(product.color);
+    const title = normalize(parts.join(' '));
+    const keys = [JSON.stringify(['title', title, color])];
+    const model = normalize(product.model);
+    if (brand && color && model && !/^\d{8,14}$/.test(model)) {
+      keys.push(JSON.stringify(['model', brand, model, color]));
+    }
+    return keys;
+  }
+
   function nextPromotionPage(bands, positions, filter, ended) {
     const keys = filter === 'all' ? ['low', 'mid', 'high'] : [filter];
     const take = filter === 'all' ? 2 : 6;
@@ -213,7 +234,7 @@
     return /^[a-z0-9][a-z0-9_-]{0,47}$/.test(slug) ? slug : '';
   }
 
-  const api = { loadCurrentAwinCatalog, openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionRoutes, promotionBandFromHash, instagramCampaign, shuffleProducts };
+  const api = { loadCurrentAwinCatalog, openAwinCatalog, openIndexedAwinCatalog, nextPromotionPage, promotionProductKeys, promotionRoutes, promotionBandFromHash, instagramCampaign, shuffleProducts };
   if (typeof module === 'object' && module.exports) module.exports = api;
   else window.awinCatalog = api;
 })();
