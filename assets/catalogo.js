@@ -192,11 +192,12 @@
       /^(?:[1-6]\d(?:\s+\d{1,2})?|xxs|xs|s|m|l|xl|xxl|os)$/.test(last))) parts.pop();
     const brand = normalize(product.brand);
     const color = normalize(product.color);
+    if (parts.length > 1 && color && normalize(parts.at(-1)) === color) parts.pop();
     const title = normalize(parts.join(' '));
-    const keys = [JSON.stringify(['title', title, color])];
+    const keys = [JSON.stringify(['title', title])];
     const model = normalize(product.model);
-    if (brand && color && model && !/^\d{8,14}$/.test(model)) {
-      keys.push(JSON.stringify(['model', brand, model, color]));
+    if (brand && model && !/^\d{8,14}$/.test(model)) {
+      keys.unshift(JSON.stringify(['model', brand, model]));
     }
     return keys;
   }
