@@ -26,3 +26,25 @@ test('public settings do not expose the personal telephone number', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.doesNotMatch(html, /tel:\+393295363457|329\s*5363457/);
 });
+
+test('promotions expose brand and sorting controls with automatic rotation', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /id="promotionsBrand"/);
+  assert.match(html, /value="discount">Sconto maggiore/);
+  assert.match(html, /value="price-asc">Prezzo crescente/);
+  assert.match(html, /value="price-desc">Prezzo decrescente/);
+  assert.match(html, /schedulePromotionRotation/);
+});
+
+test('admin offers today and reports the Facebook traffic share', () => {
+  const html = fs.readFileSync('admin/index.html', 'utf8');
+  assert.match(html, /<option value="1">Oggi<\/option>/);
+  assert.match(html, /Quota Facebook/);
+  assert.match(html, /currentReport\.facebook/);
+});
+
+test('public analytics recognizes Facebook campaign traffic', () => {
+  const html = fs.readFileSync('index.html', 'utf8');
+  assert.match(html, /fromFacebook/);
+  assert.match(html, /\(instagram\|facebook\|tiktok\)/);
+});

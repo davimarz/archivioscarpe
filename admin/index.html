@@ -150,6 +150,7 @@
 <div class="stats-actions"><h2>Statistiche</h2><div class="period-tools"><div>
 <label for="statsPeriod">Periodo</label>
 <select id="statsPeriod">
+<option value="1">Oggi</option>
 <option value="7">Ultimi 7 giorni</option>
 <option value="15">Ultimi 15 giorni</option>
 <option value="30" selected>Ultimi 30 giorni</option>
@@ -344,8 +345,8 @@ function renderChart(rows,key,title,color){
 }
 function trendTable(rows){
  const monthly=rows[0]?.bucket.length===7,table=document.createElement('table');table.className='data-table';
- const head=table.createTHead().insertRow();for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Clic Awin'])appendText(head,'th',label).scope='col';
- const body=table.createTBody();for(const row of rows){const line=body.insertRow(),date=new Date(monthly?row.bucket+'-01':row.bucket);appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';for(const key of ['visits','instagram','clicks'])appendText(line,'td',formatNumber.format(row[key]));}
+ const head=table.createTHead().insertRow();for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Facebook','Clic Awin'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();for(const row of rows){const line=body.insertRow(),date=new Date(monthly?row.bucket+'-01':row.bucket);appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';for(const key of ['visits','instagram','facebook','clicks'])appendText(line,'td',formatNumber.format(row[key]||0));}
  return table;
 }
 async function loadTrend(range,current){
@@ -363,6 +364,7 @@ function renderTraffic(currentReport,previousReport){
  const sections=document.getElementById('sectionCounts');sections.replaceChildren(...currentReport.sections.map(row=>listRow(sectionNames[row.name]||row.name,row.total)));
  const insights=document.getElementById('trafficInsights');insights.replaceChildren();
  setInsight(insights,'Quota Instagram',currentReport.visits?ratioFormat.format(100*currentReport.instagram/currentReport.visits)+'%':'—');
+ setInsight(insights,'Quota Facebook',currentReport.visits?ratioFormat.format(100*Number(currentReport.facebook||0)/currentReport.visits)+'%':'—');
  setInsight(insights,'Quota TikTok',currentReport.visits?ratioFormat.format(100*currentReport.tiktok/currentReport.visits)+'%':'—');
  setInsight(insights,'Clic ogni 100 visite',currentReport.visits?ratioFormat.format(100*currentReport.clicks/currentReport.visits):'—');
  setInsight(insights,'Sessioni con almeno un clic',currentReport.visitSessions?ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%':'In raccolta');
@@ -408,7 +410,7 @@ function renderCampaigns(traffic,awin){
 function renderQuality(report){
  const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
  document.getElementById('dataCheck').textContent='Aggiornato il '+updated;
- const list=document.getElementById('qualityList'),social=Number(report.instagram)+Number(report.tiktok),tagged=report.campaigns.reduce((sum,row)=>sum+Number(row.visits),0),covered=report.stores.reduce((sum,row)=>sum+Number(row.clicks),0);
+ const list=document.getElementById('qualityList'),social=Number(report.instagram)+Number(report.facebook||0)+Number(report.tiktok),tagged=report.campaigns.reduce((sum,row)=>sum+Number(row.visits),0),covered=report.stores.reduce((sum,row)=>sum+Number(row.clicks),0);
  const entries=[
   social?'Visite social con campagna identificata: '+formatNumber.format(tagged)+' su '+formatNumber.format(social):'Nessuna visita social nel periodo.',
   report.clicks?'Clic con negozio e prodotto identificati: '+formatNumber.format(covered)+' su '+formatNumber.format(report.clicks):'Nessun clic Awin nel periodo.',

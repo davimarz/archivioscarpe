@@ -26,6 +26,12 @@
     .promotion-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
     .promotion-filters button{min-height:44px;padding:4px;border:1px solid #506059;border-radius:12px;background:#25342e;color:#edece5;font-size:.75rem;font-weight:700}
     .promotion-filters button[aria-pressed="true"]{background:#2b7958;border-color:#d4c15c;color:#fff}
+    .promotion-sort-box{border:1px solid #d9e3ee;background:#fff;padding:12px;display:grid;gap:10px}
+    .promotion-sort-box summary{cursor:pointer;font-weight:800;color:#284b3c}
+    .promotion-sort-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .promotion-sort-controls label{display:grid;gap:5px;color:#284b3c;font-size:.75rem;font-weight:700}
+    .promotion-sort-controls select{width:100%;background:#fff;color:#050505;border:1px solid #304c40;padding:8px}
+    @media(max-width:479px){.promotion-sort-controls{grid-template-columns:1fr}}
     #promotionsMore{min-height:44px}
 
     :root { --surface:#182620; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
@@ -530,6 +536,22 @@
         <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
       </div>
+      <details class="promotion-sort-box" open>
+        <summary>Filtra e ordina le offerte</summary>
+        <div class="promotion-sort-controls">
+          <label for="promotionsBrand">Marca
+            <select id="promotionsBrand"><option value="">Tutte le marche</option></select>
+          </label>
+          <label for="promotionsSort">Ordinamento
+            <select id="promotionsSort">
+              <option value="rotate">Rotazione automatica</option>
+              <option value="discount">Sconto maggiore</option>
+              <option value="price-asc">Prezzo crescente</option>
+              <option value="price-desc">Prezzo decrescente</option>
+            </select>
+          </label>
+        </div>
+      </details>
       <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per prezzo">
         <button type="button" data-price-band="all" aria-pressed="true">Tutte</button>
         <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
@@ -2467,7 +2489,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
               (affiliateUrl.searchParams.get('a') === '3150312' || affiliateUrl.searchParams.get('awinaffid') === '3150312')) {
             affiliateUrl.searchParams.set('clickref6', 'archivioscarpe');
             const tracking = new URLSearchParams(location.search);
-            const source = /^(instagram|tiktok)$/i.test(tracking.get('utm_source') || '')
+            const source = /^(instagram|facebook|tiktok)$/i.test(tracking.get('utm_source') || '')
               ? tracking.get('utm_source').toLowerCase() : '';
             const campaign = awinCatalog.instagramCampaign(tracking.get('utm_campaign'));
             if (source) affiliateUrl.searchParams.set('clickref4', source);
@@ -2623,70 +2645,92 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const grid = document.getElementById('promotionsGrid');
       const status = document.getElementById('promotionsStatus');
       const more = document.getElementById('promotionsMore');
+      const brandSelect = document.getElementById('promotionsBrand');
+      const sortSelect = document.getElementById('promotionsSort');
       const priceFilterButtons = [...document.querySelectorAll('#promotionsPriceFilters [data-price-band]')];
       let activePriceBand = 'all';
-      const pageStates = new Map();
       let promotionLoad = 0;
+      let visiblePromotions = 6;
+      let promotionsReady = false;
+      let promotionTimer;
       function updatePriceButtons() {
         for (const button of priceFilterButtons) {
           button.setAttribute('aria-pressed', String(button.dataset.priceBand === activePriceBand));
         }
       }
-      function renderPageStatus(state) {
-        status.textContent = state.items.length ? state.items.length + ' prodotti mostrati' : 'Nessun prodotto disponibile in questa fascia di prezzo.';
-        more.classList.toggle('hidden', !state.hasMore);
-        more.textContent = 'Mostra altri prodotti';
+      function promotionPool() {
+        const keys = activePriceBand === 'all' ? ['low', 'mid', 'high'] : [activePriceBand];
+        const brand = normalize(brandSelect.value);
+        const products = keys.flatMap(key => bands[key]).filter(product =>
+          !brand || normalize(product.brand) === brand);
+        if (sortSelect.value === 'discount') {
+          return products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b));
+        }
+        if (sortSelect.value === 'price-asc') return products.sort((a, b) => numericPrice(a) - numericPrice(b));
+        if (sortSelect.value === 'price-desc') return products.sort((a, b) => numericPrice(b) - numericPrice(a));
+        return awinCatalog.shuffleProducts(products);
       }
-      async function showMore(focusNew = false) {
+      function populatePromotionBrands() {
+        const selected = brandSelect.value;
+        const brands = [...new Set(Object.values(bands).flat().map(product => String(product.brand || '').trim()).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }));
+        brandSelect.replaceChildren(new Option('Tutte le marche', ''), ...brands.map(brand => new Option(brand, brand)));
+        if (brands.includes(selected)) brandSelect.value = selected;
+      }
+      function schedulePromotionRotation() {
+        clearTimeout(promotionTimer);
+        if (sortSelect.value !== 'rotate' || !promotionsReady) return;
+        promotionTimer = setTimeout(() => {
+          if (!document.hidden && !document.getElementById('view-promotions').classList.contains('hidden') &&
+              !grid.matches(':focus-within') && !(window.matchMedia('(hover:hover)').matches && grid.matches(':hover'))) {
+            renderPromotions();
+          }
+          schedulePromotionRotation();
+        }, 9000);
+      }
+      function renderPromotions(focusFirst = false) {
+        const products = promotionPool();
+        const shown = products.slice(0, visiblePromotions);
+        grid.replaceChildren(...shown.map(createCard));
+        status.textContent = shown.length
+          ? shown.length + ' prodotti mostrati su ' + products.length + ' disponibili'
+          : 'Nessun prodotto disponibile con i filtri selezionati.';
+        more.classList.toggle('hidden', shown.length >= products.length);
+        more.textContent = 'Mostra altri prodotti';
+        more.disabled = false;
+        if (focusFirst && shown.length) grid.firstElementChild?.focus();
+        schedulePromotionRotation();
+      }
+      async function preparePromotions() {
         const current = ++promotionLoad;
-        const filter = activePriceBand;
-        const state = pageStates.get(filter);
-        more.disabled = true;
         status.textContent = 'Caricamento delle promozioni…';
+        more.disabled = true;
         try {
-          let next;
-          const keys = filter === 'all' ? undefined : [filter];
-          await readUntil(ended => {
-            next = awinCatalog.nextPromotionPage(bands, state.positions, filter, ended);
-            return Boolean(next);
-          }, keys);
+          await readUntil(ended => ended);
           if (current !== promotionLoad) return;
-          next.items.sort(compareOfferPriority);
-          const firstAdded = state.items.length;
-          state.items.push(...next.items);
-          state.positions = next.positions;
-          state.hasMore = next.hasMore;
-          grid.append(...next.items.map(createCard));
-          renderPageStatus(state);
-          if (focusNew && next.items.length) grid.children[firstAdded].focus();
+          promotionsReady = true;
+          populatePromotionBrands();
+          renderPromotions();
         } catch (error) {
           if (current !== promotionLoad) return;
           status.textContent = error.message.startsWith('Catalogo cambiato') ? error.message : 'Catalogo temporaneamente non disponibile.';
           more.textContent = 'Riprova';
           more.classList.remove('hidden');
-        } finally {
-          if (current === promotionLoad) more.disabled = false;
+          more.disabled = false;
         }
       }
       function selectPromotionBand() {
-        ++promotionLoad;
-        more.disabled = false;
-        more.classList.add('hidden');
         updatePriceButtons();
-        let state = pageStates.get(activePriceBand);
-        if (!state) {
-          state = { items: [], positions: { low: 0, mid: 0, high: 0 }, hasMore: true };
-          pageStates.set(activePriceBand, state);
-        }
-        grid.replaceChildren(...state.items.map(createCard));
-        if (state.items.length || !state.hasMore) renderPageStatus(state);
-        else void showMore();
+        visiblePromotions = 6;
+        if (promotionsReady) renderPromotions();
+        else void preparePromotions();
       }
       function openPromotions() {
-        if (!pageStates.has(activePriceBand)) selectPromotionBand();
+        if (promotionsReady) renderPromotions();
+        else void preparePromotions();
       }
       function changePromotionBand(band) {
-        if (activePriceBand === band && pageStates.has(band)) return;
+        if (activePriceBand === band && promotionsReady) return;
         activePriceBand = band;
         promotionScroll = 0;
         if (!document.getElementById('view-promotions').classList.contains('hidden')) selectPromotionBand();
@@ -2698,7 +2742,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         history.pushState(null, '', awinCatalog.promotionRoutes[band]);
         changePromotionBand(band);
       }));
-      more.addEventListener('click', () => { void showMore(true); });
+      brandSelect.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+      sortSelect.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+      more.addEventListener('click', () => {
+        if (!promotionsReady) { void preparePromotions(); return; }
+        visiblePromotions += 6;
+        renderPromotions(true);
+      });
       document.addEventListener('promotions-open', openPromotions);
       function openAddress() {
         const band = awinCatalog.promotionBandFromHash(location.hash);
@@ -2749,8 +2799,9 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const params = new URLSearchParams(location.search);
       const source = params.get('utm_source') || '';
       const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
+      const fromFacebook = /^facebook$/i.test(source) || /(?:^|\.)facebook\.com$/i.test(referrerHost) || /(?:^|\.)fb\.com$/i.test(referrerHost);
       const fromTikTok = /^tiktok$/i.test(source) || /(?:^|\.)tiktok\.com$/i.test(referrerHost);
-      const channel = fromInstagram ? 'instagram' : fromTikTok ? 'tiktok' : 'other';
+      const channel = fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
       const campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
       recordAppEvent('visit', channel, campaign);
       const recordAffiliateClick = link => recordAppEvent('affiliate_click', 'awin', campaign, {
