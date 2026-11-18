@@ -222,7 +222,7 @@
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
   </style>
   <link rel="stylesheet" href="./assets/camera.css">
-  <link rel="stylesheet" href="./assets/guardaroba.css?v=6">
+  <link rel="stylesheet" href="./assets/guardaroba.css?v=7">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans pb-32">
 
@@ -822,7 +822,7 @@
     // La cache offline si attiva automaticamente; nessuna preparazione manuale richiesta.
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=25', { scope: './', updateViaCache: 'none' })
+        navigator.serviceWorker.register('./sw.js?v=26', { scope: './', updateViaCache: 'none' })
           .catch(error => console.warn('Cache offline non disponibile:', error));
       });
     }
@@ -2331,6 +2331,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const percent = Math.round((original - current) / original * 100);
         return percent >= 1 && percent <= 99 ? { original, current, percent } : null;
       };
+      const compareOfferPriority = (a, b) =>
+        (discountFor(b)?.percent || 0) - (discountFor(a)?.percent || 0);
       const euroFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
       const formatEuro = amount => euroFormatter.format(amount);
       const disabledMerchants = new Set(['voghion global', 'goicon global']);
@@ -2342,7 +2344,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           if (catalogLoaded) return [];
           const { products } = await awinCatalog.loadCurrentAwinCatalog();
           catalogLoaded = true;
-          return awinCatalog.shuffleProducts(products);
+          return awinCatalog.shuffleProducts(products).sort(compareOfferPriority);
         }
       };
       const seen = new Set();
@@ -2368,7 +2370,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         while (!ready(catalog.ended(keys)) && !catalog.ended(keys)) await readNextBlock(keys);
       }
 
-      const { shuffleProducts } = awinCatalog;
       const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
       const bannerBands = [[], []];
@@ -2512,7 +2513,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         price.textContent = formatEuro(offer ? offer.current : numericPrice(product));
         photoFrame.append(img);
         card.append(photoFrame, merchant);
-        if (offer) card.append(discountBadge);
+        if (offer) {
+          card.classList.add('has-verified-discount');
+          discountBadge.setAttribute('aria-label', 'Sconto del ' + offer.percent + ' per cento');
+          card.append(discountBadge);
+        }
         card.append(name);
         if (offer) card.append(previous);
         else {
@@ -2593,8 +2598,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         });
       }
       readUntil(() => bands.low.length >= 8 && bands.mid.length + bands.high.length >= 8).then(() => {
-        bannerBands[0] = shuffleProducts(bands.low).slice(0, 12);
-        bannerBands[1] = shuffleProducts([...bands.mid, ...bands.high]).slice(0, 12);
+        bannerBands[0] = bands.low.slice(0, 12);
+        bannerBands[1] = [...bands.mid, ...bands.high].sort(compareOfferPriority).slice(0, 12);
         if (bannerBands.some(band => !band.length)) {
           slot.closest('aside').classList.add('hidden');
           return;
@@ -2637,6 +2642,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
             return Boolean(next);
           }, keys);
           if (current !== promotionLoad) return;
+          next.items.sort(compareOfferPriority);
           const firstAdded = state.items.length;
           state.items.push(...next.items);
           state.positions = next.positions;

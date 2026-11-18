@@ -113,7 +113,8 @@ body :is(button,input,select,textarea,a,summary):focus-visible { outline: 2px so
 }
 :is(#affiliateAdSlot,#promotionsGrid) .cisalfa-product-price { color: var(--ink); font: 700 20px/1.25 "Clash Display", sans-serif; }
 :is(#affiliateAdSlot,#promotionsGrid) .cisalfa-product-name { color: var(--ink); }
-:is(#affiliateAdSlot,#promotionsGrid) .awin-discount-badge { background: var(--accent); color: var(--ink) !important; border-radius: 0; position: absolute; top: 0; left: 0; }
+:is(#affiliateAdSlot,#promotionsGrid) .awin-discount-badge { background: #a51c30; color: #fff !important; border-radius: 0; position: absolute; top: 0; left: 0; font-size: 15px; padding: 5px 10px; }
+:is(#affiliateAdSlot,#promotionsGrid) .has-verified-discount .cisalfa-product-price { color: #a51c30; }
 :is(#affiliateAdSlot,#promotionsGrid) .awin-original-price { color: var(--muted) !important; }
 #affiliateAdSlot .banner-rotation-toggle { border-radius: 0; }
 #view-archive #affiliateAdSlot #bannerRotationButton:not([hidden]) { background: var(--paper) !important; color: var(--ink) !important; border: 1px solid var(--ink) !important; }
