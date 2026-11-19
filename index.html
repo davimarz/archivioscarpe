@@ -40,6 +40,7 @@
     #promotionsReset{min-height:44px;padding:7px 12px;border:1px solid #304c40;border-radius:9px;font-weight:700}
     #view-promotions{padding-bottom:92px}
     #promotionsGrid .cisalfa-product-card{position:relative;gap:3px;padding:8px}
+    #promotionsGrid .product-photo-frame{aspect-ratio:6/5}
     #promotionsGrid .cisalfa-product-name{min-height:2.6em;-webkit-line-clamp:2}
     #promotionsGrid .cisalfa-product-price{font-size:18px}
     #promotionsGrid .offer-cta{display:block;margin-top:auto;padding:8px 10px;border-radius:8px;background:#284b3c;color:white;text-align:center;font-size:12px;font-weight:700}
@@ -2590,18 +2591,18 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           }
         }
         card.append(price);
+        if (details.length || options.length) {
+          const note = document.createElement('small');
+          note.className = 'text-[11px]';
+          note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');
+          card.append(note);
+        }
         if (showAction) {
           const action = document.createElement('span');
           action.className = 'offer-cta';
           action.textContent = 'Vedi l’offerta';
           card.append(action);
           card.setAttribute('aria-label', product.name + ' · ' + formatEuro(numericPrice(product)) + ' · Vedi l’offerta da ' + product.merchant);
-        }
-        if (details.length || options.length) {
-          const note = document.createElement('small');
-          note.className = 'text-[11px]';
-          note.textContent = [...details, options.length ? options.join(' e ') + ' nel listino' : ''].filter(Boolean).join(' · ');
-          card.append(note);
         }
         return card;
       };
