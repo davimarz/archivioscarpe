@@ -33,7 +33,12 @@
     .promotion-sort-controls label{display:grid;gap:5px;color:#284b3c;font-size:.75rem;font-weight:700}
     .promotion-sort-controls select{width:100%;background:#fff;color:#050505;border:1px solid #304c40;padding:8px}
     @media(max-width:479px){.promotion-sort-controls{grid-template-columns:1fr}}
-    #promotionsMore{min-height:44px}\n    #view-promotions [hidden]{display:none!important}
+    #promotionsMore{min-height:44px}
+    .promotion-pages{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;padding:8px 0}
+    .promotion-pages button{min-width:44px;min-height:44px;padding:6px;border:1px solid #68766e;border-radius:8px;font-weight:700}
+    .promotion-pages button[aria-current="page"]{background:#284b3c!important;color:#fff!important;border-color:#284b3c}
+    .promotion-pages .page-summary{width:100%;text-align:center;font-size:12px;color:#425449}
+    #promotionsGrid .cisalfa-product-card[data-page-start]{scroll-margin-top:20px}\n    #view-promotions [hidden]{display:none!important}
     .promotion-sort-controls .promotion-search-label{grid-column:1/-1}
     #promotionsSearch{width:100%;min-height:48px;padding:10px 12px;border:2px solid #304c40;border-radius:10px;background:#fff;color:#111}
     .promotion-result-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -585,7 +590,9 @@
         <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150</button>
       </div>
       <div class="promotion-result-bar"><p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p><button type="button" id="promotionsReset" hidden>Azzera filtri</button></div>
+      <nav id="promotionsPages" class="promotion-pages" aria-label="Pagine delle promozioni" hidden></nav>
       <div id="promotionsGrid"></div>
+      <nav id="promotionsPagesBottom" class="promotion-pages" aria-label="Pagine delle promozioni in fondo" hidden></nav>
       <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
     </section>
   </main>
@@ -2683,6 +2690,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const grid = document.getElementById('promotionsGrid');
       const status = document.getElementById('promotionsStatus');
       const more = document.getElementById('promotionsMore');
+      const pageNavs = [document.getElementById('promotionsPages'), document.getElementById('promotionsPagesBottom')];
       const brandSelect = document.getElementById('promotionsBrand');
       const sortSelect = document.getElementById('promotionsSort');
       const searchInput = document.getElementById('promotionsSearch');
@@ -2741,6 +2749,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let activePriceBand = 'all';
       let promotionLoad = 0;
       let visiblePromotions = 6;
+      let currentPromotionPage = 1;
       let promotionsReady = false;
       function updatePriceButtons() {
         for (const button of priceFilterButtons) {
@@ -2786,16 +2795,58 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         updateSelect(typeSelect, 'promotionsTypeLabel', values(promotionType), 'Tutte le tipologie');
         updateSelect(audienceSelect, 'promotionsAudienceLabel', values(promotionAudience), 'Tutti');
       }
-      function renderPromotions() {
+      function renderPageNavigation(total) {
+        const loadedPages = Math.ceil(Math.min(visiblePromotions, total) / 6);
+        const totalPages = Math.ceil(total / 6);
+        for (const nav of pageNavs) {
+          nav.hidden = loadedPages < 2;
+          nav.replaceChildren();
+          if (loadedPages < 2) continue;
+          const summary = document.createElement('span');
+          summary.className = 'page-summary';
+          summary.textContent = 'Pagina ' + currentPromotionPage + ' di ' + totalPages + ' · ' + loadedPages + ' caricate';
+          nav.append(summary);
+          const pages = new Set([1, loadedPages, currentPromotionPage - 1, currentPromotionPage,
+            currentPromotionPage + 1].filter(page => page >= 1 && page <= loadedPages));
+          let previous = 0;
+          for (const page of [...pages].sort((x, y) => x - y)) {
+            if (previous && page - previous > 1) {
+              const gap = document.createElement('span');
+              gap.textContent = '…';
+              gap.setAttribute('aria-hidden', 'true');
+              nav.append(gap);
+            }
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = String(page);
+            button.setAttribute('aria-label', 'Vai alla pagina ' + page);
+            if (page === currentPromotionPage) button.setAttribute('aria-current', 'page');
+            button.addEventListener('click', () => {
+              currentPromotionPage = page;
+              renderPageNavigation(total);
+              grid.querySelector('[data-page-start="' + page + '"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            nav.append(button);
+            previous = page;
+          }
+        }
+      }
+      function renderPromotions(append = false) {
         const products = promotionPool();
         const shown = products.slice(0, visiblePromotions);
-        grid.replaceChildren(...shown.map(product => createCard(product, true)));
+        if (!append || grid.children.length > shown.length) grid.replaceChildren();
+        for (let index = grid.children.length; index < shown.length; index++) {
+          const card = createCard(shown[index], true);
+          if (index % 6 === 0) card.dataset.pageStart = String(Math.floor(index / 6) + 1);
+          grid.append(card);
+        }
         resetButton.hidden = activePriceBand === 'all' && !searchInput.value.trim() &&
           !brandSelect.value && !sizeSelect.value && !typeSelect.value && !audienceSelect.value &&
           sortSelect.value === 'discount';
         status.textContent = shown.length
           ? shown.length + ' prodotti mostrati su ' + products.length + ' disponibili'
           : 'Nessun prodotto trovato. Prova altre parole oppure azzera i filtri.';
+        renderPageNavigation(products.length);
         more.classList.toggle('hidden', shown.length >= products.length);
         more.textContent = 'Mostra altri prodotti';
         more.disabled = false;
@@ -2821,6 +2872,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       function selectPromotionBand() {
         updatePriceButtons();
         visiblePromotions = 6;
+        currentPromotionPage = 1;
         if (promotionsReady) renderPromotions();
         else void preparePromotions();
       }
@@ -2844,10 +2896,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let searchTimer;
       searchInput.addEventListener('input', () => {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => { visiblePromotions = 6; renderPromotions(); }, 120);
+        searchTimer = setTimeout(() => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); }, 120);
       });
       for (const select of [brandSelect, sizeSelect, typeSelect, audienceSelect]) {
-        select.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+        select.addEventListener('change', () => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); });
       }
       resetButton.addEventListener('click', () => {
         searchInput.value = '';
@@ -2858,11 +2910,12 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         renderPromotions();
         searchInput.focus();
       });
-      sortSelect.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+      sortSelect.addEventListener('change', () => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); });
       more.addEventListener('click', () => {
         if (!promotionsReady) { void preparePromotions(); return; }
         visiblePromotions += 6;
-        renderPromotions();
+        currentPromotionPage = Math.ceil(visiblePromotions / 6);
+        renderPromotions(true);
       });
       fetch('./catalogo-awin-report.json', { cache: 'no-cache' }).then(response => response.ok ? response.json() : null)
         .then(report => {
