@@ -192,8 +192,8 @@
     #affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price{font-size:15px;color:#27503f}
     #affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link{font-size:11px;font-weight:700;background:#f4f4f4;color:#050505;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
     #bannerViewport{width:100%;overflow:hidden;--offer-gap:12px}
-    #cisalfaProducts{touch-action:pan-y pinch-zoom;width:200%;display:flex!important;grid-template-columns:none!important;gap:0!important;will-change:transform}
-    #cisalfaProducts .banner-slide{width:50%;flex:0 0 50%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--offer-gap);padding-right:var(--offer-gap);box-sizing:border-box}
+    #cisalfaProducts{touch-action:pan-y pinch-zoom;width:150%;display:flex!important;grid-template-columns:none!important;gap:0!important;will-change:transform}
+    #cisalfaProducts .banner-slide{width:33.333333%;flex:0 0 33.333333%;min-width:0;padding-right:var(--offer-gap);box-sizing:border-box}
     #cisalfaProducts:focus-visible{outline:2px solid #9a3900;outline-offset:4px;border-radius:10px}
     @media(max-width:359px){nav[aria-label="Navigazione principale"] button span{font-size:10px}}
     #cisalfaProducts,#promotionsGrid{--offer-gap:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--offer-gap)}
@@ -2436,9 +2436,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       if (!slot) return;
       const bannerBands = [[], []];
       let pageCount = 0;
-      const bannerProducts = pageIndex => pageCount
-        ? bannerBands.map(band => band[pageIndex % band.length])
-        : [];
+      const bannerProduct = index => {
+        const bandIndex = ((index % 2) + 2) % 2;
+        const band = bannerBands[bandIndex];
+        return band[Math.floor(((index % pageCount) + pageCount) % pageCount / 2) % band.length];
+      };
       let page = 0;
       function offerPhotoBounds(pixels, width, height) {
         let left = width, right = -1, top = height, bottom = -1;
@@ -2619,10 +2621,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         const slide = index => {
           const group = document.createElement('div');
           group.className = 'banner-slide';
-          group.append(...bannerProducts(index).map(product => createCard(product)));
+          group.append(createCard(bannerProduct(index)));
           return group;
         };
-        slot.replaceChildren(slide(page), slide((page + 1) % pageCount));
+        slot.replaceChildren(slide(page), slide(page + 1), slide(page + 2));
       };
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
@@ -2653,7 +2655,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           return;
         }
         slideAnimation = slot.animate(
-          [{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }],
+          [{ transform: 'translateX(0)' }, { transform: 'translateX(-33.333333%)' }],
           { duration: 3000, easing: 'linear', fill: 'forwards' }
         );
         slideAnimation.onfinish = () => {
@@ -2720,7 +2722,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           slot.closest('aside').classList.add('hidden');
           return;
         }
-        pageCount = Math.max(...bannerBands.map(band => band.length));
+        pageCount = Math.max(...bannerBands.map(band => band.length)) * 2;
         render();
         slot.closest('aside').classList.remove('hidden');
         if (rotationButton) rotationButton.hidden = pageCount < 2;
