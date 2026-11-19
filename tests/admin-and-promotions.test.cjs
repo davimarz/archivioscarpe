@@ -27,21 +27,22 @@ test('public settings do not expose the personal telephone number', () => {
   assert.doesNotMatch(html, /tel:\+393295363457|329\s*5363457/);
 });
 
-test('promotions expose brand and sorting controls with automatic rotation', () => {
+test('promotions expose brand and sorting controls without automatic rotation', () => {
   const html = fs.readFileSync('index.html', 'utf8');
   assert.match(html, /id="promotionsBrand"/);
-  assert.match(html, /value="discount">Sconto maggiore/);
+  assert.match(html, /value="discount" selected>Sconto maggiore/);
   assert.match(html, /value="price-asc">Prezzo crescente/);
   assert.match(html, /value="price-desc">Prezzo decrescente/);
-  assert.match(html, /schedulePromotionRotation/);
+  assert.doesNotMatch(html, /schedulePromotionRotation|value="rotate"/);
+  assert.match(html, /id="promotionsMore"[^>]*>Mostra altri prodotti/);
 });
 
 test('admin offers calendar periods and reports the Facebook traffic share', () => {
   const html = fs.readFileSync('admin/index.html', 'utf8');
-  assert.match(html, /<option value="today">Oggi<\/option>/);
+  assert.match(html, /<option value="today" selected>Oggi<\/option>/);
   assert.match(html, /<option value="yesterday">Ieri<\/option>/);
   assert.match(html, /<option value="week">Questa settimana<\/option>/);
-  assert.match(html, /<option value="month" selected>Questo mese<\/option>/);
+  assert.match(html, /<option value="month">Questo mese<\/option>/);
   assert.match(html, /<option value="year">Quest'anno<\/option>/);
   assert.match(html, /timeZone:'Europe\/Rome'/);
   assert.match(html, /Quota Facebook/);

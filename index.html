@@ -544,8 +544,7 @@
           </label>
           <label for="promotionsSort">Ordinamento
             <select id="promotionsSort">
-              <option value="rotate">Rotazione automatica</option>
-              <option value="discount">Sconto maggiore</option>
+              <option value="discount" selected>Sconto maggiore</option>
               <option value="price-asc">Prezzo crescente</option>
               <option value="price-desc">Prezzo decrescente</option>
             </select>
@@ -2652,7 +2651,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       let promotionLoad = 0;
       let visiblePromotions = 6;
       let promotionsReady = false;
-      let promotionTimer;
       function updatePriceButtons() {
         for (const button of priceFilterButtons) {
           button.setAttribute('aria-pressed', String(button.dataset.priceBand === activePriceBand));
@@ -2668,7 +2666,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
         if (sortSelect.value === 'price-asc') return products.sort((a, b) => numericPrice(a) - numericPrice(b));
         if (sortSelect.value === 'price-desc') return products.sort((a, b) => numericPrice(b) - numericPrice(a));
-        return awinCatalog.shuffleProducts(products);
+        return products;
       }
       function populatePromotionBrands() {
         const selected = brandSelect.value;
@@ -2676,17 +2674,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           .sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }));
         brandSelect.replaceChildren(new Option('Tutte le marche', ''), ...brands.map(brand => new Option(brand, brand)));
         if (brands.includes(selected)) brandSelect.value = selected;
-      }
-      function schedulePromotionRotation() {
-        clearTimeout(promotionTimer);
-        if (sortSelect.value !== 'rotate' || !promotionsReady) return;
-        promotionTimer = setTimeout(() => {
-          if (!document.hidden && !document.getElementById('view-promotions').classList.contains('hidden') &&
-              !grid.matches(':focus-within') && !(window.matchMedia('(hover:hover)').matches && grid.matches(':hover'))) {
-            renderPromotions();
-          }
-          schedulePromotionRotation();
-        }, 9000);
       }
       function renderPromotions(focusFirst = false) {
         const products = promotionPool();
@@ -2699,7 +2686,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         more.textContent = 'Mostra altri prodotti';
         more.disabled = false;
         if (focusFirst && shown.length) grid.firstElementChild?.focus();
-        schedulePromotionRotation();
       }
       async function preparePromotions() {
         const current = ++promotionLoad;
