@@ -33,7 +33,18 @@
     .promotion-sort-controls label{display:grid;gap:5px;color:#284b3c;font-size:.75rem;font-weight:700}
     .promotion-sort-controls select{width:100%;background:#fff;color:#050505;border:1px solid #304c40;padding:8px}
     @media(max-width:479px){.promotion-sort-controls{grid-template-columns:1fr}}
-    #promotionsMore{min-height:44px}
+    #promotionsMore{min-height:44px}\n    #view-promotions [hidden]{display:none!important}
+    .promotion-sort-controls .promotion-search-label{grid-column:1/-1}
+    #promotionsSearch{width:100%;min-height:48px;padding:10px 12px;border:2px solid #304c40;border-radius:10px;background:#fff;color:#111}
+    .promotion-result-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    #promotionsReset{min-height:44px;padding:7px 12px;border:1px solid #304c40;border-radius:9px;font-weight:700}
+    #view-promotions{padding-bottom:92px}
+    #promotionsGrid .cisalfa-product-card{position:relative;gap:3px;padding:8px}
+    #promotionsGrid .cisalfa-product-name{min-height:2.6em;-webkit-line-clamp:2}
+    #promotionsGrid .cisalfa-product-price{font-size:18px}
+    #promotionsGrid .offer-cta{display:block;margin-top:auto;padding:8px 10px;border-radius:8px;background:#284b3c;color:white;text-align:center;font-size:12px;font-weight:700}
+    #promotionsGrid .cisalfa-product-card:focus-visible{outline:3px solid #d15c12;outline-offset:2px}
+    @media(max-width:390px){#promotionsGrid{grid-template-columns:1fr}}
 
     :root { --surface:#182620; --line:rgba(148,163,184,.16); --gold:#fbbf24; }
     html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
@@ -536,12 +547,25 @@
       <div>
         <h2 id="promotionsHeading" class="text-xl font-bold">Promozioni</h2>
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
+        <p id="promotionsUpdated" class="text-xs text-slate-600" aria-live="polite"></p>
       </div>
       <details class="promotion-sort-box" open>
         <summary>Filtra e ordina le offerte</summary>
         <div class="promotion-sort-controls">
+          <label for="promotionsSearch" class="promotion-search-label">Cerca offerte
+            <input id="promotionsSearch" type="search" placeholder="Marca, modello o colore" autocomplete="off" aria-controls="promotionsGrid">
+          </label>
           <label for="promotionsBrand">Marca
             <select id="promotionsBrand"><option value="">Tutte le marche</option></select>
+          </label>
+          <label for="promotionsSize" id="promotionsSizeLabel" hidden>Numero
+            <select id="promotionsSize"><option value="">Tutti i numeri</option></select>
+          </label>
+          <label for="promotionsType" id="promotionsTypeLabel" hidden>Tipologia
+            <select id="promotionsType"><option value="">Tutte le tipologie</option></select>
+          </label>
+          <label for="promotionsAudience" id="promotionsAudienceLabel" hidden>Destinatario
+            <select id="promotionsAudience"><option value="">Tutti</option></select>
           </label>
           <label for="promotionsSort">Ordinamento
             <select id="promotionsSort">
@@ -559,7 +583,7 @@
         <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150</button>
         <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150</button>
       </div>
-      <p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p>
+      <div class="promotion-result-bar"><p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p><button type="button" id="promotionsReset" hidden>Azzera filtri</button></div>
       <div id="promotionsGrid"></div>
       <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
     </section>
@@ -2486,7 +2510,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
       }
 
-      const createCard = (product) => {
+      const createCard = (product, showAction = false) => {
         const card = document.createElement('a');
         card.href = /^https:\/\//i.test(String(product.url || '')) ? product.url : '#';
         if (card.href !== '#') {
@@ -2566,6 +2590,13 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           }
         }
         card.append(price);
+        if (showAction) {
+          const action = document.createElement('span');
+          action.className = 'offer-cta';
+          action.textContent = 'Vedi l’offerta';
+          card.append(action);
+          card.setAttribute('aria-label', product.name + ' · ' + formatEuro(numericPrice(product)) + ' · Vedi l’offerta da ' + product.merchant);
+        }
         if (details.length || options.length) {
           const note = document.createElement('small');
           note.className = 'text-[11px]';
@@ -2653,6 +2684,55 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const more = document.getElementById('promotionsMore');
       const brandSelect = document.getElementById('promotionsBrand');
       const sortSelect = document.getElementById('promotionsSort');
+      const searchInput = document.getElementById('promotionsSearch');
+      const sizeSelect = document.getElementById('promotionsSize');
+      const typeSelect = document.getElementById('promotionsType');
+      const audienceSelect = document.getElementById('promotionsAudience');
+      const resetButton = document.getElementById('promotionsReset');
+      const brandAliases = new Map([
+        ['hoka one one', 'HOKA'], ['hey dude', 'HEYDUDE'], ['birkestock', 'Birkenstock']
+      ]);
+      const canonicalBrand = value => {
+        const key = normalize(value);
+        return brandAliases.get(key) || key;
+      };
+      const promotionType = product => {
+        const title = normalize(product.name);
+        if (/\\b(sneaker|sneakers|scarpe da ginnastica)\\b/.test(title)) return 'Sneakers';
+        if (/\\b(running|corsa|trail)\\b/.test(title)) return 'Running';
+        if (/\\b(stival\\w*|boot\\w*|anfibio\\w*)\\b/.test(title)) return 'Stivali e stivaletti';
+        if (/\\b(sandal\\w*|ciabatt\\w*|infradit\\w*)\\b/.test(title)) return 'Sandali e ciabatte';
+        if (/\\b(mocassin\\w*|loafer\\w*)\\b/.test(title)) return 'Mocassini';
+        if (/\\b(decollet\\w*|pump\\w*|tacchi)\\b/.test(title)) return 'Scarpe con tacco';
+        return '';
+      };
+      const promotionAudience = product => {
+        const title = normalize(product.name);
+        if (/\\b(bambin\\w*|kids|junior)\\b/.test(title)) return 'Bambini';
+        if (/\\b(donna|women|woman|femminile)\\b/.test(title)) return 'Donna';
+        if (/\\b(uomo|men|man|maschile)\\b/.test(title)) return 'Uomo';
+        return '';
+      };
+      function updateSelect(select, labelId, entries, defaultText) {
+        const selected = select.value;
+        select.replaceChildren(new Option(defaultText, ''), ...entries.map(entry => new Option(entry, entry)));
+        select.value = entries.includes(selected) ? selected : '';
+        document.getElementById(labelId).hidden = entries.length === 0;
+      }
+      function diversifyFirstPage(products) {
+        const selected = [], used = new Set();
+        for (const product of products) {
+          const family = product.family || normalize(product.name).replace(/\\b(black|white|red|nero|nera|bianco|bianca|rosso|rossa|blu|beige)\\b/g, '').trim();
+          const key = family || product.url;
+          if (used.has(key)) continue;
+          used.add(key);
+          selected.push(product);
+          if (selected.length === 6) break;
+        }
+        if (selected.length < 6) return products;
+        const chosen = new Set(selected);
+        return [...selected, ...products.filter(product => !chosen.has(product))];
+      }
       const priceFilterButtons = [...document.querySelectorAll('#promotionsPriceFilters [data-price-band]')];
       let activePriceBand = 'all';
       let promotionLoad = 0;
@@ -2665,31 +2745,53 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       }
       function promotionPool() {
         const keys = ['all', 'discounted'].includes(activePriceBand) ? ['low', 'mid', 'high'] : [activePriceBand];
-        const brand = normalize(brandSelect.value);
-        const products = keys.flatMap(key => bands[key]).filter(product =>
-          (!brand || normalize(product.brand) === brand) &&
-          (activePriceBand !== 'discounted' || Boolean(discountFor(product))));
+        const brand = brandSelect.value;
+        const query = normalize(searchInput.value).split(' ').filter(Boolean);
+        const products = keys.flatMap(key => bands[key]).filter(product => {
+          const searchable = normalize([product.name, product.brand, product.model, product.color].join(' '));
+          return (!brand || canonicalBrand(product.brand) === brand) &&
+            (!sizeSelect.value || String(product.size || '').trim().replace(',', '.') === sizeSelect.value) &&
+            (!typeSelect.value || promotionType(product) === typeSelect.value) &&
+            (!audienceSelect.value || promotionAudience(product) === audienceSelect.value) &&
+            (activePriceBand !== 'discounted' || Boolean(discountFor(product))) &&
+            query.every(word => searchable.includes(word));
+        });
         if (sortSelect.value === 'discount') {
-          return products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b));
+          return diversifyFirstPage(products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b)));
         }
-        if (sortSelect.value === 'price-asc') return products.sort((a, b) => numericPrice(a) - numericPrice(b));
-        if (sortSelect.value === 'price-desc') return products.sort((a, b) => numericPrice(b) - numericPrice(a));
+        if (sortSelect.value === 'price-asc') return diversifyFirstPage(products.sort((a, b) => numericPrice(a) - numericPrice(b)));
+        if (sortSelect.value === 'price-desc') return diversifyFirstPage(products.sort((a, b) => numericPrice(b) - numericPrice(a)));
         return products;
       }
-      function populatePromotionBrands() {
+      function populatePromotionFilters() {
+        const products = Object.values(bands).flat();
+        const names = new Map();
+        for (const product of products) {
+          const key = canonicalBrand(product.brand);
+          if (!key || names.has(key)) continue;
+          names.set(key, brandAliases.get(normalize(product.brand)) || String(product.brand).trim());
+        }
         const selected = brandSelect.value;
-        const brands = [...new Set(Object.values(bands).flat().map(product => String(product.brand || '').trim()).filter(Boolean))]
-          .sort((a, b) => a.localeCompare(b, 'it', { sensitivity: 'base' }));
-        brandSelect.replaceChildren(new Option('Tutte le marche', ''), ...brands.map(brand => new Option(brand, brand)));
-        if (brands.includes(selected)) brandSelect.value = selected;
+        brandSelect.replaceChildren(new Option('Tutte le marche', ''),
+          ...[...names].sort((a, b) => a[1].localeCompare(b[1], 'it', { sensitivity: 'base' }))
+            .map(([key, name]) => new Option(name, key)));
+        brandSelect.value = names.has(selected) ? selected : '';
+        const values = field => [...new Set(products.map(field).filter(Boolean))].sort((a, b) =>
+          a.localeCompare(b, 'it', { numeric: true, sensitivity: 'base' }));
+        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => { const size = String(product.size || '').trim(); return /^(3[0-9]|4[0-9]|50)(?:[.,]5)?$/.test(size) ? size.replace(',', '.') : ''; }), 'Tutti i numeri');
+        updateSelect(typeSelect, 'promotionsTypeLabel', values(promotionType), 'Tutte le tipologie');
+        updateSelect(audienceSelect, 'promotionsAudienceLabel', values(promotionAudience), 'Tutti');
       }
       function renderPromotions() {
         const products = promotionPool();
         const shown = products.slice(0, visiblePromotions);
-        grid.replaceChildren(...shown.map(createCard));
+        grid.replaceChildren(...shown.map(product => createCard(product, true)));
+        resetButton.hidden = activePriceBand === 'all' && !searchInput.value.trim() &&
+          !brandSelect.value && !sizeSelect.value && !typeSelect.value && !audienceSelect.value &&
+          sortSelect.value === 'discount';
         status.textContent = shown.length
           ? shown.length + ' prodotti mostrati su ' + products.length + ' disponibili'
-          : 'Nessun prodotto disponibile con i filtri selezionati.';
+          : 'Nessun prodotto trovato. Prova altre parole oppure azzera i filtri.';
         more.classList.toggle('hidden', shown.length >= products.length);
         more.textContent = 'Mostra altri prodotti';
         more.disabled = false;
@@ -2702,7 +2804,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
           await readUntil(ended => ended);
           if (current !== promotionLoad) return;
           promotionsReady = true;
-          populatePromotionBrands();
+          populatePromotionFilters();
           renderPromotions();
         } catch (error) {
           if (current !== promotionLoad) return;
@@ -2735,13 +2837,36 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         history.pushState(null, '', awinCatalog.promotionRoutes[band]);
         changePromotionBand(band);
       }));
-      brandSelect.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+      let searchTimer;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => { visiblePromotions = 6; renderPromotions(); }, 120);
+      });
+      for (const select of [brandSelect, sizeSelect, typeSelect, audienceSelect]) {
+        select.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
+      }
+      resetButton.addEventListener('click', () => {
+        searchInput.value = '';
+        for (const select of [brandSelect, sizeSelect, typeSelect, audienceSelect]) select.value = '';
+        sortSelect.value = 'discount';
+        history.pushState(null, '', awinCatalog.promotionRoutes.all);
+        changePromotionBand('all');
+        renderPromotions();
+        searchInput.focus();
+      });
       sortSelect.addEventListener('change', () => { visiblePromotions = 6; renderPromotions(); });
       more.addEventListener('click', () => {
         if (!promotionsReady) { void preparePromotions(); return; }
         visiblePromotions += 6;
         renderPromotions();
       });
+      fetch('./catalogo-awin-report.json', { cache: 'no-cache' }).then(response => response.ok ? response.json() : null)
+        .then(report => {
+          if (!report?.updatedAt) return;
+          const date = new Date(report.updatedAt);
+          if (!Number.isNaN(date.getTime())) document.getElementById('promotionsUpdated').textContent =
+            'Catalogo aggiornato il ' + new Intl.DateTimeFormat('it-IT', { dateStyle: 'medium', timeZone: 'Europe/Rome' }).format(date) + ' · Prezzi indicativi';
+        }).catch(() => {});
       document.addEventListener('promotions-open', openPromotions);
       function openAddress() {
         const band = awinCatalog.promotionBandFromHash(location.hash);
