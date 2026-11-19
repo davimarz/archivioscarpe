@@ -191,13 +191,15 @@
     #affiliateAdSlot .cisalfa-product-name, #promotionsGrid .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     #affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price{font-size:15px;color:#27503f}
     #affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link{font-size:11px;font-weight:700;background:#f4f4f4;color:#050505;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
-    #cisalfaProducts{touch-action:pan-y pinch-zoom}
+    #bannerViewport{width:100%;overflow:hidden;--offer-gap:12px}
+    #cisalfaProducts{touch-action:pan-y pinch-zoom;width:200%;display:flex!important;grid-template-columns:none!important;gap:0!important;will-change:transform}
+    #cisalfaProducts .banner-slide{width:50%;flex:0 0 50%;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--offer-gap);padding-right:var(--offer-gap);box-sizing:border-box}
     #cisalfaProducts:focus-visible{outline:2px solid #9a3900;outline-offset:4px;border-radius:10px}
     @media(max-width:359px){nav[aria-label="Navigazione principale"] button span{font-size:10px}}
     #cisalfaProducts,#promotionsGrid{--offer-gap:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--offer-gap)}
     @media(min-width:640px){
       #promotionsGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
-      #cisalfaProducts{grid-template-columns:repeat(2,minmax(0,calc((100% - 2 * var(--offer-gap)) / 3)));justify-content:center}
+      #bannerViewport{width:calc((100% - 2 * var(--offer-gap)) * 2 / 3 + var(--offer-gap));margin-inline:auto}
     }
     #view-promotions h2{color:#284b3c}
     #view-promotions button{min-height:44px;background:#f8f7ed;color:#050505}
@@ -287,7 +289,7 @@
           <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
           <button type="button" id="bannerRotationButton" class="banner-rotation-toggle" aria-pressed="false" hidden>Pausa rotazione</button>
         </div>
-        <div id="cisalfaProducts" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div>
+        <div id="bannerViewport"><div id="cisalfaProducts" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div></div>
       </aside>
       <div class="personal-archive-panel space-y-3">
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
@@ -987,7 +989,7 @@
           btn.setAttribute('aria-current', t === tabId ? 'page' : 'false');
         }
       });
-      if (tabId === 'archive') updateQuickSearchResults();
+      if (tabId === 'archive') { updateQuickSearchResults(); document.dispatchEvent(new Event('archive-open')); }
       if (tabId === 'promotions' && !promotionsWasOpen) document.dispatchEvent(new Event('promotions-open'));
       updatePhotoAiStatus();
       window.scrollTo({ top: tabId === 'promotions' ? promotionScroll : 0, behavior: 'instant' });
@@ -2614,32 +2616,60 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return card;
       };
       const render = () => {
-        slot.replaceChildren(...bannerProducts(page).map(product => createCard(product)));
+        const slide = index => {
+          const group = document.createElement('div');
+          group.className = 'banner-slide';
+          group.append(...bannerProducts(index).map(product => createCard(product)));
+          return group;
+        };
+        slot.replaceChildren(slide(page), slide((page + 1) % pageCount));
       };
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
-      let rotationTimer;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       let rotationPaused = reducedMotion.matches;
+      let slideAnimation = null;
+      let reducedMotionTimer = null;
       function updateRotationButton() {
         rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
         rotationButton.setAttribute('aria-pressed', String(rotationPaused));
       }
+      const canRotate = () => !rotationPaused && pageCount > 1 && !document.hidden &&
+        slot.getClientRects().length && !touchStart && !slot.matches(':focus-within') &&
+        !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'));
       const scheduleRotation = () => {
-        clearTimeout(rotationTimer);
-        if (rotationPaused || pageCount < 2) return;
-        rotationTimer = setTimeout(() => {
-          if (!document.hidden && slot.getClientRects().length && !touchStart &&
-              !slot.matches(':focus-within') &&
-              !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'))) {
-            moveBanner(1);
-          } else {
-            scheduleRotation();
-          }
-        }, 3000);
+        if (!canRotate()) {
+          slideAnimation?.pause();
+          clearTimeout(reducedMotionTimer);
+          return;
+        }
+        if (reducedMotion.matches) {
+          clearTimeout(reducedMotionTimer);
+          reducedMotionTimer = setTimeout(() => moveBanner(1), 3000);
+          return;
+        }
+        if (slideAnimation) {
+          slideAnimation.play();
+          return;
+        }
+        slideAnimation = slot.animate(
+          [{ transform: 'translateX(0)' }, { transform: 'translateX(-50%)' }],
+          { duration: 3000, easing: 'linear', fill: 'forwards' }
+        );
+        slideAnimation.onfinish = () => {
+          const finished = slideAnimation;
+          slideAnimation = null;
+          finished?.cancel();
+          page = (page + 1) % pageCount;
+          render();
+          scheduleRotation();
+        };
       };
       const moveBanner = direction => {
         if (!pageCount) return;
+        slideAnimation?.cancel();
+        slideAnimation = null;
+        clearTimeout(reducedMotionTimer);
         page = (page + direction + pageCount) % pageCount;
         render();
         scheduleRotation();
@@ -2651,20 +2681,30 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       });
       slot.addEventListener('touchstart', event => {
         touchStart = event.touches.length === 1 ? event.touches[0] : null;
+        scheduleRotation();
       }, { passive: true });
-      slot.addEventListener('touchcancel', () => { touchStart = null; });
+      slot.addEventListener('touchcancel', () => { touchStart = null; scheduleRotation(); });
       slot.addEventListener('touchend', event => {
         const start = touchStart;
         touchStart = null;
         const end = event.changedTouches[0];
-        if (!start || !end || start.identifier !== end.identifier || event.touches.length) return;
+        if (!start || !end || start.identifier !== end.identifier || event.touches.length) {
+          scheduleRotation();
+          return;
+        }
         const dx = end.clientX - start.clientX;
         const dy = end.clientY - start.clientY;
         if (Math.abs(dx) >= 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
           event.preventDefault();
           moveBanner(dx < 0 ? 1 : -1);
-        }
+        } else scheduleRotation();
       }, { passive: false });
+      slot.addEventListener('mouseenter', scheduleRotation);
+      slot.addEventListener('mouseleave', scheduleRotation);
+      slot.addEventListener('focusin', scheduleRotation);
+      slot.addEventListener('focusout', () => requestAnimationFrame(scheduleRotation));
+      document.addEventListener('visibilitychange', scheduleRotation);
+      document.addEventListener('archive-open', scheduleRotation);
       if (rotationButton) {
         updateRotationButton();
         rotationButton.addEventListener('click', () => {
