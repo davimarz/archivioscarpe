@@ -223,7 +223,7 @@
     return { items, positions: next, hasMore: !ended || keys.some(key => next[key] < bands[key].length) };
   }
 
-  const promotionRoutes = { all: '#promozioni', low: '#promozioni/sotto-50',
+  const promotionRoutes = { all: '#promozioni', discounted: '#promozioni/solo-scontati', low: '#promozioni/sotto-50',
     mid: '#promozioni/50-150', midLower: '#promozioni/50-100', midUpper: '#promozioni/100-150', high: '#promozioni/oltre-150' };
 
   function promotionBandFromHash(hash) {
