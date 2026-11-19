@@ -23,7 +23,8 @@
   <link rel="stylesheet" href="./assets/app.css">
   <link rel="stylesheet" href="./assets/icons.css">
   <style>
-    .promotion-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+    .promotion-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+    @media(max-width:479px){.promotion-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
     .promotion-filters button{min-height:44px;padding:4px;border:1px solid #506059;border-radius:12px;background:#25342e;color:#edece5;font-size:.75rem;font-weight:700}
     .promotion-filters button[aria-pressed="true"]{background:#2b7958;border-color:#d4c15c;color:#fff}
     .promotion-sort-box{border:1px solid #d9e3ee;background:#fff;padding:12px;display:grid;gap:10px}
@@ -551,11 +552,12 @@
           </label>
         </div>
       </details>
-      <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per prezzo">
+      <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per sconto e prezzo">
         <button type="button" data-price-band="all" aria-pressed="true">Tutti</button>
-        <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
-        <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150 €</button>
-        <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150 €</button>
+        <button type="button" data-price-band="discounted" aria-pressed="false">Solo scontati</button>
+        <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50</button>
+        <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150</button>
+        <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150</button>
       </div>
       <p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p>
       <div id="promotionsGrid"></div>
@@ -2662,10 +2664,11 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         }
       }
       function promotionPool() {
-        const keys = activePriceBand === 'all' ? ['low', 'mid', 'high'] : [activePriceBand];
+        const keys = ['all', 'discounted'].includes(activePriceBand) ? ['low', 'mid', 'high'] : [activePriceBand];
         const brand = normalize(brandSelect.value);
         const products = keys.flatMap(key => bands[key]).filter(product =>
-          !brand || normalize(product.brand) === brand);
+          (!brand || normalize(product.brand) === brand) &&
+          (activePriceBand !== 'discounted' || Boolean(discountFor(product))));
         if (sortSelect.value === 'discount') {
           return products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b));
         }
