@@ -2606,7 +2606,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         return card;
       };
       const render = () => {
-        slot.replaceChildren(...bannerProducts(page).map(createCard));
+        slot.replaceChildren(...bannerProducts(page).map(product => createCard(product)));
       };
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
@@ -2690,7 +2690,10 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const audienceSelect = document.getElementById('promotionsAudience');
       const resetButton = document.getElementById('promotionsReset');
       const brandAliases = new Map([
-        ['hoka one one', 'HOKA'], ['hey dude', 'HEYDUDE'], ['birkestock', 'Birkenstock']
+        ['hoka one one', 'hoka'], ['hey dude', 'heydude'], ['birkestock', 'birkenstock']
+      ]);
+      const brandLabels = new Map([
+        ['hoka', 'HOKA'], ['heydude', 'HEYDUDE'], ['birkenstock', 'Birkenstock']
       ]);
       const canonicalBrand = value => {
         const key = normalize(value);
@@ -2698,19 +2701,19 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       const promotionType = product => {
         const title = normalize(product.name);
-        if (/\\b(sneaker|sneakers|scarpe da ginnastica)\\b/.test(title)) return 'Sneakers';
-        if (/\\b(running|corsa|trail)\\b/.test(title)) return 'Running';
-        if (/\\b(stival\\w*|boot\\w*|anfibio\\w*)\\b/.test(title)) return 'Stivali e stivaletti';
-        if (/\\b(sandal\\w*|ciabatt\\w*|infradit\\w*)\\b/.test(title)) return 'Sandali e ciabatte';
-        if (/\\b(mocassin\\w*|loafer\\w*)\\b/.test(title)) return 'Mocassini';
-        if (/\\b(decollet\\w*|pump\\w*|tacchi)\\b/.test(title)) return 'Scarpe con tacco';
+        if (/\b(sneaker|sneakers|scarpe da ginnastica)\b/.test(title)) return 'Sneakers';
+        if (/\b(running|corsa|trail)\b/.test(title)) return 'Running';
+        if (/\b(stival\w*|boot\w*|anfibio\w*)\b/.test(title)) return 'Stivali e stivaletti';
+        if (/\b(sandal\w*|ciabatt\w*|infradit\w*)\b/.test(title)) return 'Sandali e ciabatte';
+        if (/\b(mocassin\w*|loafer\w*)\b/.test(title)) return 'Mocassini';
+        if (/\b(decollet\w*|pump\w*|tacchi)\b/.test(title)) return 'Scarpe con tacco';
         return '';
       };
       const promotionAudience = product => {
         const title = normalize(product.name);
-        if (/\\b(bambin\\w*|kids|junior)\\b/.test(title)) return 'Bambini';
-        if (/\\b(donna|women|woman|femminile)\\b/.test(title)) return 'Donna';
-        if (/\\b(uomo|men|man|maschile)\\b/.test(title)) return 'Uomo';
+        if (/\b(bambin\w*|kids|junior)\b/.test(title)) return 'Bambini';
+        if (/\b(donna|women|woman|femminile)\b/.test(title)) return 'Donna';
+        if (/\b(uomo|men|man|maschile)\b/.test(title)) return 'Uomo';
         return '';
       };
       function updateSelect(select, labelId, entries, defaultText) {
@@ -2722,7 +2725,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       function diversifyFirstPage(products) {
         const selected = [], used = new Set();
         for (const product of products) {
-          const family = product.family || normalize(product.name).replace(/\\b(black|white|red|nero|nera|bianco|bianca|rosso|rossa|blu|beige)\\b/g, '').trim();
+          const family = product.family || normalize(product.name).replace(/\b(black|white|red|nero|nera|bianco|bianca|rosso|rossa|blu|beige)\b/g, '').trim();
           const key = family || product.url;
           if (used.has(key)) continue;
           used.add(key);
@@ -2769,7 +2772,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         for (const product of products) {
           const key = canonicalBrand(product.brand);
           if (!key || names.has(key)) continue;
-          names.set(key, brandAliases.get(normalize(product.brand)) || String(product.brand).trim());
+          names.set(key, brandLabels.get(key) || String(product.brand).trim());
         }
         const selected = brandSelect.value;
         brandSelect.replaceChildren(new Option('Tutte le marche', ''),
