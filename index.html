@@ -191,7 +191,11 @@
     #affiliateAdSlot .cisalfa-product-name, #promotionsGrid .cisalfa-product-name{font-size:12px;font-weight:600;line-height:1.3;min-height:3.9em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
     #affiliateAdSlot .cisalfa-product-price, #promotionsGrid .cisalfa-product-price{font-size:15px;color:#27503f}
     #affiliateAdSlot .cisalfa-product-link, #promotionsGrid .cisalfa-product-link{font-size:11px;font-weight:700;background:#f4f4f4;color:#050505;text-align:center;border-radius:8px;padding:8px 4px;margin-top:auto}
-    #bannerViewport{width:100%;overflow:hidden;--offer-gap:12px}
+    #bannerViewport{width:100%;height:clamp(320px,calc(50vw + 120px),480px);overflow:hidden;--offer-gap:12px}
+    #bannerViewport #cisalfaProducts,#bannerViewport .banner-slide{height:100%}
+    #bannerViewport .cisalfa-product-card{height:100%;overflow:hidden}
+    #bannerViewport .product-photo-frame{position:relative;aspect-ratio:1/1;flex:0 0 auto;overflow:hidden}
+    #bannerViewport .product-photo-frame img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
     #cisalfaProducts{touch-action:pan-y pinch-zoom;width:150%;display:flex!important;grid-template-columns:none!important;gap:0!important;will-change:transform}
     #cisalfaProducts .banner-slide{width:33.333333%;flex:0 0 33.333333%;min-width:0;padding-right:var(--offer-gap);box-sizing:border-box}
     #cisalfaProducts:focus-visible{outline:2px solid #9a3900;outline-offset:4px;border-radius:10px}
