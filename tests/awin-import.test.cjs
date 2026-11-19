@@ -52,3 +52,22 @@ test('selects the lowest discounted total including known shipping', () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('treats Marco Cerullo RRP as the previous crossed-out price', () => {
+  const root = mkdtempSync(join(tmpdir(), 'archivio-marco-cerullo-'));
+  try {
+    const feeds = join(root, 'LISTINI');
+    mkdirSync(feeds);
+    const header = 'product_name,brand_name,model_number,search_price,currency,merchant_category,rrp_price,aw_deep_link,aw_image_url';
+    const row = ['BLAUER - Sneakers Donna Taupe', 'Blauer', '15047-36', 60, 'EUR', 'Scarpe', 119,
+      'https://www.awin1.com/pclick.php?a=3150312&p=1', 'https://example.test/blauer.jpg'];
+    writeFileSync(join(feeds, 'Marco Cerullo.csv'), header + '\n' + row.join(','));
+    execFileSync(process.execPath, ['tools/awin/importa-listini-awin.cjs', root, feeds, '3150312']);
+    const [card] = JSON.parse(readFileSync(join(root, 'catalogo-awin.json')));
+    assert.equal(card.price, '60,00');
+    assert.equal(card.originalPrice, '119,00');
+    assert.equal(card.referencePrice, undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

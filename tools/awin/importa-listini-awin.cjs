@@ -244,10 +244,13 @@ function offer(record, merchant) {
   if (!name || !current || !image || !url) return null;
   const rawGtin = pick(record.product_gtin, record.productgtin, record.ean, record.upc, record.gtin);
   const gtin = /^(?:\d{8}|\d{12,14})$/.test(rawGtin) && !/^0+$/.test(rawGtin) ? rawGtin.padStart(14, '0') : '';
-  const originalPrice = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
+  const feedOriginalPrice = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
     record.price_before_discount].map(value => cents(value, currency)).find(value => value > current);
   const referencePrice = [record.rrp_price, record.rrp, record.recommended_retail_price]
     .map(value => cents(value, currency)).find(value => value > current);
+  // Marco Cerullo usa il campo RRP come prezzo precedente barrato nel proprio
+  // negozio; per gli altri advertiser resta un semplice prezzo consigliato.
+  const originalPrice = feedOriginalPrice || (normalize(merchant) === 'marco cerullo' ? referencePrice : 0);
   const euro = value => (value / 100).toFixed(2).replace('.', ',');
   const variant = [record.brand_name || record.brand, record.mpn || record.model_number,
     record.colour || record.color, record['fashion:size'] || record.size].map(normalize);
@@ -257,7 +260,7 @@ function offer(record, merchant) {
   return { key, current, shipping, name, price: euro(current),
     image: image.href, url, merchant, ...catalogVariant(record, name),
     ...(gtin && { gtin }), ...(originalPrice && { originalPrice: euro(originalPrice) }),
-    ...(referencePrice && { referencePrice: euro(referencePrice) }) };
+    ...(referencePrice && referencePrice !== originalPrice && { referencePrice: euro(referencePrice) }) };
 }
 
 function cheapestOffers(offers) {
