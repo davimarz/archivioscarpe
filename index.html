@@ -2628,10 +2628,8 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-      let rotationPaused = reducedMotion.matches;
+      let rotationPaused = false;
       let slideAnimation = null;
-      let reducedMotionTimer = null;
       function updateRotationButton() {
         rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
         rotationButton.setAttribute('aria-pressed', String(rotationPaused));
@@ -2642,12 +2640,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       const scheduleRotation = () => {
         if (!canRotate()) {
           slideAnimation?.pause();
-          clearTimeout(reducedMotionTimer);
-          return;
-        }
-        if (reducedMotion.matches) {
-          clearTimeout(reducedMotionTimer);
-          reducedMotionTimer = setTimeout(() => moveBanner(1), 3000);
           return;
         }
         if (slideAnimation) {
@@ -2671,7 +2663,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         if (!pageCount) return;
         slideAnimation?.cancel();
         slideAnimation = null;
-        clearTimeout(reducedMotionTimer);
         page = (page + direction + pageCount) % pageCount;
         render();
         scheduleRotation();
