@@ -552,7 +552,7 @@
         </div>
       </details>
       <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per prezzo">
-        <button type="button" data-price-band="all" aria-pressed="true">Tutte</button>
+        <button type="button" data-price-band="all" aria-pressed="true">Tutti</button>
         <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50 €</button>
         <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150 €</button>
         <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150 €</button>
@@ -2675,7 +2675,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         brandSelect.replaceChildren(new Option('Tutte le marche', ''), ...brands.map(brand => new Option(brand, brand)));
         if (brands.includes(selected)) brandSelect.value = selected;
       }
-      function renderPromotions(focusFirst = false) {
+      function renderPromotions() {
         const products = promotionPool();
         const shown = products.slice(0, visiblePromotions);
         grid.replaceChildren(...shown.map(createCard));
@@ -2685,7 +2685,6 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
         more.classList.toggle('hidden', shown.length >= products.length);
         more.textContent = 'Mostra altri prodotti';
         more.disabled = false;
-        if (focusFirst && shown.length) grid.firstElementChild?.focus();
       }
       async function preparePromotions() {
         const current = ++promotionLoad;
@@ -2733,7 +2732,7 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       more.addEventListener('click', () => {
         if (!promotionsReady) { void preparePromotions(); return; }
         visiblePromotions += 6;
-        renderPromotions(true);
+        renderPromotions();
       });
       document.addEventListener('promotions-open', openPromotions);
       function openAddress() {

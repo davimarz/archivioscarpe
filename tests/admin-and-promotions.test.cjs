@@ -35,6 +35,9 @@ test('promotions expose brand and sorting controls without automatic rotation', 
   assert.match(html, /value="price-desc">Prezzo decrescente/);
   assert.doesNotMatch(html, /schedulePromotionRotation|value="rotate"/);
   assert.match(html, /id="promotionsMore"[^>]*>Mostra altri prodotti/);
+  assert.match(html, /data-price-band="all"[^>]*>Tutti<\/button>/);
+  assert.match(html, /activePriceBand === 'all' \? \['low', 'mid', 'high'\]/);
+  assert.doesNotMatch(html, /renderPromotions\(true\)|firstElementChild\?\.focus/);
 });
 
 test('admin offers calendar periods and reports the Facebook traffic share', () => {
