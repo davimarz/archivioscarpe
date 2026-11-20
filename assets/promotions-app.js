@@ -78,7 +78,8 @@
             for (const product of items) {
               if (!product || typeof product.name !== 'string' || typeof product.merchant !== 'string' ||
                   !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
-                  disabledMerchants.has(normalize(product.merchant))) continue;
+                  disabledMerchants.has(normalize(product.merchant)) ||
+                  !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) continue;
               const amount = numericPrice(product);
               if (!Number.isFinite(amount)) continue;
               const productKeys = awinCatalog.promotionProductKeys(product);

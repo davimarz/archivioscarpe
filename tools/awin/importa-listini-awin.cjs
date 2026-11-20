@@ -11,7 +11,7 @@ const indexFile = 'catalogo-awin-indice.json';
 const reportFile = 'catalogo-awin-report.json';
 const trackedFiles = [catalogFile, indexFile, reportFile];
 const sourceExtension = /\.(?:csv|tsv|jsonl|ndjson)(?:\.gz)?$|\.gz$/i;
-const shoeTerms = /\b(?:scarpe|scarpa|calzature|sneakers?|shoes?|footwear|baskets?|chaussures?|stivaletti|stivali|sandali|mocassini|boots?|sandals?|ciabatte)\b/i;
+const isFootwear = require('../../assets/footwear.js');
 
 function* csvRows(text, separator) {
   let row = [];
@@ -227,13 +227,7 @@ function limitCatalogVariants(products) {
 function offer(record, merchant) {
   const name = pick(record.product_name, record.title);
   const category = [record.merchant_category, record.merchant_product_category_path, record.category_name, record.product_type, record.google_product_category].map(clean).join(' ');
-  const merchantSection = clean(record.merchant_category).split('>').map(part => part.trim());
-  if (merchant === 'Cisalfa Sport IT' && merchantSection.length > 1) {
-    if (!/^scarpe$/i.test(merchantSection[1])) return null;
-  } else if (!shoeTerms.test(category) && !shoeTerms.test(name)) {
-    return null;
-  }
-  if (/\b(?:lacci|solette|soletta|calzini|shoe cleaner|shoe care|shoelaces|insoles)\b/i.test(name)) return null;
+  if (!isFootwear(name, category)) return null;
   const availability = normalize(pick(record.availability, record.in_stock, record.stock_status));
   if (/^(?:0|no|false|out[ _-]?of[ _-]?stock|unavailable|esaurito|non disponibile|pre[ _-]?order)$/.test(availability)) return null;
   const currency = pick(record.currency, record.currency_code);
@@ -260,7 +254,7 @@ function offer(record, merchant) {
   const key = gtin ? 'gtin:' + JSON.stringify([gtin, ...variant.slice(2)])
     : variant.every(Boolean) ? 'variant:' + JSON.stringify(variant) : 'offer:' + url;
   const shipping = cents(record.delivery_cost, currency);
-  return { key, current, shipping, name, price: euro(current),
+  return { key, current, shipping, name, footwear: true, price: euro(current),
     image: image.href, url, merchant, ...catalogVariant(record, name),
     ...(gtin && { gtin }), ...(originalPrice && { originalPrice: euro(originalPrice) }),
     ...(referencePrice && referencePrice !== originalPrice && { referencePrice: euro(referencePrice) }) };
