@@ -332,7 +332,6 @@
         if (rotationPaused) { slideAnimation?.cancel(); slideAnimation = null; }
         scheduleRotation();
       });
-      document.getElementById('bannerNext').addEventListener('click', () => moveBanner(1));
       const moveBanner = direction => {
         if (pageCount < 2) return;
         slideAnimation?.cancel();
@@ -394,7 +393,6 @@
         page = 0;
         render();
         slot.closest('aside').classList.remove('hidden');
-        document.getElementById('bannerNext').hidden = pageCount < 2;
         if (rotationButton) rotationButton.hidden = pageCount < 2;
         scheduleRotation();
       }
