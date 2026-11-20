@@ -94,13 +94,10 @@
 
       const slot = document.getElementById('cisalfaProducts');
       if (!slot) return;
-      const bannerBands = [[], []];
+      let discountedBannerPool = [];
+      let bannerProducts = [];
       let pageCount = 0;
-      const bannerProduct = index => {
-        const bandIndex = ((index % 2) + 2) % 2;
-        const band = bannerBands[bandIndex];
-        return band[Math.floor(((index % pageCount) + pageCount) % pageCount / 2) % band.length];
-      };
+      const bannerProduct = index => bannerProducts[(index % pageCount + pageCount) % pageCount];
       let page = 0;
       function offerPhotoBounds(pixels, width, height) {
         let left = width, right = -1, top = height, bottom = -1;
@@ -286,7 +283,7 @@
           group.append(createCard(bannerProduct(index)));
           return group;
         };
-        slot.replaceChildren(slide(page), slide(page + 1), slide(page + 2));
+        slot.replaceChildren(...Array.from({ length: pageCount === 1 ? 1 : 3 }, (_, offset) => slide(page + offset)));
       };
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
@@ -328,13 +325,13 @@
         }, 3500);
       };
       reducedMotion.addEventListener('change', () => {
-        rotationButton.hidden = reducedMotion.matches;
+        rotationButton.hidden = pageCount < 2 || reducedMotion.matches;
         if (reducedMotion.matches) { slideAnimation?.cancel(); slideAnimation = null; }
         scheduleRotation();
       });
       document.getElementById('bannerNext').addEventListener('click', () => moveBanner(1));
       const moveBanner = direction => {
-        if (!pageCount) return;
+        if (pageCount < 2) return;
         slideAnimation?.cancel();
         slideAnimation = null;
         page = (page + direction + pageCount) % pageCount;
@@ -371,7 +368,7 @@
       slot.addEventListener('focusin', scheduleRotation);
       slot.addEventListener('focusout', () => requestAnimationFrame(scheduleRotation));
       document.addEventListener('visibilitychange', scheduleRotation);
-      document.addEventListener('archive-open', scheduleRotation);
+      document.addEventListener('archive-open', refreshBanner);
       if (rotationButton) {
         updateRotationButton();
         rotationButton.addEventListener('click', () => {
@@ -380,18 +377,22 @@
           scheduleRotation();
         });
       }
-      readUntil(() => bands.low.length >= 8 && bands.mid.length + bands.high.length >= 8).then(() => {
-        bannerBands[0] = bands.low.slice(0, 12);
-        bannerBands[1] = [...bands.mid, ...bands.high].sort(compareOfferPriority).slice(0, 12);
-        if (bannerBands.some(band => !band.length)) {
-          slot.closest('aside').classList.add('hidden');
-          return;
-        }
-        pageCount = Math.max(...bannerBands.map(band => band.length)) * 2;
+      function refreshBanner() {
+        if (!discountedBannerPool.length) return;
+        slideAnimation?.cancel();
+        slideAnimation = null;
+        bannerProducts = awinCatalog.shuffleProducts(discountedBannerPool).slice(0, 24);
+        pageCount = bannerProducts.length;
+        page = 0;
         render();
         slot.closest('aside').classList.remove('hidden');
+        document.getElementById('bannerNext').hidden = pageCount < 2;
         if (rotationButton) rotationButton.hidden = pageCount < 2 || reducedMotion.matches;
         scheduleRotation();
+      }
+      readUntil(ended => ended).then(() => {
+        discountedBannerPool = [...bands.low, ...bands.mid, ...bands.high].filter(discountFor);
+        refreshBanner();
       }).catch(() => slot.closest('aside').classList.add('hidden'));
 
       const grid = document.getElementById('promotionsGrid');
