@@ -38,9 +38,11 @@
           const value = readMoney(product[field]);
           if (Number.isFinite(value)) return value;
         }
-        // Nel feed Marco Cerullo il prezzo consigliato è il prezzo barrato del negozio.
-        // I cataloghi già pubblicati possono avere solo referencePrice.
-        if (String(product.merchant || '').trim().toLowerCase() === 'marco cerullo') {
+        const merchant = normalize(product.merchant);
+        // Compatibilità con i listini già pubblicati: RRP confermato come barrato.
+        const upcourtDirectVolley = merchant === 'direct volley it' &&
+          /\bupcourt 6 gs\b/.test(normalize(product.name));
+        if (merchant === 'marco cerullo' || upcourtDirectVolley) {
           return readMoney(product.referencePrice);
         }
         return NaN;
