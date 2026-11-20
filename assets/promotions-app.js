@@ -71,6 +71,8 @@
         }
       };
       const seen = new Set();
+      const randomOrder = new WeakMap();
+      const discountedOffers = new WeakSet();
       let nextBlock;
       function readNextBlock(keys) {
         if (!nextBlock) {
@@ -82,9 +84,12 @@
                   !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) continue;
               const amount = numericPrice(product);
               if (!Number.isFinite(amount)) continue;
-              const productKeys = awinCatalog.promotionProductKeys(product);
+              const size = promotionSize(product.size);
+              const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([key, size]));
               if (productKeys.some(key => seen.has(key))) continue;
               productKeys.forEach(key => seen.add(key));
+              randomOrder.set(product, Math.random());
+              if (discountFor(product)) discountedOffers.add(product);
               bands[amount < 50 ? 'low' : amount <= 150 ? 'mid' : 'high'].push(product);
             }
           }).finally(() => { nextBlock = null; });
@@ -477,6 +482,12 @@
       let visiblePromotions = 6;
       let currentPromotionPage = 1;
       let promotionsReady = false;
+      function promotionSize(value) {
+        const label = String(value ?? '').trim().replace(/\s+/g, ' ');
+        if (!label || /^(?:n\/?a|nd|n\/d|-|null|undefined)$/i.test(label)) return '';
+        const eu = label.match(/^(?:(?:EU|EUR|IT)\s*)?(\d+(?:[.,]\d+)?(?:\s+[123]\/[234])?)$/i);
+        return eu ? eu[1].replace(',', '.').replace(/\.0+$/, '') : label.toUpperCase();
+      }
       function promotionPool(preview = false) {
         const [size, brand, price, type, audience, sort, discounted] = !preview && draftSnapshot ? draftSnapshot : readFilters();
         const keys = price === 'all' ? ['low', 'mid', 'high'] : [price];
@@ -484,13 +495,16 @@
         const products = keys.flatMap(key => bands[key]).filter(product => {
           const searchable = normalize([product.name, product.brand, product.model, product.color].join(' '));
           return (!brand || canonicalBrand(product.brand) === brand) &&
-            (!size || String(product.size || '').trim().replace(',', '.') === size) &&
+            (!size || promotionSize(product.size) === size) &&
             (!type || promotionType(product) === type) &&
             (!audience || promotionAudience(product) === audience) &&
-            (!discounted || Boolean(discountFor(product))) &&
+            (!discounted || discountedOffers.has(product)) &&
             query.every(word => searchable.includes(word));
         });
         if (preview) return products;
+        if (sort === 'random') {
+          return products.sort((a, b) => Number(discountedOffers.has(b)) - Number(discountedOffers.has(a)) || randomOrder.get(a) - randomOrder.get(b));
+        }
         if (sort === 'discount') {
           return diversifyFirstPage(products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b)));
         }
@@ -513,7 +527,7 @@
         brandSelect.value = names.has(selected) ? selected : '';
         const values = field => [...new Set(products.map(field).filter(Boolean))].sort((a, b) =>
           a.localeCompare(b, 'it', { numeric: true, sensitivity: 'base' }));
-        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => { const size = String(product.size || '').trim(); return /^(3[0-9]|4[0-9]|50)(?:[.,]5)?$/.test(size) ? size.replace(',', '.') : ''; }), 'Tutte le taglie');
+        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => promotionSize(product.size)), 'Tutte le taglie');
         updateSelect(typeSelect, 'promotionsTypeLabel', values(promotionType), 'Tutte le tipologie');
         updateSelect(audienceSelect, 'promotionsAudienceLabel', values(promotionAudience), 'Tutti');
       }
@@ -555,11 +569,11 @@
         }
       }
       let previousPromotionState;
-      try { previousPromotionState = JSON.parse(sessionStorage.getItem('promotion-state-v1')); } catch {}
+      try { previousPromotionState = JSON.parse(sessionStorage.getItem('promotion-state-v2')); } catch {}
       function rememberPromotions() {
         if (!promotionsReady || document.getElementById('view-promotions').classList.contains('hidden')) return;
         try {
-          sessionStorage.setItem('promotion-state-v1', JSON.stringify({
+          sessionStorage.setItem('promotion-state-v2', JSON.stringify({
             hash: location.hash, filters: [searchInput, brandSelect, sizeSelect, typeSelect, audienceSelect, sortSelect].map(input => input.value),
             discounted: (draftSnapshot || readFilters())[6], visible: visiblePromotions, page: currentPromotionPage, scroll: window.scrollY
           }));
@@ -661,7 +675,7 @@
       });
       filterDialog.addEventListener('change', updatePreview);
       function resetFilters() {
-        restoreFilters(['', '', 'all', '', '', 'discount', false]);
+        restoreFilters(['', '', 'all', '', '', 'random', false]);
       }
       resetButton.addEventListener('click', () => {
         resetFilters();
