@@ -290,15 +290,15 @@
       let touchStart;
       const rotationButton = document.getElementById('bannerRotationButton');
       const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-      let rotationPaused = false;
+      let rotationPaused = reducedMotion.matches;
       let slideTimer = null;
       let slideAnimation = null;
       function updateRotationButton() {
         rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
         rotationButton.setAttribute('aria-pressed', String(rotationPaused));
       }
-      const canRotate = () => !reducedMotion.matches && !rotationPaused && pageCount > 1 && !document.hidden &&
-        slot.getClientRects().length && !touchStart && !slot.matches(':focus-within') &&
+      const canRotate = () => !rotationPaused && pageCount > 1 && !document.hidden &&
+        slot.getClientRects().length && !touchStart && !slot.querySelector(':focus-visible') && !slot.matches(':focus-visible') &&
         !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'));
       const scheduleRotation = () => {
         clearTimeout(slideTimer);
@@ -327,8 +327,9 @@
         }, 3500);
       };
       reducedMotion.addEventListener('change', () => {
-        rotationButton.hidden = pageCount < 2 || reducedMotion.matches;
-        if (reducedMotion.matches) { slideAnimation?.cancel(); slideAnimation = null; }
+        rotationPaused = reducedMotion.matches;
+        updateRotationButton();
+        if (rotationPaused) { slideAnimation?.cancel(); slideAnimation = null; }
         scheduleRotation();
       });
       document.getElementById('bannerNext').addEventListener('click', () => moveBanner(1));
@@ -394,7 +395,7 @@
         render();
         slot.closest('aside').classList.remove('hidden');
         document.getElementById('bannerNext').hidden = pageCount < 2;
-        if (rotationButton) rotationButton.hidden = pageCount < 2 || reducedMotion.matches;
+        if (rotationButton) rotationButton.hidden = pageCount < 2;
         scheduleRotation();
       }
       readUntil(ended => ended).then(() => {
