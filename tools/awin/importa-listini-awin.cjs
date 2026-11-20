@@ -334,7 +334,7 @@ function main() {
   const feedStats = [];
   for (const { name } of feeds) {
     const merchant = name.replace(sourceExtension, '');
-    let rowCount = 0, offerCount = 0, skipped = 0;
+    let rowCount = 0, offerCount = 0, skipped = 0, missingPrice = 0, unexpectedCurrency = 0;
     const reportInvalid = (record, columns, expected) => {
       skipped++;
       if (skipped <= 5) console.warn(name + ' | record CSV ' + record +
@@ -343,6 +343,10 @@ function main() {
     try {
       for (const record of records(path.join(directory, name), reportInvalid)) {
         rowCount++;
+        const prices = [record.sale_price, record.search_price, record.store_price, record.price, record.display_price];
+        const unit = pick(record.currency, record.currency_code);
+        if (prices.every(value => value == null || clean(value) === '')) missingPrice++;
+        if (unit && !/^(EUR|€)$/i.test(unit)) unexpectedCurrency++;
         const item = offer(record, merchant);
         if (!item) continue;
         if (audit) item.auditSignature = JSON.stringify([
@@ -357,7 +361,8 @@ function main() {
     if (!offerCount) throw new Error(merchant + ': nessuna calzatura in EUR con prezzo, immagine e link affiliato utilizzabile');
     console.log(merchant + ' | ' + offerCount + ' offerte utilizzabili su ' + (rowCount + skipped) + ' righe' +
       (skipped ? ' | ' + skipped + ' record CSV saltati' : ''));
-    feedStats.push({ merchant, rows: rowCount + skipped, usable: offerCount, skipped });
+    console.log(merchant + ' | prezzi mancanti: ' + missingPrice + ' | valuta inattesa: ' + unexpectedCurrency);
+    feedStats.push({ merchant, rows: rowCount + skipped, usable: offerCount, skipped, missingPrice, unexpectedCurrency });
   }
   const cheapest = cheapestOffers(allOffers);
   const band = card => {
@@ -372,6 +377,20 @@ function main() {
   if (audit) {
     printGroupingAudit(allOffers, products);
     return;
+  }
+  const previousReportPath = path.join(repo, reportFile);
+  if (!products.length) throw new Error('Il catalogo generato non contiene offerte.');
+  if (fs.existsSync(previousReportPath)) {
+    const previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf8'));
+    const currentMerchants = new Set(feedStats.map(feed => normalize(feed.merchant)));
+    const missing = (Array.isArray(previous.feeds) ? previous.feeds : [])
+      .filter(feed => feed.merchant && !currentMerchants.has(normalize(feed.merchant)))
+      .map(feed => feed.merchant);
+    if (missing.length) console.warn('Listini assenti rispetto al catalogo precedente: ' + missing.join(', '));
+    if (Number.isInteger(previous.publishedOffers) && products.length < previous.publishedOffers * 0.7) {
+      throw new Error('Offerte in calo di oltre il 30% (' + previous.publishedOffers + ' → ' +
+        products.length + '). Controlla i listini prima di sostituire il catalogo.');
+    }
   }
   const content = JSON.stringify(products) + '\n';
   if (Buffer.byteLength(content) > 95 * 1024 * 1024) throw new Error('Catalogo troppo grande per un singolo file GitHub');

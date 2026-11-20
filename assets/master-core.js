@@ -124,6 +124,7 @@ window.archivioMasterCore = (() => {
 
     function storeGeminiKey(value) {
       const key = value.trim();
+      sessionStorage.removeItem('kicks_gemini_models_v10');
       if (key) sessionStorage.setItem(geminiKeyName, key);
       else sessionStorage.removeItem(geminiKeyName);
     }
@@ -188,14 +189,14 @@ Se è visibile solo un'etichetta, privilegia i dati stampati. Se il codice color
       };
       let modelsToTry = [];
       let lastErrorMsg = "";
-      const cacheKey = 'kicks_gemini_models_v9';
+      const cacheKey = 'kicks_gemini_models_v10';
       try {
-        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-        if (cached && cached.keyHint === apiKey.slice(-6) && Date.now() - cached.time < 86400000) {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+        if (cached && Date.now() - cached.time < 86400000) {
           modelsToTry = cached.models;
         } else {
           modelsToTry = await listGeminiModels(apiKey);
-          localStorage.setItem(cacheKey, JSON.stringify({keyHint: apiKey.slice(-6), time: Date.now(), models: modelsToTry}));
+          sessionStorage.setItem(cacheKey, JSON.stringify({ time: Date.now(), models: modelsToTry}));
         }
         const recentSuccess = localStorage.getItem('kicks_gemini_last_success_v2');
         if (recentSuccess && modelsToTry.includes(recentSuccess)) {
