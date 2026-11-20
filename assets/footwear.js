@@ -6,7 +6,10 @@
       .replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     const name = normalize(title);
     if (!name || other.test(name)) return false;
-    return footwear.test(name) || footwear.test(normalize(category));
+    const model = /\b(?:adidas (?:campus|samba|gazelle|handball spezial|superstar)|nike (?:air force 1|air max|p 6000|vomero|dunk)|new balance (?:327|530|550|574|9060)|asics (?:gel kayano|gel nimbus|gel cumulus|upcourt)|hoka (?:clifton|bondi|crescendo|speedgoat))\b/;
+    const type = normalize(category);
+    return footwear.test(name) || model.test(name) ||
+      (!other.test(type) && (footwear.test(type) || type === '187'));
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = isFootwear;
   else window.isCatalogFootwear = isFootwear;

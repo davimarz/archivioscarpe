@@ -227,7 +227,7 @@ function limitCatalogVariants(products) {
 function offer(record, merchant) {
   const name = pick(record.product_name, record.title);
   const category = [record.merchant_category, record.merchant_product_category_path, record.category_name, record.product_type, record.google_product_category].map(clean).join(' ');
-  if (!isFootwear(name, category)) return null;
+  if (!isFootwear(name, category) && !isFootwear(name, record.google_product_category)) return null;
   const availability = normalize(pick(record.availability, record.in_stock, record.stock_status));
   if (/^(?:0|no|false|out[ _-]?of[ _-]?stock|unavailable|esaurito|non disponibile|pre[ _-]?order)$/.test(availability)) return null;
   const currency = pick(record.currency, record.currency_code);
@@ -263,11 +263,12 @@ function offer(record, merchant) {
 function cheapestOffers(offers) {
   const bestByProduct = new Map();
   for (const item of offers) {
-    const best = bestByProduct.get(item.key);
+    const merchantKey = JSON.stringify([normalize(item.merchant), item.key]);
+    const best = bestByProduct.get(merchantKey);
     const total = item.current + (item.shipping ?? Infinity);
     const bestTotal = best ? best.current + (best.shipping ?? Infinity) : Infinity;
     if (!best || total < bestTotal || (total === bestTotal && item.current < best.current)) {
-      bestByProduct.set(item.key, item);
+      bestByProduct.set(merchantKey, item);
     }
   }
   return [...bestByProduct.values()];
@@ -379,15 +380,21 @@ function main() {
   if (!products.length) throw new Error('Il catalogo generato non contiene offerte.');
   if (fs.existsSync(previousReportPath)) {
     const previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf8'));
-    const currentMerchants = new Set(feedStats.map(feed => normalize(feed.merchant)));
-    const missing = (Array.isArray(previous.feeds) ? previous.feeds : [])
-      .filter(feed => feed.merchant && !currentMerchants.has(normalize(feed.merchant)))
-      .map(feed => feed.merchant);
-    if (missing.length) console.warn('Listini assenti rispetto al catalogo precedente: ' + missing.join(', '));
     if (Number.isInteger(previous.publishedOffers) && products.length < previous.publishedOffers * 0.7) {
       throw new Error('Offerte in calo di oltre il 30% (' + previous.publishedOffers + ' → ' +
         products.length + '). Controlla i listini prima di sostituire il catalogo.');
     }
+  }
+  const previousCatalogPath = path.join(repo, catalogFile);
+  if (fs.existsSync(previousCatalogPath)) {
+    const oldProducts = JSON.parse(fs.readFileSync(previousCatalogPath, 'utf8'));
+    const retained = new Set(products.map(item => normalize(item.merchant)));
+    const allowed = new Set(String(process.env.AWIN_RIMUOVI_ADVERTISER || '').split(';').map(normalize).filter(Boolean));
+    const missing = new Map(oldProducts.filter(item => item.merchant &&
+      !retained.has(normalize(item.merchant)) && !allowed.has(normalize(item.merchant)))
+      .map(item => [normalize(item.merchant), item.merchant]));
+    if (missing.size) throw new Error('Mancano offerte valide per ' +
+      [...missing.values()].join(', ') + '. Verifica che i relativi listini siano inclusi.');
   }
   const content = JSON.stringify(products) + '\n';
   if (Buffer.byteLength(content) > 95 * 1024 * 1024) throw new Error('Catalogo troppo grande per un singolo file GitHub');

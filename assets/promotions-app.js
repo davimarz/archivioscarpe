@@ -85,7 +85,7 @@
               const amount = numericPrice(product);
               if (!Number.isFinite(amount)) continue;
               const size = promotionSize(product.size);
-              const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([key, size]));
+              const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([normalize(product.merchant), key, size]));
               if (productKeys.some(key => seen.has(key))) continue;
               productKeys.forEach(key => seen.add(key));
               randomOrder.set(product, Math.random());
