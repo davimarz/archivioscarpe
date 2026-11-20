@@ -381,7 +381,12 @@
         if (!discountedBannerPool.length) return;
         slideAnimation?.cancel();
         slideAnimation = null;
-        bannerProducts = awinCatalog.shuffleProducts(discountedBannerPool).slice(0, 24);
+        const lower = awinCatalog.shuffleProducts(discountedBannerPool.filter(product => numericPrice(product) < 50));
+        const upper = awinCatalog.shuffleProducts(discountedBannerPool.filter(product => numericPrice(product) >= 50));
+        const pairs = Math.min(lower.length, upper.length, 12);
+        bannerProducts = pairs
+          ? lower.slice(0, pairs).flatMap((product, index) => [product, upper[index]])
+          : (lower.length ? lower : upper).slice(0, 24);
         pageCount = bannerProducts.length;
         page = 0;
         render();
