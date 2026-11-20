@@ -460,35 +460,42 @@
         const chosen = new Set(selected);
         return [...selected, ...products.filter(product => !chosen.has(product))];
       }
-      const priceFilterButtons = [...document.querySelectorAll('#promotionsPriceFilters [data-price-band]')];
-      let activePriceBand = 'all';
+      const filterDialog = document.getElementById('promotionsFilterDialog');
+      const filterOpen = document.getElementById('promotionsFilterOpen');
+      const applyButton = document.getElementById('promotionsApply');
+      const relaxButton = document.getElementById('promotionsRelax');
+      const priceSelect = document.getElementById('promotionsPrice');
+      const discountInput = document.getElementById('promotionsDiscount');
+      const filterSelects = [sizeSelect, brandSelect, priceSelect, typeSelect, audienceSelect, sortSelect];
+      let draftSnapshot;
+      const readFilters = () => filterSelects.map(select => select.value).concat(discountInput.checked);
+      function restoreFilters(values) {
+        filterSelects.forEach((select, index) => { select.value = values[index]; });
+        discountInput.checked = values[6];
+      }
       let promotionLoad = 0;
       let visiblePromotions = 6;
       let currentPromotionPage = 1;
       let promotionsReady = false;
-      function updatePriceButtons() {
-        for (const button of priceFilterButtons) {
-          button.setAttribute('aria-pressed', String(button.dataset.priceBand === activePriceBand));
-        }
-      }
-      function promotionPool() {
-        const keys = ['all', 'discounted'].includes(activePriceBand) ? ['low', 'mid', 'high'] : [activePriceBand];
-        const brand = brandSelect.value;
+      function promotionPool(preview = false) {
+        const [size, brand, price, type, audience, sort, discounted] = !preview && draftSnapshot ? draftSnapshot : readFilters();
+        const keys = price === 'all' ? ['low', 'mid', 'high'] : [price];
         const query = normalize(searchInput.value).split(' ').filter(Boolean);
         const products = keys.flatMap(key => bands[key]).filter(product => {
           const searchable = normalize([product.name, product.brand, product.model, product.color].join(' '));
           return (!brand || canonicalBrand(product.brand) === brand) &&
-            (!sizeSelect.value || String(product.size || '').trim().replace(',', '.') === sizeSelect.value) &&
-            (!typeSelect.value || promotionType(product) === typeSelect.value) &&
-            (!audienceSelect.value || promotionAudience(product) === audienceSelect.value) &&
-            (activePriceBand !== 'discounted' || Boolean(discountFor(product))) &&
+            (!size || String(product.size || '').trim().replace(',', '.') === size) &&
+            (!type || promotionType(product) === type) &&
+            (!audience || promotionAudience(product) === audience) &&
+            (!discounted || Boolean(discountFor(product))) &&
             query.every(word => searchable.includes(word));
         });
-        if (sortSelect.value === 'discount') {
+        if (preview) return products;
+        if (sort === 'discount') {
           return diversifyFirstPage(products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b)));
         }
-        if (sortSelect.value === 'price-asc') return diversifyFirstPage(products.sort((a, b) => numericPrice(a) - numericPrice(b)));
-        if (sortSelect.value === 'price-desc') return diversifyFirstPage(products.sort((a, b) => numericPrice(b) - numericPrice(a)));
+        if (sort === 'price-asc') return diversifyFirstPage(products.sort((a, b) => numericPrice(a) - numericPrice(b)));
+        if (sort === 'price-desc') return diversifyFirstPage(products.sort((a, b) => numericPrice(b) - numericPrice(a)));
         return products;
       }
       function populatePromotionFilters() {
@@ -506,7 +513,7 @@
         brandSelect.value = names.has(selected) ? selected : '';
         const values = field => [...new Set(products.map(field).filter(Boolean))].sort((a, b) =>
           a.localeCompare(b, 'it', { numeric: true, sensitivity: 'base' }));
-        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => { const size = String(product.size || '').trim(); return /^(3[0-9]|4[0-9]|50)(?:[.,]5)?$/.test(size) ? size.replace(',', '.') : ''; }), 'Tutti i numeri');
+        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => { const size = String(product.size || '').trim(); return /^(3[0-9]|4[0-9]|50)(?:[.,]5)?$/.test(size) ? size.replace(',', '.') : ''; }), 'Tutte le taglie');
         updateSelect(typeSelect, 'promotionsTypeLabel', values(promotionType), 'Tutte le tipologie');
         updateSelect(audienceSelect, 'promotionsAudienceLabel', values(promotionAudience), 'Tutti');
       }
@@ -547,37 +554,6 @@
           }
         }
       }
-      const chips = document.getElementById('promotionChips');
-      function renderChips() {
-        chips.replaceChildren();
-        const add = (label, clear) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = label + ' ×';
-          button.setAttribute('aria-label', 'Rimuovi filtro ' + label);
-          button.onclick = () => {
-            clear();
-            visiblePromotions = 6;
-            currentPromotionPage = 1;
-            renderPromotions();
-            searchInput.focus();
-          };
-          chips.append(button);
-        };
-        if (searchInput.value.trim()) add(searchInput.value.trim(), () => { searchInput.value = ''; });
-        for (const [control, label] of [[brandSelect, 'Marca'], [sizeSelect, 'Numero'],
-          [typeSelect, 'Tipologia'], [audienceSelect, 'Destinatario']]) {
-          if (control.value) add(label + ' ' + control.selectedOptions[0].textContent, () => { control.value = ''; });
-        }
-        if (activePriceBand !== 'all') {
-          const current = priceFilterButtons.find(button => button.dataset.priceBand === activePriceBand);
-          add(current.textContent, () => {
-            history.replaceState(null, '', awinCatalog.promotionRoutes.all);
-            activePriceBand = 'all';
-            updatePriceButtons();
-          });
-        }
-      }
       let previousPromotionState;
       try { previousPromotionState = JSON.parse(sessionStorage.getItem('promotion-state-v1')); } catch {}
       function rememberPromotions() {
@@ -585,7 +561,7 @@
         try {
           sessionStorage.setItem('promotion-state-v1', JSON.stringify({
             hash: location.hash, filters: [searchInput, brandSelect, sizeSelect, typeSelect, audienceSelect, sortSelect].map(input => input.value),
-            visible: visiblePromotions, page: currentPromotionPage, scroll: window.scrollY
+            discounted: (draftSnapshot || readFilters())[6], visible: visiblePromotions, page: currentPromotionPage, scroll: window.scrollY
           }));
         } catch {}
       }
@@ -602,14 +578,15 @@
           if (index % 6 === 0) card.dataset.pageStart = String(Math.floor(index / 6) + 1);
           grid.append(card);
         }
-        resetButton.hidden = activePriceBand === 'all' && !searchInput.value.trim() &&
-          !brandSelect.value && !sizeSelect.value && !typeSelect.value && !audienceSelect.value &&
-          sortSelect.value === 'discount';
+        const [size, brand, price, type, audience, , discounted] = draftSnapshot || readFilters();
+        const count = [size, brand, price !== 'all', type, audience, discounted].filter(Boolean).length;
+        filterOpen.textContent = count ? 'Filtri · ' + count : 'Filtri';
         status.textContent = shown.length
           ? shown.length + ' prodotti su ' + products.length
-          : 'Nessun prodotto trovato. Prova altre parole oppure azzera i filtri.';
+          : 'Nessuna offerta corrisponde a questi filtri.';
+        relaxButton.hidden = Boolean(shown.length) || !(size || count || searchInput.value.trim());
+        relaxButton.textContent = size ? 'Rimuovi taglia ' + size.replace('.', ',') : 'Azzera la ricerca e i filtri';
         rememberPromotions();
-        renderChips();
         renderPageNavigation(products.length);
         more.classList.toggle('hidden', shown.length >= products.length);
         more.textContent = 'Mostra altri prodotti';
@@ -624,6 +601,7 @@
           if (current !== promotionLoad) return;
           promotionsReady = true;
           populatePromotionFilters();
+          filterOpen.disabled = false;
           const saved = previousPromotionState;
           previousPromotionState = null;
           const restore = saved?.hash === location.hash && Array.isArray(saved.filters);
@@ -632,6 +610,7 @@
               const value = saved.filters[index];
               if (typeof value === 'string' && (!input.options || [...input.options].some(option => option.value === value))) input.value = value;
             });
+            if (typeof saved.discounted === 'boolean') discountInput.checked = saved.discounted;
             visiblePromotions = Math.max(6, Math.min(300, Number(saved.visible) || 6));
             currentPromotionPage = Math.min(Math.ceil(visiblePromotions / 6), Math.max(1, Number(saved.page) || 1));
           }
@@ -646,7 +625,6 @@
         }
       }
       function selectPromotionBand() {
-        updatePriceButtons();
         visiblePromotions = 6;
         currentPromotionPage = 1;
         if (promotionsReady) renderPromotions();
@@ -657,37 +635,61 @@
         else void preparePromotions();
       }
       function changePromotionBand(band) {
-        if (activePriceBand === band && promotionsReady) return;
-        activePriceBand = band;
+        priceSelect.value = band === 'discounted' ? 'all' : band;
+        discountInput.checked = band === 'discounted';
         promotionScroll = 0;
         if (!document.getElementById('view-promotions').classList.contains('hidden')) selectPromotionBand();
-        else updatePriceButtons();
       }
-      priceFilterButtons.forEach(button => button.addEventListener('click', () => {
-        const band = button.dataset.priceBand;
-        if (band === activePriceBand) return;
-        history.pushState(null, '', awinCatalog.promotionRoutes[band]);
-        changePromotionBand(band);
-      }));
+      function updatePreview() {
+        const count = promotionPool(true).length;
+        applyButton.textContent = count === 1 ? 'Mostra 1 risultato' : 'Mostra ' + count + ' risultati';
+      }
+      filterOpen.addEventListener('click', () => {
+        draftSnapshot = readFilters();
+        updatePreview();
+        filterDialog.showModal();
+      });
+      function dismissFilters() {
+        if (draftSnapshot) restoreFilters(draftSnapshot);
+        draftSnapshot = null;
+        filterDialog.close();
+      }
+      document.getElementById('promotionsFilterClose').addEventListener('click', dismissFilters);
+      filterDialog.addEventListener('cancel', event => {
+        event.preventDefault();
+        dismissFilters();
+      });
+      filterDialog.addEventListener('change', updatePreview);
+      function resetFilters() {
+        restoreFilters(['', '', 'all', '', '', 'discount', false]);
+      }
+      resetButton.addEventListener('click', () => {
+        resetFilters();
+        updatePreview();
+      });
+      function applyFilters() {
+        const band = priceSelect.value === 'all' && discountInput.checked ? 'discounted' : priceSelect.value;
+        history.replaceState(null, '', awinCatalog.promotionRoutes[band]);
+        promotionScroll = 0;
+        selectPromotionBand();
+        status.focus({ preventScroll: true });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+      applyButton.addEventListener('click', () => {
+        draftSnapshot = null;
+        filterDialog.close();
+        applyFilters();
+      });
+      relaxButton.addEventListener('click', () => {
+        if (sizeSelect.value) sizeSelect.value = '';
+        else { searchInput.value = ''; resetFilters(); }
+        applyFilters();
+      });
       let searchTimer;
       searchInput.addEventListener('input', () => {
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); }, 120);
+        searchTimer = setTimeout(selectPromotionBand, 120);
       });
-      for (const select of [brandSelect, sizeSelect, typeSelect, audienceSelect]) {
-        select.addEventListener('change', () => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); });
-      }
-      resetButton.addEventListener('click', () => {
-        searchInput.value = '';
-        for (const select of [brandSelect, sizeSelect, typeSelect, audienceSelect]) select.value = '';
-        sortSelect.value = 'discount';
-        history.pushState(null, '', awinCatalog.promotionRoutes.all);
-        activePriceBand = 'all';
-        promotionScroll = 0;
-        selectPromotionBand();
-        searchInput.focus();
-      });
-      sortSelect.addEventListener('change', () => { visiblePromotions = 6; currentPromotionPage = 1; renderPromotions(); });
       more.addEventListener('click', () => {
         if (!promotionsReady) { void preparePromotions(); return; }
         visiblePromotions += 6;
@@ -704,6 +706,7 @@
         }).catch(() => {});
       document.addEventListener('promotions-open', openPromotions);
       function openAddress() {
+        if (filterDialog.open) dismissFilters();
         const band = awinCatalog.promotionBandFromHash(location.hash);
         if (band) {
           changePromotionBand(band);

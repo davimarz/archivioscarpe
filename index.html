@@ -272,6 +272,22 @@
     #view-archive #personalArchiveCard>div:first-child{flex-wrap:wrap}
     #view-archive #archiveSearchPanel{padding:0}
     #view-archive #emptyArchiveMsg:not(.hidden){padding-bottom:16px}
+    .promotion-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+    .promotion-toolbar input{min-width:0}
+    #promotionsFilterOpen,#promotionsRelax{padding:0 12px;border:1px solid #304c40;border-radius:8px}
+    #promotionsFilterDialog{position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,520px);max-width:none;max-height:85vh;max-height:85dvh;padding:0;border:1px solid #304c40;border-radius:16px 16px 0 0;background:#fff;color:#14291f}
+    #promotionsFilterDialog[open]{display:flex;flex-direction:column}
+    #promotionsFilterDialog::backdrop{background:#0008}
+    html:has(#promotionsFilterDialog[open]){overflow:hidden}
+    .promotion-filter-header,.promotion-filter-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 16px}
+    .promotion-filter-header button{min-width:44px;border-radius:8px;font-size:24px}
+    .promotion-filter-fields{padding:8px 16px;overflow:auto}
+    #promotionsFilterDialog select{min-height:44px}
+    #promotionsFilterDialog .promotion-discount{display:flex;align-items:center;gap:8px;align-self:end;min-height:44px}
+    .promotion-discount input{width:20px;height:20px;accent-color:#284b3c}
+    .promotion-filter-actions{border-top:1px solid #deded5;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+    #view-promotions #promotionsApply{flex:1;background:#284b3c;color:#fff;border-radius:8px;padding:0 12px;font-weight:700}
+    @media(min-width:640px){#promotionsFilterDialog{inset:0;margin:auto;border-radius:16px}}
 </style>
   <link rel="stylesheet" href="./assets/camera.css">
   <link rel="stylesheet" href="./assets/guardaroba.css?v=7">
@@ -580,19 +596,31 @@
         <p class="text-sm text-slate-600">Link affiliati · Verifica prezzo e disponibilità sul sito del venditore.</p>
         <p id="promotionsUpdated" class="text-xs text-slate-600" aria-live="polite"></p>
       </div>
-      <div class="promotion-sort-controls promotion-primary">
-          <label for="promotionsSearch" class="promotion-search-label">Cerca offerte
-            <input id="promotionsSearch" type="search" placeholder="Ricerca con testo libero" autocomplete="off" aria-controls="promotionsGrid">
-          </label>
-          <label for="promotionsSize" id="promotionsSizeLabel" hidden>Numero
-            <select id="promotionsSize"><option value="">Tutti i numeri</option></select>
-          </label>
+      <div class="promotion-toolbar">
+        <label class="sr-only" for="promotionsSearch">Cerca offerte</label>
+        <input id="promotionsSearch" type="search" placeholder="Cerca offerte…" autocomplete="off" aria-controls="promotionsGrid">
+        <button type="button" id="promotionsFilterOpen" aria-haspopup="dialog" disabled>Filtri</button>
       </div>
-      <details class="promotion-sort-box">
-        <summary>Altri filtri e ordinamento</summary>
-        <div class="promotion-sort-controls">
+      <dialog id="promotionsFilterDialog" aria-labelledby="promotionsFilterTitle">
+        <div class="promotion-filter-header">
+          <h3 id="promotionsFilterTitle" class="font-bold">Filtri</h3>
+          <button type="button" id="promotionsFilterClose" aria-label="Chiudi filtri">×</button>
+        </div>
+        <div class="promotion-sort-controls promotion-filter-fields">
+          <label for="promotionsSize" id="promotionsSizeLabel" hidden>Taglia
+            <select id="promotionsSize"><option value="">Tutte le taglie</option></select>
+          </label>
+          <label class="promotion-discount" for="promotionsDiscount"><input id="promotionsDiscount" type="checkbox"> Solo scontati</label>
           <label for="promotionsBrand">Marca
             <select id="promotionsBrand"><option value="">Tutte le marche</option></select>
+          </label>
+          <label for="promotionsPrice">Fascia di prezzo
+            <select id="promotionsPrice">
+              <option value="all">Tutti i prezzi</option>
+              <option value="low">Sotto 50 €</option>
+              <option value="mid">Da 50 a 150 €</option>
+              <option value="high">Oltre 150 €</option>
+            </select>
           </label>
           <label for="promotionsType" id="promotionsTypeLabel" hidden>Tipologia
             <select id="promotionsType"><option value="">Tutte le tipologie</option></select>
@@ -608,19 +636,15 @@
             </select>
           </label>
         </div>
-      </details>
-      <div id="promotionsPriceFilters" class="promotion-filters" role="group" aria-label="Filtra le promozioni per sconto e prezzo">
-        <button type="button" data-price-band="all" aria-pressed="true">Tutti</button>
-        <button type="button" data-price-band="discounted" aria-pressed="false">Solo scontati</button>
-        <button type="button" data-price-band="low" aria-pressed="false" class="rounded-xl border border-sky-400 bg-sky-600 text-white px-1 py-3 text-xs sm:text-sm font-bold">0–50</button>
-        <button type="button" data-price-band="mid" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">50–150</button>
-        <button type="button" data-price-band="high" aria-pressed="false" class="rounded-xl border border-slate-600 bg-slate-800 text-slate-200 px-1 py-3 text-xs sm:text-sm font-bold">Oltre 150</button>
-      </div>
-      <div class="promotion-result-bar"><p id="promotionsStatus" class="text-sm text-slate-600" role="status">Caricamento del catalogo…</p><button type="button" id="promotionsReset" hidden>Azzera filtri</button></div>
-      <div id="promotionChips" class="promotion-chips" aria-label="Filtri attivi"></div>
-      <nav id="promotionsPages" class="promotion-pages" aria-label="Pagine delle promozioni" hidden></nav>
+        <div class="promotion-filter-actions">
+          <button type="button" id="promotionsReset">Azzera</button>
+          <button type="button" id="promotionsApply" aria-live="polite">Mostra risultati</button>
+        </div>
+      </dialog>
+      <p id="promotionsStatus" class="text-sm text-slate-600" role="status" tabindex="-1">Caricamento del catalogo…</p>
+      <button type="button" id="promotionsRelax" hidden></button>
       <div id="promotionsGrid"></div>
-
+      <nav id="promotionsPages" class="promotion-pages" aria-label="Pagine delle promozioni" hidden></nav>
       <button type="button" id="promotionsMore" class="hidden w-full rounded-xl px-4 py-2 text-sm font-bold">Mostra altri prodotti</button>
     </section>
   </main>
@@ -736,6 +760,6 @@
   <script src="./assets/gemini-app.js?v=1"></script>
 
   <script src="./assets/footwear.js?v=1"></script>
-  <script src="./assets/promotions-app.js?v=7"></script>
+  <script src="./assets/promotions-app.js?v=8"></script>
 </body>
 </html>
