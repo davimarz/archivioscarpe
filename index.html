@@ -264,7 +264,15 @@
       #view-promotions .promotion-filters {display:flex;flex-wrap:wrap}
       #view-promotions .promotion-filters button {flex:1 1 auto}
     }
-  </style>
+      #view-archive #bannerViewport{height:clamp(234px,calc(24vw + 150px),278px)}
+    #view-archive #bannerViewport .product-photo-frame{height:clamp(95px,24vw,140px);aspect-ratio:auto}
+    #view-archive #affiliateAdSlot .cisalfa-product-name{min-height:2.6em;-webkit-line-clamp:2}
+    #view-archive #affiliateAdSlot .offer-details{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #view-archive #personalArchiveCard{padding:10px}
+    #view-archive #personalArchiveCard>div:first-child{flex-wrap:wrap}
+    #view-archive #archiveSearchPanel{padding:0}
+    #view-archive #emptyArchiveMsg:not(.hidden){padding-bottom:16px}
+</style>
   <link rel="stylesheet" href="./assets/camera.css">
   <link rel="stylesheet" href="./assets/guardaroba.css?v=7">
 </head>
@@ -288,21 +296,7 @@
   <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-4">
 
     <!-- VIEW 1: ARCHIVIO SCARPE -->
-    <section id="view-archive" class="space-y-4">
-      <div id="personalArchiveCard" class="personal-archive-panel space-y-3">
-      <div class="flex items-center justify-between gap-2">
-        <div><h2 class="text-lg font-bold">Le mie scarpe</h2></div>
-        <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
-        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
-      </div>
-      <button type="button" class="min-h-11 px-2 text-sm underline" onclick="exportShoeBackup()">Esporta backup</button>
-        <div id="archiveSearchPanel" class="mode-panel space-y-2">
-
-        <label for="searchInput" class="sr-only">Cerca le tue scarpe</label>
-        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
-        <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
-      </div>
-      </div>
+    <section id="view-archive" class="space-y-2">
       <aside id="affiliateAdSlot" aria-label="Prodotti sponsorizzati dei negozi partner" class="hidden">
         <div class="flex items-center justify-between gap-2 mb-2">
           <p class="text-[10px] uppercase tracking-widest font-semibold">Pubblicità · Link affiliati</p>
@@ -310,7 +304,18 @@
         </div>
         <div id="bannerViewport"><div id="cisalfaProducts" role="group" tabindex="0" aria-label="Offerte affiliate. Usa le frecce della tastiera o scorri a sinistra e a destra."></div></div>
       </aside>
-      <div class="personal-archive-panel space-y-3">
+      <div id="personalArchiveCard" class="personal-archive-panel space-y-2">
+      <div class="flex items-center justify-between gap-2">
+        <div><h2 class="text-lg font-bold">Le mie scarpe</h2></div>
+        <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
+        <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
+      </div>
+        <div id="archiveSearchPanel" class="mode-panel space-y-2">
+
+        <label for="searchInput" class="sr-only">Cerca le tue scarpe</label>
+        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
+        <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
+      </div>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
         <summary class="cursor-pointer min-h-12 flex items-center justify-between px-3 text-sm font-semibold">Filtri e tipologie <span id="activeFiltersBadge" class="text-xs text-amber-400"></span></summary>
       <div class="grid grid-cols-2 gap-3 rounded-2xl bg-slate-900/80 border border-slate-800 p-3">
@@ -340,8 +345,8 @@
       </details>
       <div id="shoesGrid" class="grid grid-cols-2 gap-2.5" aria-live="polite"></div>
 
-      <div id="emptyArchiveMsg" class="hidden text-center py-12 px-4 space-y-3">
-        <div class="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl">
+      <div id="emptyArchiveMsg" class="hidden text-center py-4 px-2 space-y-2">
+        <div class="w-10 h-10 mx-auto rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-2xl">
           <i class="fa-solid fa-box-open"></i>
         </div>
         <h3 id="emptyArchiveTitle" class="text-base font-semibold text-slate-300">Nessuna scarpa archiviata</h3>
