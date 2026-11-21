@@ -71,6 +71,8 @@
         }
       };
       const seen = new Set();
+      const sizeCache = new Map();
+      const sizeOptions = new Set();
       const randomOrder = new WeakMap();
       const discountedOffers = new WeakSet();
       let nextBlock;
@@ -84,10 +86,12 @@
                   !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) continue;
               const amount = numericPrice(product);
               if (!Number.isFinite(amount)) continue;
-              const size = promotionSize(product.size);
+              const sizes = promotionSizes(product.size);
+              const size = sizes.join('|') || product.size;
               const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([normalize(product.merchant), key, size]));
               if (productKeys.some(key => seen.has(key))) continue;
               productKeys.forEach(key => seen.add(key));
+              sizes.forEach(key => sizeOptions.add(key));
               randomOrder.set(product, Math.random());
               if (discountFor(product)) discountedOffers.add(product);
               bands[amount < 50 ? 'low' : amount <= 150 ? 'mid' : 'high'].push(product);
@@ -415,6 +419,7 @@
       const sortSelect = document.getElementById('promotionsSort');
       const searchInput = document.getElementById('promotionsSearch');
       const sizeSelect = document.getElementById('promotionsSize');
+      const foreignSizes = document.getElementById('promotionsForeignSizes');
       const typeSelect = document.getElementById('promotionsType');
       const audienceSelect = document.getElementById('promotionsAudience');
       const resetButton = document.getElementById('promotionsReset');
@@ -473,8 +478,10 @@
       const discountInput = document.getElementById('promotionsDiscount');
       const filterSelects = [sizeSelect, brandSelect, priceSelect, typeSelect, audienceSelect, sortSelect];
       let draftSnapshot;
-      const readFilters = () => filterSelects.map(select => select.value).concat(discountInput.checked);
+      const readFilters = () => filterSelects.map(select => select.value).concat(discountInput.checked, foreignSizes.checked);
       function restoreFilters(values) {
+        foreignSizes.checked = Boolean(values[7]);
+        renderSizeOptions();
         filterSelects.forEach((select, index) => { select.value = values[index]; });
         discountInput.checked = values[6];
       }
@@ -482,11 +489,61 @@
       let visiblePromotions = 6;
       let currentPromotionPage = 1;
       let promotionsReady = false;
-      function promotionSize(value) {
-        const label = String(value ?? '').trim().replace(/\s+/g, ' ');
-        if (!label || /^(?:n\/?a|nd|n\/d|-|null|undefined)$/i.test(label)) return '';
-        const eu = label.match(/^(?:(?:EU|EUR|IT)\s*)?(\d+(?:[.,]\d+)?(?:\s+[123]\/[234])?)$/i);
-        return eu ? eu[1].replace(',', '.').replace(/\.0+$/, '') : label.toUpperCase();
+      function promotionSizes(value) {
+        if (sizeCache.has(value)) return sizeCache.get(value);
+        const raw = String(value ?? '').toUpperCase().trim()
+          .replace(/([½⅓⅔¼¾])/g, fraction => ' ' + ({ '½': '1/2', '⅓': '1/3', '⅔': '2/3', '¼': '1/4', '¾': '3/4' })[fraction])
+          .replace(/\s+/g, ' ');
+        const sizes = new Set();
+        const add = (system, text) => {
+          const parts = text.match(/^(\d+(?:[.,]\d+)?)(?:\s+(1\/2|[12]\/3|[13]\/4))?([CYK]?)$/);
+          if (!parts) return;
+          let number = Number(parts[1].replace(',', '.'));
+          let fraction = parts[2];
+          if (fraction && !fraction.endsWith('/3')) {
+            const [numerator, denominator] = fraction.split('/').map(Number);
+            number += numerator / denominator;
+            fraction = '';
+          }
+          if (system === 'EU' && (parts[3] || number < 15 || number > 55)) return;
+          sizes.add(system + ' ' + number + (fraction ? ' ' + fraction : '') + parts[3]);
+        };
+        const systems = [...raw.matchAll(/\b(EUR?|IT|UK|US|BRASIL|BR|JP|CM)\b/g)];
+        if (!systems.length && /^[\d., /-]+$/.test(raw)) {
+          const parts = raw.split(/\s*[-–]\s*|(?<=\d{2})\/(?=\d{2}\b)/);
+          parts.forEach(part => add('EU', part));
+        }
+        systems.forEach((match, index) => {
+          const system = /^(EU|EUR|IT)$/.test(match[0]) ? 'EU' : match[0];
+          if (!['EU', 'UK', 'US'].includes(system)) return;
+          const end = systems[index + 1]?.index ?? raw.length;
+          const label = raw.slice(match.index + match[0].length, end).replace(/^[\s:]+|[\s/–-]+$/g, '');
+          label.split(/\s*[-–]\s*|(?<=\d{2})\/(?=\d{2}\b)/).forEach(part => add(system, part));
+        });
+        const keys = [...sizes];
+        sizeCache.set(value, keys);
+        return keys;
+      }
+      function renderSizeOptions() {
+        const selected = sizeSelect.value;
+        const groups = ['EU', ...(foreignSizes.checked ? ['UK', 'US'] : [])].flatMap(system => {
+          const group = document.createElement('optgroup');
+          group.label = system;
+          const options = [...sizeOptions].filter(key => key.startsWith(system + ' '));
+          const numeric = key => {
+            const [, number, fraction] = key.split(' ');
+            return parseFloat(number) + (fraction ? Number(fraction[0]) / Number(fraction[2]) : 0);
+          };
+          options.sort((a, b) => numeric(a) - numeric(b) || a.localeCompare(b));
+          if (!options.length) return [];
+          group.append(...options.map(key => new Option(
+            (system === 'EU' ? '' : system + ' ') + key.slice(3).replace('.', ',').replace(' 1/3', '⅓').replace(' 2/3', '⅔'), key
+          )));
+          return [group];
+        });
+        sizeSelect.replaceChildren(new Option('Tutte le taglie', ''), ...groups);
+        sizeSelect.value = [...sizeSelect.options].some(option => option.value === selected) ? selected : '';
+        document.getElementById('promotionsSizeLabel').hidden = !groups.length;
       }
       function promotionPool(preview = false) {
         const [size, brand, price, type, audience, sort, discounted] = !preview && draftSnapshot ? draftSnapshot : readFilters();
@@ -495,7 +552,7 @@
         const products = keys.flatMap(key => bands[key]).filter(product => {
           const searchable = normalize([product.name, product.brand, product.model, product.color].join(' '));
           return (!brand || canonicalBrand(product.brand) === brand) &&
-            (!size || promotionSize(product.size) === size) &&
+            (!size || promotionSizes(product.size).includes(size)) &&
             (!type || promotionType(product) === type) &&
             (!audience || promotionAudience(product) === audience) &&
             (!discounted || discountedOffers.has(product)) &&
@@ -527,7 +584,7 @@
         brandSelect.value = names.has(selected) ? selected : '';
         const values = field => [...new Set(products.map(field).filter(Boolean))].sort((a, b) =>
           a.localeCompare(b, 'it', { numeric: true, sensitivity: 'base' }));
-        updateSelect(sizeSelect, 'promotionsSizeLabel', values(product => promotionSize(product.size)), 'Tutte le taglie');
+        renderSizeOptions();
         updateSelect(typeSelect, 'promotionsTypeLabel', values(promotionType), 'Tutte le tipologie');
         updateSelect(audienceSelect, 'promotionsAudienceLabel', values(promotionAudience), 'Tutti');
       }
@@ -575,7 +632,7 @@
         try {
           sessionStorage.setItem('promotion-state-v2', JSON.stringify({
             hash: location.hash, filters: [searchInput, brandSelect, sizeSelect, typeSelect, audienceSelect, sortSelect].map(input => input.value),
-            discounted: (draftSnapshot || readFilters())[6], visible: visiblePromotions, page: currentPromotionPage, scroll: window.scrollY
+            discounted: (draftSnapshot || readFilters())[6], foreignSizes: (draftSnapshot || readFilters())[7], visible: visiblePromotions, page: currentPromotionPage, scroll: window.scrollY
           }));
         } catch {}
       }
@@ -620,6 +677,8 @@
           previousPromotionState = null;
           const restore = saved?.hash === location.hash && Array.isArray(saved.filters);
           if (restore) {
+            foreignSizes.checked = saved.foreignSizes === true;
+            renderSizeOptions();
             [searchInput, brandSelect, sizeSelect, typeSelect, audienceSelect, sortSelect].forEach((input, index) => {
               const value = saved.filters[index];
               if (typeof value === 'string' && (!input.options || [...input.options].some(option => option.value === value))) input.value = value;
@@ -673,6 +732,7 @@
         event.preventDefault();
         dismissFilters();
       });
+      foreignSizes.addEventListener('change', renderSizeOptions);
       filterDialog.addEventListener('change', updatePreview);
       function resetFilters() {
         restoreFilters(['', '', 'all', '', '', 'random', false]);
