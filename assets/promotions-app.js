@@ -301,17 +301,14 @@
       const rotationButton = document.getElementById('bannerRotationButton');
       const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
       let rotationPaused = reducedMotion.matches;
-      let slideTimer = null;
       let slideAnimation = null;
       function updateRotationButton() {
         rotationButton.textContent = rotationPaused ? 'Riprendi rotazione' : 'Pausa rotazione';
         rotationButton.setAttribute('aria-pressed', String(rotationPaused));
       }
       const canRotate = () => !rotationPaused && pageCount > 1 && !document.hidden &&
-        slot.getClientRects().length && !touchStart && !slot.querySelector(':focus-visible') && !slot.matches(':focus-visible') &&
-        !(window.matchMedia('(hover: hover)').matches && slot.matches(':hover'));
+        slot.getClientRects().length && !touchStart && !slot.querySelector(':focus-visible') && !slot.matches(':focus-visible');
       const scheduleRotation = () => {
-        clearTimeout(slideTimer);
         if (!canRotate()) {
           slideAnimation?.pause();
           return;
@@ -320,8 +317,6 @@
           slideAnimation.play();
           return;
         }
-        slideTimer = setTimeout(() => {
-        if (!canRotate()) return;
         slideAnimation = slot.animate(
           [{ transform: 'translateX(0)' }, { transform: 'translateX(-33.333333%)' }],
           { duration: 3000, easing: 'linear', fill: 'forwards' }
@@ -334,7 +329,6 @@
           render();
           scheduleRotation();
         };
-        }, 3500);
       };
       reducedMotion.addEventListener('change', () => {
         rotationPaused = reducedMotion.matches;
@@ -375,8 +369,6 @@
           moveBanner(dx < 0 ? 1 : -1);
         } else scheduleRotation();
       }, { passive: false });
-      slot.addEventListener('mouseenter', scheduleRotation);
-      slot.addEventListener('mouseleave', scheduleRotation);
       slot.addEventListener('focusin', scheduleRotation);
       slot.addEventListener('focusout', () => requestAnimationFrame(scheduleRotation));
       document.addEventListener('visibilitychange', scheduleRotation);
