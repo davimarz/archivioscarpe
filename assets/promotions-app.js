@@ -249,7 +249,7 @@
           return url.protocol === 'https:' && !url.username && !url.password ? url.href : '';
         } catch { return ''; }
       };
-      const createCard = (product, showAction = false) => {
+      const createCard = (product, showAction = false, availability) => {
         const card = document.createElement('a');
         card.href = safeOfferUrl(product.url) || '#';
         if (card.href !== '#') {
@@ -299,11 +299,17 @@
         merchant.textContent = product.merchant;
         // data-awin-variant-note
         const details = [];
-        if (product.color) details.push('Colore: ' + product.color);
-        if (product.size) details.push('Taglia: ' + product.size);
+        if (availability) {
+          details.push('Colori a listino: ' + (availability.colors.join(', ') || 'non indicati'));
+          details.push('Taglie a listino: ' + (availability.sizes.join(', ') || 'non indicate'));
+          details.push('Verifica colori e taglie sul sito del negozio.');
+        } else {
+          if (product.color) details.push('Colore: ' + product.color);
+          if (product.size) details.push('Taglia: ' + product.size);
+        }
         const options = [];
-        if (product.colorCount > 1) options.push(product.colorCount + ' colori');
-        if (product.sizeCount > 1) options.push(product.sizeCount + ' taglie');
+        if (!availability && product.colorCount > 1) options.push(product.colorCount + ' colori');
+        if (!availability && product.sizeCount > 1) options.push(product.sizeCount + ' taglie');
         const offer = discountFor(product);
         const discountBadge = document.createElement('span');
         discountBadge.className = 'awin-discount-badge';
@@ -500,20 +506,6 @@
         select.value = entries.includes(selected) ? selected : '';
         document.getElementById(labelId).hidden = entries.length === 0;
       }
-      function diversifyFirstPage(products) {
-        const selected = [], used = new Set();
-        for (const product of products) {
-          const family = product.family || normalize(product.name).replace(/\b(black|white|red|nero|nera|bianco|bianca|rosso|rossa|blu|beige)\b/g, '').trim();
-          const key = family || product.url;
-          if (used.has(key)) continue;
-          used.add(key);
-          selected.push(product);
-          if (selected.length === 6) break;
-        }
-        if (selected.length < 6) return products;
-        const chosen = new Set(selected);
-        return [...selected, ...products.filter(product => !chosen.has(product))];
-      }
       const filterDialog = document.getElementById('promotionsFilterDialog');
       const filterOpen = document.getElementById('promotionsFilterOpen');
       const applyButton = document.getElementById('promotionsApply');
@@ -589,11 +581,58 @@
         sizeSelect.value = [...sizeSelect.options].some(option => option.value === selected) ? selected : '';
         document.getElementById('promotionsSizeLabel').hidden = !groups.length;
       }
+      const modelKeys = new WeakMap();
+      const promotionAvailability = new Map();
+      function promotionModelKey(product) {
+        if (modelKeys.has(product)) return modelKeys.get(product);
+        const size = String(product.size || '').trim();
+        const name = size && product.name.toLowerCase().endsWith(size.toLowerCase())
+          ? product.name.slice(0, -size.length) : product.name;
+        const brand = canonicalBrand(product.brand);
+        const audience = promotionAudience(product);
+        const parts = name.split(/\s+[-–—|]\s+/);
+        const colors = new Set(normalize(product.color).split(' ').filter(Boolean));
+        const lastPart = normalize(parts.at(-1));
+        if (parts.length > 1 && (lastPart === normalize(product.color) ||
+            /^(nero|bianco|beige|rosa|lilla|blu|verde|giallo|grigio|rosso|arancio|marrone|color mix)$/.test(lastPart))) parts.pop();
+        const words = normalize(parts.join(' ')).split(' ');
+        const title = words.filter(word => !colors.has(word) &&
+          !/^(scarpa|scarpe|running|corsa|donna|uomo|women|men|taglia)$/.test(word)).join(' ')
+          .replace(/\b(nova)\s+(blast)\b/g, '$1$2');
+        const model = /\basics\s+novablast\s+\d+\b/.test(title) && audience
+          ? title.match(/\basics\s+novablast\s+\d+(?:\s+(?:gtx|lite show|rise shine))?/)[0]
+          : title;
+        const key = JSON.stringify([brand, audience, model || product.url]);
+        modelKeys.set(product, key);
+        return key;
+      }
+      function indexPromotionAvailability(products) {
+        const groups = new Map();
+        for (const product of products) {
+          const key = promotionModelKey(product);
+          if (!groups.has(key)) groups.set(key, { colors: new Map(), sizes: new Set() });
+          const group = groups.get(key);
+          if (product.color) group.colors.set(normalize(product.color), product.color);
+          for (const size of promotionSizes(product.size)) group.sizes.add(size);
+        }
+        const compare = new Intl.Collator('it', { numeric: true }).compare;
+        for (const [key, group] of groups) {
+          promotionAvailability.set(key, {
+            colors: [...group.colors.values()].sort(compare),
+            sizes: [...group.sizes].sort((a, b) => {
+              const [systemA, numberA, fractionA = '0/1'] = a.split(' ');
+              const [systemB, numberB, fractionB = '0/1'] = b.split(' ');
+              const numeric = (number, fraction) => parseFloat(number) + Number(fraction[0]) / Number(fraction[2]);
+              return compare(systemA, systemB) || numeric(numberA, fractionA) - numeric(numberB, fractionB) || compare(a, b);
+            }).map(size => size.replace(/^EU /, '').replace('.', ',').replace(' 1/3', '⅓').replace(' 2/3', '⅔'))
+          });
+        }
+      }
       function promotionPool(preview = false) {
         const [size, brand, price, type, audience, sort, discounted] = !preview && draftSnapshot ? draftSnapshot : readFilters();
         const keys = price === 'all' ? ['low', 'mid', 'high'] : [price];
         const query = normalize(searchInput.value).split(' ').filter(Boolean);
-        const products = keys.flatMap(key => bands[key]).filter(product => {
+        const matching = keys.flatMap(key => bands[key]).filter(product => {
           const searchable = normalize([product.name, product.brand, product.model, product.color].join(' '));
           return (!brand || canonicalBrand(product.brand) === brand) &&
             (!size || promotionSizes(product.size).includes(size)) &&
@@ -602,19 +641,30 @@
             (!discounted || discountedOffers.has(product)) &&
             query.every(word => searchable.includes(word));
         });
+        const representatives = new Map();
+        for (const product of matching) {
+          const key = promotionModelKey(product);
+          const current = representatives.get(key);
+          if (!current || numericPrice(product) < numericPrice(current) ||
+              (numericPrice(product) === numericPrice(current) && compareOfferPriority(product, current) < 0)) {
+            representatives.set(key, product);
+          }
+        }
+        const products = [...representatives.values()];
         if (preview) return products;
         if (sort === 'random') {
           return products.sort((a, b) => Number(discountedOffers.has(b)) - Number(discountedOffers.has(a)) || randomOrder.get(a) - randomOrder.get(b));
         }
         if (sort === 'discount') {
-          return diversifyFirstPage(products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b)));
+          return products.sort((a, b) => compareOfferPriority(a, b) || numericPrice(a) - numericPrice(b));
         }
-        if (sort === 'price-asc') return diversifyFirstPage(products.sort((a, b) => numericPrice(a) - numericPrice(b)));
-        if (sort === 'price-desc') return diversifyFirstPage(products.sort((a, b) => numericPrice(b) - numericPrice(a)));
+        if (sort === 'price-asc') return products.sort((a, b) => numericPrice(a) - numericPrice(b));
+        if (sort === 'price-desc') return products.sort((a, b) => numericPrice(b) - numericPrice(a));
         return products;
       }
       function populatePromotionFilters() {
         const products = Object.values(bands).flat();
+        indexPromotionAvailability(products);
         const names = new Map();
         for (const product of products) {
           const key = canonicalBrand(product.brand);
@@ -689,7 +739,7 @@
         const shown = products.slice(0, visiblePromotions);
         if (!append || grid.children.length > shown.length) grid.replaceChildren();
         for (let index = grid.children.length; index < shown.length; index++) {
-          const card = createCard(shown[index], true);
+          const card = createCard(shown[index], true, promotionAvailability.get(promotionModelKey(shown[index])));
           if (index % 6 === 0) card.dataset.pageStart = String(Math.floor(index / 6) + 1);
           grid.append(card);
         }
