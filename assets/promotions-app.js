@@ -70,6 +70,56 @@
           return awinCatalog.shuffleProducts(products).sort(compareOfferPriority);
         }
       };
+      function cheapestMerchantOffers(products) {
+        const groups = new Map();
+        const sharedVariants = new Map();
+        const find = group => {
+          while (group.parent) {
+            if (group.parent.parent) group.parent = group.parent.parent;
+            group = group.parent;
+          }
+          return group;
+        };
+        const entries = products.map(product => {
+          const merchant = normalize(product.merchant);
+          const brand = normalize(product.brand);
+          const color = normalize(product.color);
+          const size = String(product.size || '').trim();
+          const title = normalize(size && product.name.toLowerCase().endsWith(size.toLowerCase())
+            ? product.name.slice(0, -size.length) : product.name);
+          // A retailer typically reuses the same photo and title for all sizes of a colorway.
+          const localKey = JSON.stringify([merchant, brand, title, color, product.image]);
+          let group = groups.get(localKey);
+          if (!group) {
+            group = { parent: null, cheapest: null };
+            groups.set(localKey, group);
+          }
+          const gtin = String(product.gtin || '').trim();
+          const keys = [];
+          if (/^\d{8,14}$/.test(gtin)) keys.push('gtin:' + gtin.padStart(14, '0'));
+          if (brand && color && title) keys.push(JSON.stringify([brand, title, color]));
+          for (const key of keys) {
+            const other = sharedVariants.get(key);
+            if (other) {
+              const root = find(group);
+              const target = find(other);
+              if (root !== target) root.parent = target;
+            } else {
+              sharedVariants.set(key, group);
+            }
+          }
+          return { product, merchant, group, price: numericPrice(product) };
+        });
+        for (const entry of entries) {
+          const group = find(entry.group);
+          const best = group.cheapest;
+          if (!best || entry.price < best.price ||
+              (entry.price === best.price && entry.merchant < best.merchant)) group.cheapest = entry;
+        }
+        return entries.filter(entry => entry.merchant === find(entry.group).cheapest.merchant)
+          .map(entry => entry.product);
+      }
+
       const seen = new Set();
       const sizeCache = new Map();
       const sizeOptions = new Set();
@@ -79,16 +129,18 @@
       function readNextBlock(keys) {
         if (!nextBlock) {
           nextBlock = catalog.next(keys).then(items => {
-            for (const product of items) {
+            const eligible = items.filter(product => {
               if (!product || typeof product.name !== 'string' || typeof product.merchant !== 'string' ||
                   !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
                   disabledMerchants.has(normalize(product.merchant)) ||
-                  !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) continue;
+                  !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) return false;
+              return Number.isFinite(numericPrice(product));
+            });
+            for (const product of cheapestMerchantOffers(eligible).sort((a, b) => numericPrice(a) - numericPrice(b))) {
               const amount = numericPrice(product);
-              if (!Number.isFinite(amount)) continue;
               const sizes = promotionSizes(product.size);
               const size = sizes.join('|') || product.size;
-              const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([normalize(product.merchant), key, size]));
+              const productKeys = awinCatalog.promotionProductKeys(product).map(key => JSON.stringify([normalize(product.merchant), key, normalize(product.color), size]));
               if (productKeys.some(key => seen.has(key))) continue;
               productKeys.forEach(key => seen.add(key));
               sizes.forEach(key => sizeOptions.add(key));
