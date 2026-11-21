@@ -111,7 +111,7 @@
     main .bg-amber-500,main .bg-indigo-600{background:#050505!important;color:white!important}
     button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #9a3900!important}
     #archiveSearchPanel input{background:#f9f8f4!important;border-radius:999px!important;box-shadow:0 4px 12px #28493b0d}
-    #usageGuideButton{background:#005f2d;border:2px solid #39ff14;color:#fff;box-shadow:0 0 8px #39ff1466;font-size:.875rem}
+    #usageGuideButton{background:#005f2d;border:2px solid #39ff14;color:#fff;box-shadow:0 0 8px #39ff1466}
     #usageGuideButton:hover{background:#006b31;color:#fff}
     #shoesCountBadge{background:#f4f4f4!important;color:#2d7657!important;border-color:#edeadb!important}
     #archiveFiltersDetails{background:#fff!important;border:1px solid #ecebe3!important}
@@ -247,6 +247,7 @@
     #view-settings #settingsBackupCard button.bg-amber-500{color:#fff!important}
     header .brand-mark{width:44px!important;height:44px!important}
     header .truncate{padding-right:48px}
+    #searchInput{-webkit-appearance:none;appearance:none;border-radius:0!important}
     #searchInput,#addBrand{scroll-margin-top:90px}
     #view-archive #personalArchiveCard h2{font-size:1.25rem;line-height:1.3}
     #affiliateAdSlot .banner-rotation-toggle{min-height:44px;font-size:.75rem}
@@ -323,13 +324,13 @@
       <div id="personalArchiveCard" class="personal-archive-panel space-y-2">
       <div class="flex items-center justify-between gap-2">
         <div><h2 class="text-lg font-bold">Le mie scarpe</h2></div>
-        <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex min-h-11 items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
+        <a id="usageGuideButton" href="./Guida-Archivio-Scarpe.pdf" target="_blank" rel="noopener" class="ml-auto shrink-0 inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-bold whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-400">Guida all'uso</a>
         <span id="shoesCountBadge" class="bg-slate-800 text-amber-400 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold whitespace-nowrap">0 paia</span>
       </div>
         <div id="archiveSearchPanel" class="mode-panel space-y-2">
 
         <label for="searchInput" class="sr-only">Cerca le tue scarpe</label>
-        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
+        <div class="relative"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i><input type="search" id="searchInput" oninput="filterArchive()" placeholder="Scrivi marca, modello o colore…" class="w-full min-h-12 bg-slate-900 border border-slate-700 pl-10 pr-3 text-sm text-white" autocomplete="off"></div>
         <div id="quickSearchResults" class="hidden" aria-live="polite"></div>
       </div>
       <details id="archiveFiltersDetails" class="rounded-xl border border-slate-700 bg-slate-900/80">
