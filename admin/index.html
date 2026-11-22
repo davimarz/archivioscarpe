@@ -56,13 +56,6 @@
   .panel summary { cursor: pointer; font-weight: 700; }
   .panel-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .panel-head button { min-height: 36px; padding: 5px 9px; background: var(--paper); color: var(--ink); }
-  .meta-ads { margin: 10px 0 14px; padding: 12px; border: 1px solid var(--rule); background: var(--paper); }
-  .meta-ads-title { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-  .meta-ads-title h3 { margin: 0; font-size: 1rem; }
-  .meta-ads-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid #9bcab0; border-radius: 999px; color: #14723d; background: #effaf3; font-size: .78rem; font-weight: 700; }
-  .meta-ads-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #14723d; }
-  .meta-ads .insight-grid { margin-bottom: 10px; grid-template-columns: repeat(4,minmax(0,1fr)); }
-  .meta-ads-note { margin: 8px 0 0 !important; font-size: .82rem; color: var(--muted); }
   .delta { display: block; min-height: 1.25em; margin-top: 5px; color: var(--muted); font: 600 .78rem/1.25 Satoshi, Arial, sans-serif; }
   .delta.positive { color: #14723d; }
   .delta.negative { color: #a33535; }
@@ -177,16 +170,11 @@
 </nav>
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
-<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Instagram, Facebook e TikTok nel periodo selezionato.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Facebook e Instagram per i contenuti organici. TikTok è il canale delle inserzioni a pagamento.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
 <p id="socialStatus" class="muted" role="status"></p>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
-<div class="social-detail" aria-labelledby="campaignHeading">
-<div class="panel-head"><div><h2 id="campaignHeading">Dati delle piattaforme pubblicitarie</h2><p class="muted" id="campaignStatus">Dati Meta per Instagram e Facebook, quando disponibili. Spesa e impression di TikTok Ads al momento non sono collegate.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
-<div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
-<details><summary>Dati per campagna</summary><div id="campaignTable" class="trend-scroll"></div></details>
-</div>
 <div class="social-detail" aria-labelledby="tiktokHeading">
-<div class="panel-head"><div><h2 id="tiktokHeading">Traffico TikTok</h2><p class="muted">Traffico attribuito a TikTok, sommato per tutto il canale.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="tiktokHeading">TikTok Ads</h2><p class="muted">Visite e clic attribuiti a TikTok. I dati su spesa, impression e copertura richiedono il collegamento a TikTok Ads Manager.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
 <details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
@@ -266,14 +254,7 @@ const ratioFormat=new Intl.NumberFormat('it-IT',{maximumFractionDigits:1});
 const trendDate=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});
 const trendMonth=new Intl.DateTimeFormat('it-IT',{month:'short',year:'numeric',timeZone:'UTC'});
 const sectionNames={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
-const exportData={campaigns:[],awin:[]};
-const metaAdsSnapshot={
- accountId:'1621100199686666',campaign:'Instagram Post',channel:'Instagram',
- period:'19 ott 2026 – 17 nov 2026',status:'Non attiva',budgetDaily:3,spend:2.73,
- results:16,resultLabel:'Visite al profilo',reach:425,frequency:1.09,impressions:465,
- linkClicks:17,cpc:0.16,ctr:3.66,cpm:5.87,costPerResult:0.17,updatedAt:'18 nov 2026'
-};
-let metaAdsData={...metaAdsSnapshot,live:false};
+const exportData={awin:[]};
 function periodBounds(value,now=new Date()){
  const current=dateParts(romeDateFormat,now);
  const today=romeMidnight(current.year,current.month,current.day);
@@ -408,41 +389,6 @@ function renderTraffic(currentReport,previousReport){
  storeList.replaceChildren(...(currentReport.stores.length?currentReport.stores.map(row=>listRow(row.name,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
  productList.replaceChildren(...(currentReport.products.length?currentReport.products.map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
 }
-function commissionArrayText(rows){return rows?.map(row=>formatMoney(row.currency,row.approved)).join(' · ')||'—';}
-function renderMetaAds(data=metaAdsData){
- const container=document.getElementById('metaAdsOverview');container.replaceChildren();
- const head=document.createElement('div');head.className='meta-ads-title';const title=document.createElement('h3');title.textContent='Meta Ads Manager · '+data.campaign;const badge=document.createElement('span');badge.className='meta-ads-badge';badge.textContent=data.live?'Dati aggiornati da Meta':'Ultima rilevazione verificata';head.append(title,badge);container.append(head);
- const grid=document.createElement('div');grid.className='insight-grid';
- const money=value=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(value);
- for(const [label,value] of [['Spesa',money(data.spend)],['Risultati',formatNumber.format(data.results)],['Copertura',formatNumber.format(data.reach)],['Impression',formatNumber.format(data.impressions)],['Clic sul link',formatNumber.format(data.linkClicks)],['CTR',ratioFormat.format(data.ctr)+'%'],['CPC',money(data.cpc)],['Costo per risultato',money(data.costPerResult)]])setInsight(grid,label,value);
- container.append(grid);
- const tableWrap=document.createElement('div');tableWrap.className='trend-scroll';const table=document.createElement('table');table.className='trend-table';const row=table.createTBody().insertRow();
- for(const [label,value] of [['Periodo',data.period],['Budget',money(data.budgetDaily)+'/giorno'],['Frequenza',ratioFormat.format(data.frequency)],['CPM',money(data.cpm)],['Stato',data.status],['Account',data.accountId]]){const cell=row.insertCell();appendText(cell,'strong',label);cell.append(document.createElement('br'),document.createTextNode(value));}
- tableWrap.append(table);container.append(tableWrap);
- const note=document.createElement('p');note.className='meta-ads-note';note.textContent=(data.live?'Aggiornamento automatico Meta eseguito il ':'Rilevazione verificata aggiornata il ')+data.updatedAt+'. I clic e gli ordini Awin restano separati.';container.append(note);
-}
-async function loadMetaAds(range,current){
- try{
-  const {data,error}=await client.functions.invoke('meta-ads-insights',{body:{since:range.since,until:range.until}});
-  if(error||!data?.campaigns?.length)throw new Error('META_UNAVAILABLE');
-  if(!current())return;
-  const best=[...data.campaigns].sort((a,b)=>Number(b.spend||0)-Number(a.spend||0))[0];
-  metaAdsData={...metaAdsSnapshot,...best,accountId:data.accountId||metaAdsSnapshot.accountId,period:best.period||metaAdsSnapshot.period,updatedAt:new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date()),live:true};
- }catch{metaAdsData={...metaAdsSnapshot,live:false};}
-}
-function renderCampaigns(traffic,awin){
- renderMetaAds(metaAdsData);
- const merged=new Map();
- for(const row of traffic.campaigns){if(row.source==='tiktok')continue;const key=(row.source||'other')+':'+row.name;merged.set(key,{campagna:row.name,canale:row.source||'other',visite:Number(row.visits),clic:Number(row.clicks),ordini:0,commissioni:'—'});}
- for(const row of awin?.footwearCampaigns||[]){if(row.source==='tiktok')continue;const key=(row.source||'other')+':'+row.campaign;const item=merged.get(key)||{campagna:row.campaign,canale:row.source||'other',visite:0,clic:0,ordini:0,commissioni:'—'};item.ordini=Number(row.orders);item.commissioni=commissionArrayText(row.commissions);merged.set(key,item);}
- const rows=[...merged.values()].sort((a,b)=>b.visite-a.visite||b.clic-a.clic||a.campagna.localeCompare(b.campagna,'it'));exportData.campaigns=rows;
- const container=document.getElementById('campaignTable'),status=document.getElementById('campaignStatus');container.replaceChildren();
- if(!rows.length){status.textContent='Nessuna campagna identificata nel periodo selezionato.';return;}
- status.textContent='Ordini e commissioni compaiono quando Awin restituisce il riferimento della campagna.';
- const table=document.createElement('table');table.className='data-table';const head=table.createTHead().insertRow();for(const label of ['Campagna','Canale','Visite','Clic','Ordini','Commissioni approvate'])appendText(head,'th',label).scope='col';
- const body=table.createTBody();for(const row of rows){const line=body.insertRow();for(const value of [row.campagna,row.canale,formatNumber.format(row.visite),formatNumber.format(row.clic),formatNumber.format(row.ordini),row.commissioni])appendText(line,'td',value);}
- container.append(table);
-}
 function renderQuality(report){
  const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
  document.getElementById('dataCheck').textContent='Aggiornato il '+updated;
@@ -494,7 +440,8 @@ function renderSocialComparison(report,previous){
  for(const label of ['Canale','Visite','Quota sul sito','Δ visite','Clic Awin tracciati'])appendText(head,'th',label).scope='col';
  const body=table.createTBody();
  for(const row of socialRows){
-  const line=body.insertRow();appendText(line,'th',row.canale).scope='row';
+  const line=body.insertRow();const channel=appendText(line,'th',row.canale);channel.scope='row';
+  appendText(channel,'small',row.canale==='TikTok'?' · Canale a pagamento':' · Contenuti organici');
   appendText(line,'td',formatNumber.format(row.visite));
   const share=line.insertCell();
   if(row.quota_percento===null)share.textContent='—';
@@ -507,7 +454,7 @@ function renderSocialComparison(report,previous){
   appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
  }
  target.append(table);
- status.textContent='La variazione è rispetto al periodo precedente. I clic Awin includono quelli con un riferimento di campagna registrato.';
+ status.textContent='Le visite sono attribuite al social di provenienza e possono includere traffico da inserzioni precedenti. I clic Awin includono quelli con un riferimento di campagna registrato.';
 }
 function tiktokClicks(report){
  return report.campaigns.filter(row=>row.source==='tiktok').reduce((sum,row)=>sum+Number(row.clicks),0);
@@ -567,7 +514,7 @@ async function loadStats(){
  try{
   const currentRequest=client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until});
   const previousRequest=client.rpc('dashboard_admin_report',{since:range.previousSince,until_at:range.previousUntil});
-   const [currentResult,previousResult,awinSettled]=await Promise.all([currentRequest,previousRequest,Promise.allSettled([loadAwinStats(range,current)]),loadMetaAds(range,current)]);
+   const [currentResult,previousResult,awinSettled]=await Promise.all([currentRequest,previousRequest,Promise.allSettled([loadAwinStats(range,current)])]);
   if(currentResult.error)throw currentResult.error;if(previousResult.error)throw previousResult.error;if(!current())return;
   const awinResult=awinSettled[0].status==='fulfilled'?awinSettled[0].value:null;
   if(!awinResult){
@@ -577,7 +524,7 @@ async function loadStats(){
    document.getElementById('exportAwin').disabled=true;
   }
   renderSocialComparison(currentResult.data,previousResult.data);
-  renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);renderCampaigns(currentResult.data,awinResult);
+  renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);
   void loadTikTok(range,currentResult.data,previousResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
   void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
   status.textContent=currentResult.data.visits||currentResult.data.clicks?'Periodo visualizzato: '+statsPeriod.options[statsPeriod.selectedIndex].text+'.':'Nessuna attività nel periodo selezionato.';
@@ -586,7 +533,6 @@ async function loadStats(){
   if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
  }finally{if(version===statsVersion)refreshStats.disabled=false;}
 }
-document.getElementById('exportCampaigns').addEventListener('click',()=>downloadCsv('campagne-archivio-scarpe.csv',[{campagna:metaAdsData.campaign,canale:metaAdsData.channel,periodo:metaAdsData.period,spesa:metaAdsData.spend,risultati:metaAdsData.results,copertura:metaAdsData.reach,impression:metaAdsData.impressions,clic_link:metaAdsData.linkClicks,ctr_percentuale:metaAdsData.ctr,cpc:metaAdsData.cpc,cpm:metaAdsData.cpm,costo_risultato:metaAdsData.costPerResult,budget_giornaliero:metaAdsData.budgetDaily,stato:metaAdsData.status,account_meta:metaAdsData.accountId,dati_in_tempo_reale:metaAdsData.live?'sì':'no'},...exportData.campaigns]));
 document.getElementById('exportAwin').addEventListener('click',()=>downloadCsv('awin-archivio-scarpe.csv',exportData.awin));
 refreshStats.addEventListener('click',loadStats);
 statsPeriod.addEventListener('change',loadStats);
