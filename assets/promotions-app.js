@@ -924,9 +924,15 @@
       const source = params.get('utm_source') || '';
       const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
       const fromFacebook = /^facebook$/i.test(source) || /(?:^|\.)facebook\.com$/i.test(referrerHost) || /(?:^|\.)fb\.com$/i.test(referrerHost);
-      const fromTikTok = /^tiktok$/i.test(source) || /(?:^|\.)tiktok\.com$/i.test(referrerHost);
+      const fromTikTok = params.has('ttclid') || /^tiktok$/i.test(source) || /(?:^|\.)tiktok\.com$/i.test(referrerHost);
       const channel = fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
-      const campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
+      let campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
+      if (channel === 'tiktok') {
+        const medium = (params.get('utm_medium') || '').trim().toLowerCase();
+        const paid = Boolean(params.get('ttclid')) || /^(paid[_-]?social|paid|cpc|cpm)$/.test(medium);
+        const organic = /^(organic[_-]?social|organic)$/.test(medium);
+        if (paid || organic) campaign = (paid ? 'tt-paid-' : 'tt-organic-') + (campaign || 'generale').slice(0, 37);
+      }
       recordAppEvent('visit', channel, campaign);
       const recordAffiliateClick = link => recordAppEvent('affiliate_click', 'awin', campaign, {
         source: channel,

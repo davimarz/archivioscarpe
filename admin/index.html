@@ -170,11 +170,11 @@
 </nav>
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
-<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Facebook e Instagram per i contenuti organici. TikTok è il canale delle inserzioni a pagamento.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Facebook e Instagram per i contenuti organici. TikTok comprende contenuti organici e inserzioni.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
 <p id="socialStatus" class="muted" role="status"></p>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
 <div class="social-detail" aria-labelledby="tiktokHeading">
-<div class="panel-head"><div><h2 id="tiktokHeading">TikTok Ads</h2><p class="muted">Visite e clic attribuiti a TikTok. I dati su spesa, impression e copertura richiedono il collegamento a TikTok Ads Manager.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="tiktokHeading">TikTok · organico e a pagamento</h2><p class="muted">Visite e clic attribuiti a TikTok. I dati su spesa, impression e copertura richiedono il collegamento a TikTok Ads Manager.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
 <details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
@@ -441,7 +441,7 @@ function renderSocialComparison(report,previous){
  const body=table.createTBody();
  for(const row of socialRows){
   const line=body.insertRow();const channel=appendText(line,'th',row.canale);channel.scope='row';
-  appendText(channel,'small',row.canale==='TikTok'?' · Canale a pagamento':' · Contenuti organici');
+  appendText(channel,'small',row.canale==='TikTok'?' · Organico e a pagamento':' · Contenuti organici');
   appendText(line,'td',formatNumber.format(row.visite));
   const share=line.insertCell();
   if(row.quota_percento===null)share.textContent='—';
@@ -454,21 +454,33 @@ function renderSocialComparison(report,previous){
   appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
  }
  target.append(table);
- status.textContent='Le visite sono attribuite al social di provenienza e possono includere traffico da inserzioni precedenti. I clic Awin includono quelli con un riferimento di campagna registrato.';
+ status.textContent='Le visite sono attribuite al social di provenienza e possono includere traffico da inserzioni precedenti. I clic Awin mostrati sono quelli tracciati. Il traffico TikTok privo di un’indicazione organica o pubblicitaria compare senza distinzione.';
 }
-function tiktokClicks(report){
- return report.campaigns.filter(row=>row.source==='tiktok').reduce((sum,row)=>sum+Number(row.clicks),0);
+function tiktokBreakdown(report){
+ const totals={organico:0,pagamento:0,non_classificato:Number(report.tiktok),
+  clic_organici:0,clic_pagamento:0,clic_non_classificati:0};
+ for(const row of report.campaigns.filter(row=>row.source==='tiktok')){
+  if(row.name.startsWith('tt-organic-')){
+   totals.organico+=Number(row.visits);totals.clic_organici+=Number(row.clicks);
+  }else if(row.name.startsWith('tt-paid-')){
+   totals.pagamento+=Number(row.visits);totals.clic_pagamento+=Number(row.clicks);
+  }else totals.clic_non_classificati+=Number(row.clicks);
+ }
+ totals.non_classificato=Math.max(0,totals.non_classificato-totals.organico-totals.pagamento);
+ return totals;
 }
+const tiktokColumns=[
+ ['organico','Visite organiche'],['pagamento','Visite a pagamento'],['non_classificato','Visite senza distinzione'],
+ ['clic_organici','Clic Awin organici'],['clic_pagamento','Clic Awin a pagamento'],['clic_non_classificati','Clic Awin senza distinzione']
+];
 let tiktokRows=[];
 document.getElementById('exportTikTok').addEventListener('click',()=>downloadCsv('report-tiktok.csv',tiktokRows));
-async function loadTikTok(range,report,previous,current){
+async function loadTikTok(range,report,current){
  const summary=document.getElementById('tiktokSummary'),tableWrap=document.getElementById('tiktokTable'),
   status=document.getElementById('tiktokStatus'),exportButton=document.getElementById('exportTikTok');
  summary.replaceChildren();tableWrap.replaceChildren();tiktokRows=[];exportButton.disabled=true;
- setInsight(summary,'Visite da TikTok',formatNumber.format(report.tiktok));
- setInsight(summary,'Visite nel periodo precedente',formatNumber.format(previous.tiktok));
- setInsight(summary,'Clic Awin con tracciamento campagna',formatNumber.format(tiktokClicks(report)));
- setInsight(summary,'Quota sulle visite al sito',report.visits?ratioFormat.format(100*report.tiktok/report.visits)+'%':'—');
+ const totals=tiktokBreakdown(report);
+ for(const [key,label] of tiktokColumns)setInsight(summary,label,formatNumber.format(totals[key]));
  status.textContent='Caricamento del dettaglio per data…';
  const start=new Date(range.since),end=new Date(range.until);
  const monthly=end-start>32*86400000;
@@ -488,21 +500,21 @@ async function loadTikTok(range,report,previous,current){
   rows.push(...await Promise.all(periods.slice(offset,offset+4).map(async ({label,...period})=>{
    const {data,error}=periods.length===1?{data:report}:await client.rpc('dashboard_admin_report',period);
    if(error)throw error;
-   return {periodo:label,visite:Number(data.tiktok),clic_awin_tracciati:tiktokClicks(data)};
+   return {periodo:label,...tiktokBreakdown(data)};
   })));
  }
  if(!current())return;
  const table=document.createElement('table');table.className='data-table';
  const head=table.createTHead().insertRow();
- for(const label of [monthly?'Mese':'Giorno','Visite TikTok','Clic Awin tracciati'])appendText(head,'th',label).scope='col';
+ for(const label of [monthly?'Mese':'Giorno',...tiktokColumns.map(([,label])=>label)])appendText(head,'th',label).scope='col';
  const body=table.createTBody();
  for(const row of rows){
   const line=body.insertRow();
   appendText(line,'th',row.periodo).scope='row';
-  appendText(line,'td',formatNumber.format(row.visite));appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
+  for(const [key] of tiktokColumns)appendText(line,'td',formatNumber.format(row[key]));
  }
  tableWrap.append(table);tiktokRows=rows;exportButton.disabled=!rows.length;
- status.textContent='I clic Awin includono quelli con un riferimento di campagna registrato.';
+ status.textContent='I clic Awin mostrati sono quelli tracciati. Il traffico TikTok privo di un’indicazione organica o pubblicitaria compare senza distinzione.';
 }
 async function loadStats(){
  const version=++statsVersion,authVersion=checkVersion,current=()=>version===statsVersion&&authVersion===checkVersion&&!dashboard.hidden;
@@ -525,7 +537,7 @@ async function loadStats(){
   }
   renderSocialComparison(currentResult.data,previousResult.data);
   renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);
-  void loadTikTok(range,currentResult.data,previousResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
+  void loadTikTok(range,currentResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
   void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
   status.textContent=currentResult.data.visits||currentResult.data.clicks?'Periodo visualizzato: '+statsPeriod.options[statsPeriod.selectedIndex].text+'.':'Nessuna attività nel periodo selezionato.';
  }catch(error){
