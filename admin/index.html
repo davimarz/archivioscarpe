@@ -139,6 +139,7 @@
   .dashboard-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
   .dashboard-nav a { padding: .45rem .65rem; border: 1px solid var(--rule); }
   .dashboard-grid section { scroll-margin-top: 1rem; }
+  .social-detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
 </style>
 </head>
 <body><main>
@@ -176,9 +177,20 @@
 </nav>
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
-<div class="panel-head"><div><h2 id="socialHeading">Confronto social</h2><p class="muted">Instagram, Facebook e TikTok nel periodo selezionato.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Instagram, Facebook e TikTok nel periodo selezionato.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
 <p id="socialStatus" class="muted" role="status"></p>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
+<div class="social-detail" aria-labelledby="campaignHeading">
+<div class="panel-head"><div><h2 id="campaignHeading">Dati delle piattaforme pubblicitarie</h2><p class="muted" id="campaignStatus">Dati Meta per Instagram e Facebook, quando disponibili. Spesa e impression di TikTok Ads al momento non sono collegate.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
+<div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
+<details><summary>Dati per campagna</summary><div id="campaignTable" class="trend-scroll"></div></details>
+</div>
+<div class="social-detail" aria-labelledby="tiktokHeading">
+<div class="panel-head"><div><h2 id="tiktokHeading">Traffico TikTok</h2><p class="muted">Traffico attribuito a TikTok, sommato per tutto il canale.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
+<div id="tiktokSummary" class="insight-grid"></div>
+<p id="tiktokStatus" class="muted" role="status"></p>
+<details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
+</div>
 </section>
 <section class="panel panel-traffic" aria-labelledby="trendHeading">
 <div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
@@ -189,17 +201,6 @@
 <section class="panel panel-control" aria-labelledby="qualityHeading">
 <h2 id="qualityHeading">Controllo dei dati</h2>
 <p id="dataCheck" role="status">Verifica delle statistiche…</p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
-</section>
-<section class="panel panel-wide" aria-labelledby="campaignHeading">
-<div class="panel-head"><div><h2 id="campaignHeading">Dettaglio pubblicitario</h2><p class="muted" id="campaignStatus">Dati pubblicitari Meta e attribuzione delle campagne.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
-<div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
-<details><summary>Dati per campagna</summary><div id="campaignTable" class="trend-scroll"></div></details>
-</section>
-<section class="panel panel-wide" aria-labelledby="tiktokHeading">
-<div class="panel-head"><div><h2 id="tiktokHeading">Report TikTok</h2><p class="muted">Traffico attribuito a TikTok, sommato per tutto il canale.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
-<div id="tiktokSummary" class="insight-grid"></div>
-<p id="tiktokStatus" class="muted" role="status"></p>
-<details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
 </section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
 <div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
