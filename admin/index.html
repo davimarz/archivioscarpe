@@ -131,6 +131,14 @@
 .awin-store h3{margin:0 0 8px;font-size:1rem}
 .awin-store p{margin:5px 0}
 #footwearNotes:empty,#footwearStores:empty{display:none}
+  #socialOverview { background: var(--paper); padding: clamp(14px, 3vw, 26px); }
+  #socialOverview table { width: 100%; min-width: 34rem; }
+  #socialOverview td { font-variant-numeric: tabular-nums; }
+  .social-share { display: flex; align-items: center; gap: .6rem; }
+  .social-share meter { width: 5rem; height: .9rem; }
+  .dashboard-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+  .dashboard-nav a { padding: .45rem .65rem; border: 1px solid var(--rule); }
+  .dashboard-grid section { scroll-margin-top: 1rem; }
 </style>
 </head>
 <body><main>
@@ -147,7 +155,7 @@
 </form>
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
-<div class="stats-actions"><h2>Statistiche</h2><div class="period-tools"><div>
+<div class="stats-actions"><h2>Riepilogo delle prestazioni</h2><div class="period-tools"><div>
 <label for="statsPeriod">Periodo</label>
 <select id="statsPeriod">
 <option value="today" selected>Oggi</option>
@@ -163,7 +171,15 @@
 <div><dt>Ordini con calzature</dt><dd id="statOrders">—</dd><small class="delta" id="deltaOrders"></small></div>
 <div><dt>Commissioni approvate</dt><dd id="statCommission">—</dd><small class="delta" id="deltaCommission"></small></div>
 </dl>
+<nav class="dashboard-nav" aria-label="Sezioni del pannello">
+<a href="#socialOverview">Confronto social</a><a href="#trendHeading">Traffico</a><a href="#awinHeading">Risultati Awin</a><a href="#catalogHeading">Catalogo</a>
+</nav>
 <div class="dashboard-grid">
+<section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
+<div class="panel-head"><div><h2 id="socialHeading">Confronto social</h2><p class="muted">Instagram, Facebook e TikTok nel periodo selezionato.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
+<p id="socialStatus" class="muted" role="status"></p>
+<div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
+</section>
 <section class="panel panel-traffic" aria-labelledby="trendHeading">
 <div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
 <p id="trendStatus" class="muted" role="status"></p>
@@ -175,15 +191,15 @@
 <p id="dataCheck" role="status">Verifica delle statistiche…</p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
 </section>
 <section class="panel panel-wide" aria-labelledby="campaignHeading">
-<div class="panel-head"><div><h2 id="campaignHeading">Campagne social</h2><p class="muted" id="campaignStatus">Instagram e TikTok, dalla visita all’acquisto verificabile.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="campaignHeading">Dettaglio pubblicitario</h2><p class="muted" id="campaignStatus">Dati pubblicitari Meta e attribuzione delle campagne.</p></div><button type="button" id="exportCampaigns">Esporta CSV</button></div>
 <div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
-<div id="campaignTable" class="trend-scroll"></div>
+<details><summary>Dati per campagna</summary><div id="campaignTable" class="trend-scroll"></div></details>
 </section>
 <section class="panel panel-wide" aria-labelledby="tiktokHeading">
 <div class="panel-head"><div><h2 id="tiktokHeading">Report TikTok</h2><p class="muted">Traffico attribuito a TikTok, sommato per tutto il canale.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
-<div id="tiktokTable" class="trend-scroll"></div>
+<details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
 </section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
 <div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
@@ -457,6 +473,41 @@ function downloadCsv(name,rows){
  const columns=Object.keys(rows[0]),content='\uFEFF'+[columns.join(';'),...rows.map(row=>columns.map(column=>csvCell(row[column])).join(';'))].join('\n');
  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+const socialChannels=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok']];
+let socialRows=[];
+document.getElementById('exportSocial').addEventListener('click',()=>downloadCsv('confronto-social.csv',socialRows));
+function renderSocialComparison(report,previous){
+ const target=document.getElementById('socialTable'),status=document.getElementById('socialStatus'),
+  exportButton=document.getElementById('exportSocial');
+ target.replaceChildren();exportButton.disabled=!report;
+ if(!report){socialRows=[];status.textContent='Caricamento del confronto…';return;}
+ const total=Number(report.visits);
+ socialRows=socialChannels.map(([source,canale])=>{
+  const visite=Number(report[source]||0);
+  return {canale,visite,quota_percento:total?Number((100*visite/total).toFixed(1)):null,
+   variazione_visite:visite-Number(previous[source]||0),
+   clic_awin_tracciati:report.campaigns.filter(row=>row.source===source).reduce((sum,row)=>sum+Number(row.clicks),0)};
+ }).sort((a,b)=>b.visite-a.visite);
+ const table=document.createElement('table');table.className='data-table';
+ const head=table.createTHead().insertRow();
+ for(const label of ['Canale','Visite','Quota sul sito','Δ visite','Clic Awin tracciati'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();
+ for(const row of socialRows){
+  const line=body.insertRow();appendText(line,'th',row.canale).scope='row';
+  appendText(line,'td',formatNumber.format(row.visite));
+  const share=line.insertCell();
+  if(row.quota_percento===null)share.textContent='—';
+  else{
+   const wrap=document.createElement('span');wrap.className='social-share';
+   const bar=document.createElement('meter');bar.min=0;bar.max=100;bar.value=row.quota_percento;bar.setAttribute('aria-hidden','true');
+   wrap.append(bar);appendText(wrap,'span',ratioFormat.format(row.quota_percento)+'%');share.append(wrap);
+  }
+  appendText(line,'td',(row.variazione_visite>0?'+':'')+formatNumber.format(row.variazione_visite));
+  appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
+ }
+ target.append(table);
+ status.textContent='La variazione è rispetto al periodo precedente. I clic Awin includono quelli con un riferimento di campagna registrato.';
+}
 function tiktokClicks(report){
  return report.campaigns.filter(row=>row.source==='tiktok').reduce((sum,row)=>sum+Number(row.clicks),0);
 }
@@ -510,6 +561,7 @@ async function loadStats(){
  const status=document.getElementById('statsStatus'),range=periodBounds(statsPeriod.value);
  for(const id of ['statVisits','statClicks','statOrders','statCommission'])document.getElementById(id).textContent='—';
  for(const id of ['deltaVisits','deltaClicks','deltaOrders','deltaCommission'])document.getElementById(id).textContent='';
+ renderSocialComparison(null);
  refreshStats.disabled=true;status.textContent='Aggiornamento del pannello per '+statsPeriod.options[statsPeriod.selectedIndex].text.toLowerCase()+'…';
  try{
   const currentRequest=client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until});
@@ -523,11 +575,13 @@ async function loadStats(){
    document.getElementById('footwearNotes').textContent='';
    document.getElementById('exportAwin').disabled=true;
   }
+  renderSocialComparison(currentResult.data,previousResult.data);
   renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);renderCampaigns(currentResult.data,awinResult);
   void loadTikTok(range,currentResult.data,previousResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
   void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
   status.textContent=currentResult.data.visits||currentResult.data.clicks?'Periodo visualizzato: '+statsPeriod.options[statsPeriod.selectedIndex].text+'.':'Nessuna attività nel periodo selezionato.';
  }catch(error){
+  if(current()&&!socialRows.length)document.getElementById('socialStatus').textContent='Confronto social non disponibile.';
   if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
  }finally{if(version===statsVersion)refreshStats.disabled=false;}
 }
