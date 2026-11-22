@@ -179,6 +179,12 @@
 <div id="metaAdsOverview" class="meta-ads" aria-label="Dati Meta Ads Manager"></div>
 <div id="campaignTable" class="trend-scroll"></div>
 </section>
+<section class="panel panel-wide" aria-labelledby="tiktokHeading">
+<div class="panel-head"><div><h2 id="tiktokHeading">Report TikTok</h2><p class="muted">Traffico attribuito a TikTok, sommato per tutto il canale.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
+<div id="tiktokSummary" class="insight-grid"></div>
+<p id="tiktokStatus" class="muted" role="status"></p>
+<div id="tiktokTable" class="trend-scroll"></div>
+</section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
 <div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
 <p id="awinStatus" role="status"></p><div id="awinTotals"></div>
@@ -410,8 +416,8 @@ async function loadMetaAds(range,current){
 function renderCampaigns(traffic,awin){
  renderMetaAds(metaAdsData);
  const merged=new Map();
- for(const row of traffic.campaigns){const key=(row.source||'other')+':'+row.name;merged.set(key,{campagna:row.name,canale:row.source||'other',visite:Number(row.visits),clic:Number(row.clicks),ordini:0,commissioni:'—'});}
- for(const row of awin?.footwearCampaigns||[]){const key=(row.source||'other')+':'+row.campaign;const item=merged.get(key)||{campagna:row.campaign,canale:row.source||'other',visite:0,clic:0,ordini:0,commissioni:'—'};item.ordini=Number(row.orders);item.commissioni=commissionArrayText(row.commissions);merged.set(key,item);}
+ for(const row of traffic.campaigns){if(row.source==='tiktok')continue;const key=(row.source||'other')+':'+row.name;merged.set(key,{campagna:row.name,canale:row.source||'other',visite:Number(row.visits),clic:Number(row.clicks),ordini:0,commissioni:'—'});}
+ for(const row of awin?.footwearCampaigns||[]){if(row.source==='tiktok')continue;const key=(row.source||'other')+':'+row.campaign;const item=merged.get(key)||{campagna:row.campaign,canale:row.source||'other',visite:0,clic:0,ordini:0,commissioni:'—'};item.ordini=Number(row.orders);item.commissioni=commissionArrayText(row.commissions);merged.set(key,item);}
  const rows=[...merged.values()].sort((a,b)=>b.visite-a.visite||b.clic-a.clic||a.campagna.localeCompare(b.campagna,'it'));exportData.campaigns=rows;
  const container=document.getElementById('campaignTable'),status=document.getElementById('campaignStatus');container.replaceChildren();
  if(!rows.length){status.textContent='Nessuna campagna identificata nel periodo selezionato.';return;}
@@ -451,6 +457,54 @@ function downloadCsv(name,rows){
  const columns=Object.keys(rows[0]),content='\uFEFF'+[columns.join(';'),...rows.map(row=>columns.map(column=>csvCell(row[column])).join(';'))].join('\n');
  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function tiktokClicks(report){
+ return report.campaigns.filter(row=>row.source==='tiktok').reduce((sum,row)=>sum+Number(row.clicks),0);
+}
+let tiktokRows=[];
+document.getElementById('exportTikTok').addEventListener('click',()=>downloadCsv('report-tiktok.csv',tiktokRows));
+async function loadTikTok(range,report,previous,current){
+ const summary=document.getElementById('tiktokSummary'),tableWrap=document.getElementById('tiktokTable'),
+  status=document.getElementById('tiktokStatus'),exportButton=document.getElementById('exportTikTok');
+ summary.replaceChildren();tableWrap.replaceChildren();tiktokRows=[];exportButton.disabled=true;
+ setInsight(summary,'Visite da TikTok',formatNumber.format(report.tiktok));
+ setInsight(summary,'Visite nel periodo precedente',formatNumber.format(previous.tiktok));
+ setInsight(summary,'Clic Awin con tracciamento campagna',formatNumber.format(tiktokClicks(report)));
+ setInsight(summary,'Quota sulle visite al sito',report.visits?ratioFormat.format(100*report.tiktok/report.visits)+'%':'—');
+ status.textContent='Caricamento del dettaglio per data…';
+ const start=new Date(range.since),end=new Date(range.until);
+ const monthly=end-start>32*86400000;
+ const periods=[];
+ let cursor=start;
+ while(cursor<end){
+  const {year,month,day}=dateParts(romeDateFormat,cursor);
+  const next=monthly?moveCalendarDay(year,month+1,1,0):moveCalendarDay(year,month,day,1);
+  const boundary=new Date(Math.min(end,romeMidnight(next.year,next.month,next.day)));
+  const label=romeDateFormat.format(cursor);
+  periods.push({since:cursor.toISOString(),until_at:boundary.toISOString(),label:monthly?label.slice(0,7):label});
+  cursor=boundary;
+ }
+ const rows=[];
+ for(let offset=0;offset<periods.length;offset+=4){
+  if(!current())return;
+  rows.push(...await Promise.all(periods.slice(offset,offset+4).map(async ({label,...period})=>{
+   const {data,error}=periods.length===1?{data:report}:await client.rpc('dashboard_admin_report',period);
+   if(error)throw error;
+   return {periodo:label,visite:Number(data.tiktok),clic_awin_tracciati:tiktokClicks(data)};
+  })));
+ }
+ if(!current())return;
+ const table=document.createElement('table');table.className='data-table';
+ const head=table.createTHead().insertRow();
+ for(const label of [monthly?'Mese':'Giorno','Visite TikTok','Clic Awin tracciati'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();
+ for(const row of rows){
+  const line=body.insertRow();
+  appendText(line,'th',row.periodo).scope='row';
+  appendText(line,'td',formatNumber.format(row.visite));appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
+ }
+ tableWrap.append(table);tiktokRows=rows;exportButton.disabled=!rows.length;
+ status.textContent='I clic Awin includono quelli con un riferimento di campagna registrato.';
+}
 async function loadStats(){
  const version=++statsVersion,authVersion=checkVersion,current=()=>version===statsVersion&&authVersion===checkVersion&&!dashboard.hidden;
  const status=document.getElementById('statsStatus'),range=periodBounds(statsPeriod.value);
@@ -470,6 +524,7 @@ async function loadStats(){
    document.getElementById('exportAwin').disabled=true;
   }
   renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);renderCampaigns(currentResult.data,awinResult);
+  void loadTikTok(range,currentResult.data,previousResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
   void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
   status.textContent=currentResult.data.visits||currentResult.data.clicks?'Periodo visualizzato: '+statsPeriod.options[statsPeriod.selectedIndex].text+'.':'Nessuna attività nel periodo selezionato.';
  }catch(error){
