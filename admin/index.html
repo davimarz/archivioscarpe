@@ -197,7 +197,7 @@
 </section>
 <section class="panel panel-ranking" aria-labelledby="rankingHeading">
 <h2 id="rankingHeading">Negozi e prodotti più cliccati</h2><p class="muted">La classifica si popola con i nuovi clic registrati.</p>
-<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
+<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
 </section>
 <section class="panel panel-catalog" aria-labelledby="catalogHeading">
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
@@ -387,7 +387,7 @@ function renderTraffic(currentReport,previousReport){
  setInsight(insights,'Sessioni con almeno un clic',currentReport.visitSessions?ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%':'In raccolta');
  const storeList=document.getElementById('storeRanking'),productList=document.getElementById('productRanking');
  storeList.replaceChildren(...(currentReport.stores.length?currentReport.stores.map(row=>listRow(row.name,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
- productList.replaceChildren(...(currentReport.products.length?currentReport.products.map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
+ productList.replaceChildren(...(currentReport.products.length?currentReport.products.slice(0,10).map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
 }
 function renderQuality(report){
  const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
