@@ -133,6 +133,10 @@
   .dashboard-nav a { padding: .45rem .65rem; border: 1px solid var(--rule); }
   .dashboard-grid section { scroll-margin-top: 1rem; }
   .social-detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .dashboard-group { margin-block: 26px; }
+  .dashboard-group > h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+  .dashboard-group .panel h2 { font-size: 1.08rem; }
+  .dashboard-group .dashboard-grid > details { margin: 0; }
 </style>
 </head>
 <body><main>
@@ -160,15 +164,26 @@
 </select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
-<div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
-<div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
 <div><dt>Ordini con calzature</dt><dd id="statOrders">—</dd><small class="delta" id="deltaOrders"></small></div>
 <div><dt>Commissioni approvate</dt><dd id="statCommission">—</dd><small class="delta" id="deltaCommission"></small></div>
+<div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
+<div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
 </dl>
 <nav class="dashboard-nav" aria-label="Sezioni del pannello">
-<a href="#socialOverview">Confronto social</a><a href="#trendHeading">Traffico</a><a href="#awinHeading">Risultati Awin</a><a href="#catalogHeading">Catalogo</a>
+<a href="#resultsHeading">Risultati</a><a href="#acquisitionHeading">Acquisizione</a><a href="#maintenanceHeading">Manutenzione</a>
 </nav>
-<div class="dashboard-grid">
+<section class="dashboard-group" aria-labelledby="resultsHeading"><h2 id="resultsHeading">Risultati commerciali</h2><div class="dashboard-grid">
+<section class="panel panel-wide" aria-labelledby="awinHeading">
+<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
+<p id="awinStatus" role="status"></p><div id="awinTotals"></div>
+<div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
+</section>
+<section class="panel panel-wide" aria-labelledby="rankingHeading">
+<h2 id="rankingHeading">Negozi e prodotti più cliccati</h2>
+<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
+</section>
+</div></section>
+<section class="dashboard-group" aria-labelledby="acquisitionHeading"><h2 id="acquisitionHeading">Acquisizione e traffico</h2><div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
 <div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Facebook e Instagram per i contenuti organici. TikTok comprende contenuti organici e inserzioni.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
 <p id="socialStatus" class="muted" role="status"></p>
@@ -180,29 +195,21 @@
 <details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
 </div>
 </section>
-<section class="panel panel-traffic" aria-labelledby="trendHeading">
+<section class="panel panel-wide" aria-labelledby="trendHeading">
 <div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
 <p id="trendStatus" class="muted" role="status"></p>
 <div id="trendCharts" class="chart-grid"></div>
 <details><summary>Valori e aperture delle sezioni</summary><div id="trendTable" class="trend-scroll"></div><ul id="sectionCounts"></ul></details>
 </section>
-<section class="panel panel-control" aria-labelledby="qualityHeading">
-<h2 id="qualityHeading">Controllo dei dati</h2>
-<p id="dataCheck" role="status">Verifica delle statistiche…</p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
-</section>
-<section class="panel panel-wide" aria-labelledby="awinHeading">
-<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
-<p id="awinStatus" role="status"></p><div id="awinTotals"></div>
-<div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
-</section>
-<section class="panel panel-ranking" aria-labelledby="rankingHeading">
-<h2 id="rankingHeading">Negozi e prodotti più cliccati</h2><p class="muted">La classifica si popola con i nuovi clic registrati.</p>
-<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
-</section>
-<section class="panel panel-catalog" aria-labelledby="catalogHeading">
+</div></section>
+<section class="dashboard-group" aria-labelledby="maintenanceHeading"><h2 id="maintenanceHeading">Manutenzione</h2><div class="dashboard-grid">
+<section class="panel panel-wide" aria-labelledby="catalogHeading">
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
 </section>
-</div>
+<details class="panel panel-wide"><summary>Qualità delle statistiche</summary>
+<p id="dataCheck" class="muted" role="status"></p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
+</details>
+</div></section>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
@@ -380,9 +387,6 @@ function renderTraffic(currentReport,previousReport){
  document.getElementById('statClicks').textContent=formatNumber.format(currentReport.clicks);delta('deltaClicks',currentReport.clicks,previousReport.clicks);
  const sections=document.getElementById('sectionCounts');sections.replaceChildren(...currentReport.sections.map(row=>listRow(sectionNames[row.name]||row.name,row.total)));
  const insights=document.getElementById('trafficInsights');insights.replaceChildren();
- setInsight(insights,'Quota Instagram',currentReport.visits?ratioFormat.format(100*currentReport.instagram/currentReport.visits)+'%':'—');
- setInsight(insights,'Quota Facebook',currentReport.visits?ratioFormat.format(100*Number(currentReport.facebook||0)/currentReport.visits)+'%':'—');
- setInsight(insights,'Quota TikTok',currentReport.visits?ratioFormat.format(100*currentReport.tiktok/currentReport.visits)+'%':'—');
  setInsight(insights,'Clic ogni 100 visite',currentReport.visits?ratioFormat.format(100*currentReport.clicks/currentReport.visits):'—');
  setInsight(insights,'Sessioni con almeno un clic',currentReport.visitSessions?ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%':'In raccolta');
  const storeList=document.getElementById('storeRanking'),productList=document.getElementById('productRanking');
