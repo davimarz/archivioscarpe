@@ -124,17 +124,27 @@
 .awin-store h3{margin:0 0 8px;font-size:1rem}
 .awin-store p{margin:5px 0}
 #footwearNotes:empty,#footwearStores:empty{display:none}
-  #socialOverview { background: var(--paper); padding: clamp(14px, 3vw, 26px); }
-  #socialOverview table { width: 100%; min-width: 34rem; }
+  #socialOverview table { width: 100%; }
   #socialOverview td { font-variant-numeric: tabular-nums; }
   .social-share { display: flex; align-items: center; gap: .6rem; }
   .social-share meter { width: 5rem; height: .9rem; }
   .dashboard-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
   .dashboard-nav a { padding: .45rem .65rem; border: 1px solid var(--rule); }
   .dashboard-grid section { scroll-margin-top: 1rem; }
-  #tiktokSummary { grid-template-columns: repeat(auto-fit,minmax(min(100%,8rem),1fr)); gap: 6px; }
-  #tiktokSummary .insight { padding: 5px 7px; font-size: .78rem; }
+  .dashboard-grid { gap: 8px; }
+  .dashboard-grid > .panel { padding: 10px; }
+  .dashboard-grid h2 { font-size: 1.1rem; }
+  .dashboard-grid h3 { font-size: .95rem; margin: 0 0 5px; }
+  .topic-block + .topic-block { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule); }
+  #tiktokSummary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; margin-top: 4px; }
+  #tiktokSummary .insight { padding: 4px 5px; font-size: .75rem; line-height: 1.25; }
   #tiktokSummary .insight strong { font-size: 1rem; }
+  #socialTable table { min-width: 22rem; }
+  #tiktokTable table { min-width: 32rem; }
+  .export-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .export-actions button { font-size: .85rem; }
+  @media (min-width: 800px) { .chart-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+  @media (max-width: 600px) { .social-share meter { display: none; } }
   .dashboard-group { margin-block: 26px; }
   .dashboard-group > h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
   .dashboard-group .panel h2 { font-size: 1.08rem; }
@@ -178,15 +188,18 @@
 </dl>
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
-<div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Sono mostrate tutte le sorgenti rilevate dal sito. Facebook e Instagram riguardano i contenuti organici; TikTok comprende contenuti organici e inserzioni.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
-<p id="socialStatus" class="muted" role="status"></p>
+<h2 id="socialHeading">Pubblicità e traffico social</h2>
+<div class="topic-block">
+<h3>Confronto per canale</h3>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
-</section>
-<section class="panel panel-wide" aria-labelledby="tiktokHeading">
-<div class="panel-head"><div><h2 id="tiktokHeading">TikTok · organico e a pagamento</h2><p class="muted">Qui compaiono le aperture del sito attribuite a TikTok, non le visualizzazioni di video o profilo mostrate nell’app TikTok. Spesa, impression e copertura richiedono il collegamento a TikTok Ads Manager.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
+<p id="socialStatus" class="muted" role="status"></p>
+</div>
+<section class="topic-block" aria-labelledby="tiktokHeading">
+<h3 id="tiktokHeading">TikTok · organico e a pagamento</h3>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
 <details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
+</section>
 </section>
 <section class="panel panel-wide" aria-labelledby="trendHeading">
 <div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
@@ -202,7 +215,7 @@
 <p id="dataCheck" class="muted" role="status"></p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
 </section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
-<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
+<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div></div>
 <p id="awinStatus" role="status"></p><div id="awinTotals"></div>
 <div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
 </section>
@@ -210,6 +223,14 @@
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
 </section>
 <section class="panel panel-wide"><h2>Acquisizione e traffico</h2><h3>Aperture delle sezioni</h3><ul id="sectionCounts"></ul></section>
+<section class="panel panel-wide" aria-labelledby="exportsHeading">
+<h2 id="exportsHeading">Esportazioni CSV</h2>
+<div class="export-actions">
+<button type="button" id="exportSocial" disabled>Confronto social</button>
+<button type="button" id="exportTikTok" disabled>Dettaglio TikTok</button>
+<button type="button" id="exportAwin" disabled>Risultati Awin</button>
+</div>
+</section>
 </div>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
@@ -540,6 +561,7 @@ async function loadStats(){
  for(const id of ['statVisits','statClicks','statOrders','statCommission'])document.getElementById(id).textContent='—';
  for(const id of ['deltaVisits','deltaClicks','deltaOrders','deltaCommission'])document.getElementById(id).textContent='';
  renderSocialComparison(null);
+ for(const id of ['exportTikTok','exportAwin'])document.getElementById(id).disabled=true;
  refreshStats.disabled=true;status.textContent='Aggiornamento del pannello per '+statsPeriod.options[statsPeriod.selectedIndex].text.toLowerCase()+'…';
  try{
   const currentRequest=client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until});
