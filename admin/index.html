@@ -162,6 +162,11 @@
 <option value="month">Questo mese</option>
 <option value="year">Quest'anno</option>
 </select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
+<form id="customPeriod" class="period-tools">
+<div><label for="periodStart">Data iniziale</label><input id="periodStart" type="date" required></div>
+<div><label for="periodEnd">Data finale</label><input id="periodEnd" type="date" required></div>
+<button type="submit">Applica date</button>
+</form>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
 <div><dt>Ordini con calzature</dt><dd id="statOrders">—</dd><small class="delta" id="deltaOrders"></small></div>
@@ -224,6 +229,10 @@ let recovering=false;
 let checkVersion=0;
 const refreshStats=document.getElementById('refreshStats');
 const statsPeriod=document.getElementById('statsPeriod');
+statsPeriod.add(new Option('Intervallo personalizzato','custom'));
+const customPeriod=document.getElementById('customPeriod');
+const periodStart=document.getElementById('periodStart'),periodEnd=document.getElementById('periodEnd');
+let selectedDates;
 const romeDateFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit'});
 const romeDateTimeFormat=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Rome',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
 function dateParts(format,date){return Object.fromEntries(format.formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,Number(part.value)]));}
@@ -262,11 +271,17 @@ const trendDate=new Intl.DateTimeFormat('it-IT',{day:'numeric',month:'short',yea
 const trendMonth=new Intl.DateTimeFormat('it-IT',{month:'short',year:'numeric',timeZone:'UTC'});
 const sectionNames={archive:'Armadio',add:'Aggiungi',check:'Confronta',promotions:'Promozioni',settings:'Impostazioni'};
 const exportData={awin:[]};
-function periodBounds(value,now=new Date()){
+function periodBounds(value,now=new Date(),dates=selectedDates){
  const current=dateParts(romeDateFormat,now);
  const today=romeMidnight(current.year,current.month,current.day);
  let start=today,untilDate=now;
- if(value==='yesterday'){
+ if(value==='custom'){
+  const [year,month,day]=dates.start.split('-').map(Number);
+  const [endYear,endMonth,endDay]=dates.end.split('-').map(Number);
+  const next=moveCalendarDay(endYear,endMonth,endDay,1);
+  start=romeMidnight(year,month,day);
+  untilDate=new Date(Math.min(now,romeMidnight(next.year,next.month,next.day)));
+ }else if(value==='yesterday'){
   const previous=moveCalendarDay(current.year,current.month,current.day,-1);
   start=romeMidnight(previous.year,previous.month,previous.day);untilDate=today;
  }else if(value==='week'){
@@ -523,6 +538,7 @@ async function loadTikTok(range,report,current){
  status.textContent='I clic Awin mostrati sono quelli tracciati. Il traffico TikTok privo di un’indicazione organica o pubblicitaria compare senza distinzione.';
 }
 async function loadStats(){
+ if(statsPeriod.value==='custom'&&!selectedDates){periodStart.focus();return;}
  const version=++statsVersion,authVersion=checkVersion,current=()=>version===statsVersion&&authVersion===checkVersion&&!dashboard.hidden;
  const status=document.getElementById('statsStatus'),range=periodBounds(statsPeriod.value);
  for(const id of ['statVisits','statClicks','statOrders','statCommission'])document.getElementById(id).textContent='—';
@@ -532,20 +548,28 @@ async function loadStats(){
  try{
   const currentRequest=client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until});
   const previousRequest=client.rpc('dashboard_admin_report',{since:range.previousSince,until_at:range.previousUntil});
-   const [currentResult,previousResult,awinSettled]=await Promise.all([currentRequest,previousRequest,Promise.allSettled([loadAwinStats(range,current)])]);
+  const awinRequest=loadAwinStats(range,current).catch(()=>null);
+  const [currentResult,previousResult]=await Promise.all([currentRequest,previousRequest]);
   if(currentResult.error)throw currentResult.error;if(previousResult.error)throw previousResult.error;if(!current())return;
-  const awinResult=awinSettled[0].status==='fulfilled'?awinSettled[0].value:null;
-  if(!awinResult){
+  void awinRequest.then(awinResult=>{
+   if(!current())return;
+   if(!awinResult){
    document.getElementById('awinStatus').textContent='Awin non ha restituito il report. Le statistiche del sito restano disponibili; premi Aggiorna per riprovare.';
    document.getElementById('footwearStores').replaceChildren();
    document.getElementById('footwearNotes').textContent='';
    document.getElementById('exportAwin').disabled=true;
-  }
+   }
+   void loadCatalogHealth(awinResult?.advertisers,current);
+  });
   renderSocialComparison(currentResult.data,previousResult.data);
   renderTraffic(currentResult.data,previousResult.data);renderQuality(currentResult.data);
   void loadTikTok(range,currentResult.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
-  void loadCatalogHealth(awinResult?.advertisers,current);void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
-  status.textContent=currentResult.data.visits||currentResult.data.clicks?'Periodo visualizzato: '+statsPeriod.options[statsPeriod.selectedIndex].text+'.':'Nessuna attività nel periodo selezionato.';
+  void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
+  const label=statsPeriod.value==='custom'
+   ? [selectedDates.start,selectedDates.end].map(date=>trendDate.format(new Date(date))).join(' – ')
+   : statsPeriod.options[statsPeriod.selectedIndex].text;
+  const time=new Intl.DateTimeFormat('it-IT',{timeStyle:'medium',timeZone:'Europe/Rome'}).format(new Date());
+  status.textContent=label+' · Dati del sito aggiornati alle '+time+(statsPeriod.value==='today'?' · Aggiornamento automatico ogni minuto.':'.');
  }catch(error){
   if(current()&&!socialRows.length)document.getElementById('socialStatus').textContent='Confronto social non disponibile.';
   if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
@@ -553,7 +577,25 @@ async function loadStats(){
 }
 document.getElementById('exportAwin').addEventListener('click',()=>downloadCsv('awin-archivio-scarpe.csv',exportData.awin));
 refreshStats.addEventListener('click',loadStats);
-statsPeriod.addEventListener('change',loadStats);
+statsPeriod.addEventListener('change',()=>{
+ if(statsPeriod.value==='custom'&&!selectedDates){periodStart.focus();return;}
+ void loadStats();
+});
+customPeriod.addEventListener('submit',event=>{
+ event.preventDefault();
+ const today=romeDateFormat.format(new Date());
+ const start=periodStart.value,end=periodEnd.value;
+ if(start>end||end>today||Date.parse(end)-Date.parse(start)>365*86400000){
+  document.getElementById('statsStatus').textContent='Scegli date in ordine, fino a oggi, per un massimo di 366 giorni.';
+  return;
+ }
+ selectedDates={start,end};
+ statsPeriod.value='custom';
+ void loadStats();
+});
+setInterval(()=>{
+ if(!dashboard.hidden&&!document.hidden&&!refreshStats.disabled&&statsPeriod.value==='today')void loadStats();
+},60000);
 async function check(){
  const version=++checkVersion;
  dashboard.hidden=true;login.hidden=true;recovery.hidden=true;message.textContent='Verifica accesso in corso…';
