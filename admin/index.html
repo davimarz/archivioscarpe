@@ -132,7 +132,9 @@
   .dashboard-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
   .dashboard-nav a { padding: .45rem .65rem; border: 1px solid var(--rule); }
   .dashboard-grid section { scroll-margin-top: 1rem; }
-  .social-detail { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  #tiktokSummary { grid-template-columns: repeat(auto-fit,minmax(min(100%,8rem),1fr)); gap: 6px; }
+  #tiktokSummary .insight { padding: 5px 7px; font-size: .78rem; }
+  #tiktokSummary .insight strong { font-size: 1rem; }
   .dashboard-group { margin-block: 26px; }
   .dashboard-group > h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
   .dashboard-group .panel h2 { font-size: 1.08rem; }
@@ -174,47 +176,41 @@
 <div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
 <div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
 </dl>
-<nav class="dashboard-nav" aria-label="Sezioni del pannello">
-<a href="#resultsHeading">Risultati</a><a href="#acquisitionHeading">Acquisizione</a><a href="#maintenanceHeading">Manutenzione</a>
-</nav>
-<section class="dashboard-group" aria-labelledby="resultsHeading"><h2 id="resultsHeading">Risultati commerciali</h2><div class="dashboard-grid">
-<section class="panel panel-wide" aria-labelledby="awinHeading">
-<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
-<p id="awinStatus" role="status"></p><div id="awinTotals"></div>
-<div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
-</section>
-<section class="panel panel-wide" aria-labelledby="rankingHeading">
-<h2 id="rankingHeading">Negozi e prodotti più cliccati</h2>
-<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
-</section>
-</div></section>
-<section class="dashboard-group" aria-labelledby="acquisitionHeading"><h2 id="acquisitionHeading">Acquisizione e traffico</h2><div class="dashboard-grid">
+<div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
 <div class="panel-head"><div><h2 id="socialHeading">Pubblicità e traffico social</h2><p class="muted">Sono mostrate tutte le sorgenti rilevate dal sito. Facebook e Instagram riguardano i contenuti organici; TikTok comprende contenuti organici e inserzioni.</p></div><button type="button" id="exportSocial" disabled>Esporta CSV</button></div>
 <p id="socialStatus" class="muted" role="status"></p>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
-<div class="social-detail" aria-labelledby="tiktokHeading">
+</section>
+<section class="panel panel-wide" aria-labelledby="tiktokHeading">
 <div class="panel-head"><div><h2 id="tiktokHeading">TikTok · organico e a pagamento</h2><p class="muted">Qui compaiono le aperture del sito attribuite a TikTok, non le visualizzazioni di video o profilo mostrate nell’app TikTok. Spesa, impression e copertura richiedono il collegamento a TikTok Ads Manager.</p></div><button type="button" id="exportTikTok" disabled>Esporta CSV</button></div>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
 <details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
-</div>
 </section>
 <section class="panel panel-wide" aria-labelledby="trendHeading">
 <div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
 <p id="trendStatus" class="muted" role="status"></p>
 <div id="trendCharts" class="chart-grid"></div>
-<details><summary>Valori e aperture delle sezioni</summary><div id="trendTable" class="trend-scroll"></div><ul id="sectionCounts"></ul></details>
+<details><summary>Valori per data</summary><div id="trendTable" class="trend-scroll"></div></details>
 </section>
-</div></section>
-<section class="dashboard-group" aria-labelledby="maintenanceHeading"><h2 id="maintenanceHeading">Manutenzione</h2><div class="dashboard-grid">
+<section class="panel panel-wide" aria-labelledby="rankingHeading">
+<h2 id="rankingHeading">Negozi e prodotti più cliccati</h2>
+<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
+</section>
+<section class="panel panel-wide"><h2>Qualità delle statistiche</h2>
+<p id="dataCheck" class="muted" role="status"></p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
+</section>
+<section class="panel panel-wide" aria-labelledby="awinHeading">
+<div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div><button type="button" id="exportAwin" disabled>Esporta CSV</button></div>
+<p id="awinStatus" role="status"></p><div id="awinTotals"></div>
+<div class="awin-store-list" id="footwearStores"></div><p class="muted" id="footwearNotes"></p>
+</section>
 <section class="panel panel-wide" aria-labelledby="catalogHeading">
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
 </section>
-<details class="panel panel-wide"><summary>Qualità delle statistiche</summary>
-<p id="dataCheck" class="muted" role="status"></p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
-</details>
-</div></section>
+<section class="panel panel-wide"><h2>Acquisizione e traffico</h2><h3>Aperture delle sezioni</h3><ul id="sectionCounts"></ul></section>
+</div>
 </section>
 <p id="message" role="status" aria-live="polite"></p>
 </main>
