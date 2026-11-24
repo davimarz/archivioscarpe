@@ -185,6 +185,34 @@
   .dashboard-group > h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
   .dashboard-group .panel h2 { font-size: 1.08rem; }
   .dashboard-group .dashboard-grid > details { margin: 0; }
+  main:has(#dashboard:not([hidden])) { padding: clamp(5px, 1.2vw, 14px); }
+  main:has(#dashboard:not([hidden])) .admin-header { padding: 4px 0; margin-bottom: 3px; }
+  main:has(#dashboard:not([hidden])) .admin-header img { width: 32px; height: 32px; }
+  #dashboard { line-height: 1.28; }
+  #dashboard :is(.top,.stats-actions,.panel-head) { gap: 5px; }
+  #dashboard p { margin-block: 3px; }
+  #dashboard h2 { font-size: 1rem; }
+  #dashboard h3 { font-size: .875rem; margin-bottom: 3px; }
+  #dashboard .dashboard-grid { gap: 4px; }
+  #dashboard .panel, #dashboardMetrics > div { padding: 5px; }
+  #dashboardMetrics { margin-block: 4px; }
+  #dashboard .dashboard-nav, #dashboard .social-tabs { gap: 3px; margin-block: 3px; }
+  #dashboard .dashboard-nav a { padding: 4px 6px; font-size: .8rem; }
+  #dashboard :is(button,select,input) { min-height: 32px; padding-block: 2px; }
+  #dashboard .topic-block + .topic-block { margin-top: 5px; padding-top: 5px; }
+  #dashboard .panel-head, #dashboard .panel details { margin-block: 3px; }
+  #dashboard .dashboard-group { margin-block: 9px; }
+  #dashboard .dashboard-group > h2 { margin-bottom: 4px; padding-bottom: 3px; }
+  #dashboard :is(.insight,.awin-store,.chart-card) { padding: 4px; min-width: 0; }
+  #dashboard :is(.insight-grid,.catalog-grid,.awin-store-list) { gap: 3px; margin-top: 3px; }
+  #dashboard .data-table :is(th,td) { padding: 3px; }
+  #dashboard .chart-card svg { height: 48px; }
+  #dashboard .ranking-list li { padding-block: 2px; }
+  @media (max-width: 680px) {
+    #dashboard .chart-card svg { height: 36px; }
+    #dashboard .data-table tbody th { padding-bottom: 1px; }
+    #dashboard .data-table tbody td { padding-block: 1px; }
+  }
 </style>
 </head>
 <body><main>
