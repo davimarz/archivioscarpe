@@ -143,6 +143,9 @@
   #tiktokTable table { min-width: 32rem; }
   .export-actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .export-actions button { font-size: .85rem; }
+  .social-tabs { display:grid; grid-template-columns:repeat(auto-fit,minmax(7rem,1fr)); gap:5px; margin:8px 0; }
+  .social-tabs button { padding:6px; font-size:.85rem; }
+  .social-tabs button[aria-pressed="false"] { background:var(--paper); color:var(--ink); }
   @media (min-width: 800px) { .chart-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
   @media (max-width: 600px) { .social-share meter { display: none; } }
   .dashboard-group { margin-block: 26px; }
@@ -189,12 +192,18 @@
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
 <h2 id="socialHeading">Pubblicità e traffico social</h2>
+<div class="social-tabs" role="group" aria-label="Scegli il social">
+<button type="button" data-social="TikTok" aria-pressed="true">TikTok</button>
+<button type="button" data-social="Instagram" aria-pressed="false">Instagram</button>
+<button type="button" data-social="Facebook" aria-pressed="false">Facebook</button>
+<button type="button" data-social="Threads" aria-pressed="false">Threads</button>
+</div>
 <div class="topic-block">
-<h3>Confronto per canale</h3>
+<h3 id="selectedSocial">TikTok</h3>
 <div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
 <p id="socialStatus" class="muted" role="status"></p>
 </div>
-<section class="topic-block" aria-labelledby="tiktokHeading">
+<section class="topic-block" id="tiktokPanel" aria-labelledby="tiktokHeading">
 <h3 id="tiktokHeading">TikTok · organico e a pagamento</h3>
 <div id="tiktokSummary" class="insight-grid"></div>
 <p id="tiktokStatus" class="muted" role="status"></p>
@@ -458,8 +467,20 @@ function downloadCsv(name,rows){
 }
 const socialChannels=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['other','Dirette, ricerca e altre sorgenti']];
 let socialRows=[];
+let activeSocial='TikTok', latestSocialReport, latestSocialComparison;
+for(const button of document.querySelectorAll('[data-social]')){
+ button.addEventListener('click',()=>{
+  activeSocial=button.dataset.social;
+  for(const tab of document.querySelectorAll('[data-social]'))tab.setAttribute('aria-pressed',String(tab===button));
+  renderSocialComparison(latestSocialReport,latestSocialComparison);
+ });
+}
 document.getElementById('exportSocial').addEventListener('click',()=>downloadCsv('confronto-social.csv',socialRows));
 function renderSocialComparison(report,previous){
+ latestSocialReport=report;
+ latestSocialComparison=previous;
+ document.getElementById('selectedSocial').textContent=activeSocial;
+ document.getElementById('tiktokPanel').hidden=activeSocial!=='TikTok';
  const target=document.getElementById('socialTable'),status=document.getElementById('socialStatus'),
   exportButton=document.getElementById('exportSocial');
  target.replaceChildren();exportButton.disabled=!report;
@@ -473,11 +494,15 @@ function renderSocialComparison(report,previous){
    variazione_visite:visite-Number(previous[source]||0),
    clic_awin_tracciati:report.campaigns.filter(row=>row.source===source).reduce((sum,row)=>sum+Number(row.clicks),0)};
  }).sort((a,b)=>b.visite-a.visite);
+ if(activeSocial==='Threads'&&report.threads==null){
+  status.textContent='Il tracciamento separato di Threads non è ancora attivo.';
+  return;
+ }
  const table=document.createElement('table');table.className='data-table';
  const head=table.createTHead().insertRow();
  for(const label of ['Canale','Visite','Quota sul sito','Δ visite','Clic Awin tracciati'])appendText(head,'th',label).scope='col';
  const body=table.createTBody();
- for(const row of socialRows){
+ for(const row of socialRows.filter(row=>row.canale===activeSocial)){
   const line=body.insertRow();const channel=appendText(line,'th',row.canale);channel.scope='row';
   appendText(channel,'small',row.canale==='TikTok'?' · Organico e a pagamento':row.canale.startsWith('Dirette')?' · Traffico non attribuito ai social':' · Contenuti organici');
   appendText(line,'td',formatNumber.format(row.visite));
