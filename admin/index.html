@@ -139,14 +139,47 @@
   #tiktokSummary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; margin-top: 4px; }
   #tiktokSummary .insight { padding: 4px 5px; font-size: .75rem; line-height: 1.25; }
   #tiktokSummary .insight strong { font-size: 1rem; }
-  #socialTable table { min-width: 22rem; }
-  #tiktokTable table { min-width: 32rem; }
+  .trend-scroll { min-width:0; overflow:visible; }
+  .data-table { table-layout:fixed; }
+  .data-table th, .data-table td { padding:4px; overflow-wrap:anywhere; }
+  .data-table th small { display:block; }
   .export-actions { display: flex; flex-wrap: wrap; gap: 6px; }
   .export-actions button { font-size: .85rem; }
   .social-tabs { display:grid; grid-template-columns:repeat(auto-fit,minmax(7rem,1fr)); gap:5px; margin:8px 0; }
   .social-tabs button { padding:6px; font-size:.85rem; }
   .social-tabs button[aria-pressed="false"] { background:var(--paper); color:var(--ink); }
   @media (min-width: 800px) { .chart-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+  #dashboardMetrics { gap:4px; margin:8px 0; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  #dashboardMetrics > div, .dashboard-grid > .panel { padding:7px; min-width:0; overflow-wrap:anywhere; }
+  #dashboardMetrics dd { font-size:1.15rem; line-height:1.1; margin-top:2px; }
+  .delta { min-height:0; margin-top:2px; }
+  .panel p, .panel ul { margin:4px 0; }
+  .chart-card { min-width:0; padding:5px; }
+  .chart-card svg { height:65px; }
+  .insight-grid, .catalog-grid { gap:4px; margin-top:5px; }
+  .insight, .awin-store { padding:6px; }
+  .ranking-list li, #sectionCounts li { padding:3px 0; }
+  .period-tools { gap:4px; }
+  .period-tools > div { min-width:0; }
+  .period-tools label { margin-bottom:1px; }
+  .period-tools input, .period-tools select, .period-tools button,
+  .export-actions button, .social-tabs button { min-height:44px; padding:4px 6px; }
+  #customPeriod > div { flex:1 1 8rem; }
+  @media (max-width:680px) {
+    main:has(#dashboard:not([hidden])) { padding:7px; }
+    #dashboardMetrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .social-tabs { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .social-tabs button { font-size:.75rem; padding-inline:2px; }
+    .chart-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:3px; }
+    .chart-card h3, .chart-card small { font-size:.7rem; }
+    .chart-card svg { height:44px; }
+    .data-table, .data-table tbody { display:block; }
+    .data-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+    .data-table tbody tr { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-bottom:1px solid var(--rule); }
+    .data-table tbody th { grid-column:1/-1; padding:4px 2px 1px; }
+    .data-table tbody td { min-width:0; text-align:left; padding:2px 3px; border:0; font-size:.8rem; }
+    .data-table td::before { content:attr(data-label); display:block; color:var(--muted); font-size:.7rem; line-height:1.15; }
+  }
   @media (max-width: 600px) { .social-share meter { display: none; } }
   .dashboard-group { margin-block: 26px; }
   .dashboard-group > h2 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
@@ -408,11 +441,20 @@ function renderChart(rows,key,title,color){
  }
  card.append(svg);appendText(card,'small','Massimo del periodo: '+formatNumber.format(maximum));return card;
 }
+function labelReportCells(table){
+ const headings=Array.from(table.tHead.rows[0].cells,cell=>cell.textContent);
+ for(const row of table.tBodies[0].rows){
+  for(const cell of row.cells){
+   if(cell.tagName==='TD')cell.dataset.label=headings[cell.cellIndex];
+  }
+ }
+ return table;
+}
 function trendTable(rows){
  const monthly=rows[0]?.bucket.length===7,table=document.createElement('table');table.className='data-table';
  const head=table.createTHead().insertRow();for(const label of [monthly?'Mese':'Giorno','Visite','Instagram','Facebook','TikTok','Altre sorgenti','Clic Awin'])appendText(head,'th',label).scope='col';
  const body=table.createTBody();for(const row of rows){const line=body.insertRow(),date=new Date(monthly?row.bucket+'-01':row.bucket);appendText(line,'th',(monthly?trendMonth:trendDate).format(date)).scope='row';for(const key of ['visits','instagram','facebook','tiktok','other','clicks'])appendText(line,'td',formatNumber.format(row[key]||0));}
- return table;
+ return labelReportCells(table);
 }
 async function loadTrend(range,current){
  const status=document.getElementById('trendStatus'),charts=document.getElementById('trendCharts'),table=document.getElementById('trendTable');
@@ -516,7 +558,7 @@ function renderSocialComparison(report,previous){
   appendText(line,'td',(row.variazione_visite>0?'+':'')+formatNumber.format(row.variazione_visite));
   appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
  }
- target.append(table);
+ target.append(labelReportCells(table));
  status.textContent='Il totale include tutte le aperture registrate dal sito. Le visite indicate nell’app TikTok possono invece comprendere visualizzazioni del profilo o dei contenuti e quindi non coincidono necessariamente con le visite al sito.';
 }
 function tiktokBreakdown(report){
@@ -576,7 +618,7 @@ async function loadTikTok(range,report,current){
   appendText(line,'th',row.periodo).scope='row';
   for(const [key] of tiktokColumns)appendText(line,'td',formatNumber.format(row[key]));
  }
- tableWrap.append(table);tiktokRows=rows;exportButton.disabled=!rows.length;
+ tableWrap.append(labelReportCells(table));tiktokRows=rows;exportButton.disabled=!rows.length;
  status.textContent='I clic Awin mostrati sono quelli tracciati. Il traffico TikTok privo di un’indicazione organica o pubblicitaria compare senza distinzione.';
 }
 async function loadStats(){
