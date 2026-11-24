@@ -921,15 +921,25 @@
       let referrerHost = '';
       try { if (document.referrer) referrerHost = new URL(document.referrer).hostname; } catch {}
       const params = new URLSearchParams(location.search);
-      const source = params.get('utm_source') || '';
-      const fromInstagram = /^instagram$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
-      const fromFacebook = /^facebook$/i.test(source) || /(?:^|\.)facebook\.com$/i.test(referrerHost) || /(?:^|\.)fb\.com$/i.test(referrerHost);
-      const fromTikTok = params.has('ttclid') || /^tiktok$/i.test(source) || /(?:^|\.)tiktok\.com$/i.test(referrerHost);
-      const channel = fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
+      const source = (params.get('utm_source') || '').trim();
+      const clickId = params.has('ttclid') || params.has('tik_tok_click_id');
+      const fromInstagram = /^(instagram|ig)$/i.test(source) || /(?:^|\.)instagram\.com$/i.test(referrerHost);
+      const fromFacebook = /^(facebook|fb|meta)$/i.test(source) || /(?:^|\.)(facebook|fb)\.com$/i.test(referrerHost);
+      const fromTikTok = clickId || /^(tiktok|tik_tok|tt)$/i.test(source)
+        || /(?:^|\.)(tiktok\.com|tiktokv\.com|tiktokcdn\.com)$/i.test(referrerHost);
+      let channel = fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
+      try {
+        const attributionKey = 'archivio-scarpe-traffic-source';
+        if (channel !== 'other') sessionStorage.setItem(attributionKey, channel);
+        else {
+          const stored = sessionStorage.getItem(attributionKey);
+          if (/^(instagram|facebook|tiktok)$/.test(stored || '')) channel = stored;
+        }
+      } catch {}
       let campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
       if (channel === 'tiktok') {
         const medium = (params.get('utm_medium') || '').trim().toLowerCase();
-        const paid = Boolean(params.get('ttclid')) || /^(paid[_-]?social|paid|cpc|cpm)$/.test(medium);
+        const paid = clickId || /^(paid[_-]?social|paid|cpc|cpm|ppc)$/.test(medium);
         const organic = /^(organic[_-]?social|organic)$/.test(medium);
         if (paid || organic) campaign = (paid ? 'tt-paid-' : 'tt-organic-') + (campaign || 'generale').slice(0, 37);
       }

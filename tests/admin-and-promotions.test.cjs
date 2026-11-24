@@ -53,7 +53,17 @@ test('admin offers calendar periods and reports the Facebook traffic share', () 
 });
 
 test('public analytics recognizes Facebook campaign traffic', () => {
-  const html = fs.readFileSync('index.html', 'utf8');
-  assert.match(html, /fromFacebook/);
-  assert.match(html, /\(instagram\|facebook\|tiktok\)/);
+  const script = fs.readFileSync('assets/promotions-app.js', 'utf8');
+  assert.match(script, /fromFacebook/);
+  assert.match(script, /fromTikTok/);
+  assert.match(script, /tiktokv/);
+  assert.match(script, /archivio-scarpe-traffic-source/);
+});
+
+test('admin exposes TikTok and unclassified traffic in the daily trend', () => {
+  const html = fs.readFileSync('admin/index.html', 'utf8');
+  assert.match(html, /'tiktok','other','clicks'/);
+  assert.match(html, /Visite da TikTok/);
+  assert.match(html, /Dirette, ricerca e altre sorgenti/);
+  assert.match(html, /non le visualizzazioni di video o profilo/);
 });
