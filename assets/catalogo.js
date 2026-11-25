@@ -83,15 +83,19 @@
   const liveCatalogUrl = 'https://davimarz.github.io/archivioscarpe/catalogo-awin.json';
 
   async function loadCurrentAwinCatalog() {
-    for (const [url, origin] of [[liveCatalogUrl, 'online'], ['./catalogo-awin.json', 'snapshot']]) {
+    const sources = new Map([
+      [new URL('./catalogo-awin.json', document.baseURI).href, 'snapshot'],
+      [liveCatalogUrl, 'online']
+    ]);
+    for (const [url, origin] of sources) {
       try {
-        const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(10000) });
+        const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(60000) });
         if (!response.ok) continue;
         const products = await response.json();
         if (Array.isArray(products) && products.some(product =>
           typeof product?.name === 'string' && typeof product.url === 'string')) return { products, origin };
       } catch {
-        // If the online feed is unavailable, use the verified copy included with the site.
+        // Try the other source when the current catalog is unavailable.
       }
     }
     throw Error('Catalogo Awin temporaneamente non disponibile.');
