@@ -238,16 +238,10 @@ function offer(record, merchant) {
   if (!name || !current || !image || !url) return null;
   const rawGtin = pick(record.product_gtin, record.productgtin, record.ean, record.upc, record.gtin);
   const gtin = /^(?:\d{8}|\d{12,14})$/.test(rawGtin) && !/^0+$/.test(rawGtin) ? rawGtin.padStart(14, '0') : '';
-  const feedOriginalPrice = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
+  const originalPrice = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
     record.price_before_discount].map(value => cents(value, currency)).find(value => value > current);
   const referencePrice = [record.rrp_price, record.rrp, record.recommended_retail_price]
     .map(value => cents(value, currency)).find(value => value > current);
-  // Usa RRP come prezzo barrato solo per le fonti verificate.
-  const merchantKey = normalize(merchant);
-  const upcourtDirectVolley = merchantKey === 'direct-volley - it' &&
-    /\bupcourt\s+6\s+gs\b/i.test(name);
-  const originalPrice = feedOriginalPrice ||
-    (merchantKey === 'marco cerullo' || upcourtDirectVolley ? referencePrice : 0);
   const euro = value => (value / 100).toFixed(2).replace('.', ',');
   const variant = [record.brand_name || record.brand, record.mpn || record.model_number,
     record.colour || record.color, record['fashion:size'] || record.size].map(normalize);
@@ -386,7 +380,7 @@ function main() {
   if (!products.length) throw new Error('Il catalogo generato non contiene offerte.');
   if (fs.existsSync(previousReportPath)) {
     const previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf8'));
-    if (previous.discountedOnly === true && Number.isInteger(previous.publishedOffers) &&
+    if (previous.discountPricePolicy === 'previous-and-current' && Number.isInteger(previous.publishedOffers) &&
         products.length < previous.publishedOffers * 0.7) {
       throw new Error('Offerte in calo di oltre il 30% (' + previous.publishedOffers + ' → ' +
         products.length + '). Controlla i listini prima di sostituire il catalogo.');
@@ -409,6 +403,7 @@ function main() {
   const report = JSON.stringify({
     updatedAt: new Date().toISOString(),
     discountedOnly: true,
+    discountPricePolicy: 'previous-and-current',
     feeds: feedStats,
     sourceRows: feedStats.reduce((sum, feed) => sum + feed.rows, 0),
     usableOffers: allOffers.length,
