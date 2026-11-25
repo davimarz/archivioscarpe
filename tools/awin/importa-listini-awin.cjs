@@ -403,11 +403,15 @@ function main() {
   const content = JSON.stringify(products) + '\n';
   if (Buffer.byteLength(content) > 95 * 1024 * 1024) throw new Error('Catalogo troppo grande per un singolo file GitHub');
   const index = JSON.stringify(catalogIndex(products, content)) + '\n';
+  const publishedByMerchant = new Map();
+  for (const product of products) {
+    publishedByMerchant.set(product.merchant, (publishedByMerchant.get(product.merchant) ?? 0) + 1);
+  }
   const report = JSON.stringify({
     updatedAt: new Date().toISOString(),
     discountedOnly: true,
     discountPricePolicy: 'previous-and-current',
-    feeds: feedStats,
+    feeds: feedStats.map(feed => ({ ...feed, published: publishedByMerchant.get(feed.merchant) ?? 0 })),
     sourceRows: feedStats.reduce((sum, feed) => sum + feed.rows, 0),
     usableOffers: allOffers.length,
     comparedOffers: cheapest.length,

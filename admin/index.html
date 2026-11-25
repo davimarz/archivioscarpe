@@ -293,6 +293,11 @@
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div><ul id="catalogChecks" class="quality-list"></ul>
 </section>
 <section class="panel panel-wide"><h2>Acquisizione e traffico</h2><h3>Aperture delle sezioni</h3><ul id="sectionCounts"></ul></section>
+<section class="panel panel-wide" aria-labelledby="feedListHeading">
+<h2 id="feedListHeading">Listini Awin per advertiser</h2>
+<p class="muted">Articoli nel listino e offerte effettivamente pubblicate nell’ultimo aggiornamento.</p>
+<div id="feedList" aria-live="polite">Caricamento dei listini…</div>
+</section>
 <section class="panel panel-wide" aria-labelledby="exportsHeading">
 <h2 id="exportsHeading">Esportazioni CSV</h2>
 <div class="export-actions">
@@ -515,19 +520,39 @@ function renderQuality(report){
  ];
  list.replaceChildren(...entries.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
 }
+function renderFeedList(feeds){
+ const target=document.getElementById('feedList');
+ if(!feeds.length){target.textContent='Nessun listino disponibile.';return;}
+ const table=document.createElement('table');
+ table.className='data-table';
+ const head=table.createTHead().insertRow();
+ for(const label of ['Advertiser','Articoli nel feed','Offerte pubblicate'])appendText(head,'th',label).scope='col';
+ const body=table.createTBody();
+ for(const feed of [...feeds].sort((a,b)=>a.merchant.localeCompare(b.merchant,'it'))){
+  const row=body.insertRow();
+  appendText(row,'th',feed.merchant).scope='row';
+  appendText(row,'td',formatNumber.format(feed.rows));
+  appendText(row,'td',Number.isInteger(feed.published)?formatNumber.format(feed.published):'—');
+ }
+ target.replaceChildren(labelReportCells(table));
+}
 async function loadCatalogHealth(advertisers,current){
  const status=document.getElementById('catalogStatus'),metrics=document.getElementById('catalogMetrics'),checks=document.getElementById('catalogChecks');
  try{
   const response=await fetch('../catalogo-awin-report.json',{cache:'no-store'});if(!response.ok)throw new Error();const report=await response.json();if(!current())return;
   const date=new Intl.DateTimeFormat('it-IT',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date(report.updatedAt));
   status.textContent='Ultimo aggiornamento: '+date;metrics.replaceChildren();
+  renderFeedList(report.feeds);
   setInsight(metrics,'Offerte pubblicate',formatNumber.format(report.publishedOffers));setInsight(metrics,'Listini presenti',formatNumber.format(report.feeds.length));
   const known=new Set(report.feeds.map(row=>row.merchant.toLocaleLowerCase('it'))),missing=(advertisers||[]).filter(name=>!known.has(name.toLocaleLowerCase('it')));
   const skipped=report.feeds.reduce((sum,row)=>sum+Number(row.skipped||0),0),filtered=Number.isFinite(report.sourceRows)&&Number.isFinite(report.usableOffers)?report.sourceRows-report.usableOffers:null;
-  const messages=[missing.length?'Advertiser iscritti senza offerte pubblicate: '+missing.join(', '):'Tutti gli advertiser Awin rilevati hanno offerte nel catalogo.',skipped?'Record CSV non validi scartati: '+formatNumber.format(skipped):'Nessun record CSV strutturalmente non valido segnalato.'];
+  const messages=[missing.length?'Advertiser iscritti assenti dai listini importati: '+missing.join(', '):'Nessun listino mancante tra gli advertiser confrontati.',skipped?'Record CSV non validi scartati: '+formatNumber.format(skipped):'Nessun record CSV strutturalmente non valido segnalato.'];
   messages.push(filtered===null?'Il conteggio completo degli scarti sarà disponibile dal prossimo aggiornamento dei listini.':'Righe escluse perché non utilizzabili come calzature: '+formatNumber.format(filtered));
   checks.replaceChildren(...messages.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
- }catch{if(current())status.textContent='Controllo catalogo non disponibile.';}
+ }catch{if(current()){
+  status.textContent='Controllo catalogo non disponibile.';
+  document.getElementById('feedList').textContent='Elenco listini non disponibile.';
+ }}
 }
 function csvCell(value){return '"'+String(value??'').replaceAll('"','""')+'"';}
 function downloadCsv(name,rows){
