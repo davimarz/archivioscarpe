@@ -362,7 +362,13 @@ function main() {
     console.log(merchant + ' | prezzi mancanti: ' + missingPrice + ' | valuta inattesa: ' + unexpectedCurrency);
     feedStats.push({ merchant, rows: rowCount + skipped, usable: offerCount, skipped, missingPrice, unexpectedCurrency });
   }
-  const cheapest = cheapestOffers(allOffers);
+  const discountedOffers = allOffers.filter(item => {
+    const original = cents(item.originalPrice, 'EUR');
+    if (!(original > item.current)) return false;
+    const discount = Math.round((original - item.current) / original * 100);
+    return discount >= 1 && discount <= 99;
+  });
+  const cheapest = cheapestOffers(discountedOffers);
   const band = card => {
     const price = Number(card.price.replace(',', '.'));
     return price < 50 ? 0 : price <= 150 ? 1 : 2;
@@ -380,7 +386,8 @@ function main() {
   if (!products.length) throw new Error('Il catalogo generato non contiene offerte.');
   if (fs.existsSync(previousReportPath)) {
     const previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf8'));
-    if (Number.isInteger(previous.publishedOffers) && products.length < previous.publishedOffers * 0.7) {
+    if (previous.discountedOnly === true && Number.isInteger(previous.publishedOffers) &&
+        products.length < previous.publishedOffers * 0.7) {
       throw new Error('Offerte in calo di oltre il 30% (' + previous.publishedOffers + ' → ' +
         products.length + '). Controlla i listini prima di sostituire il catalogo.');
     }
@@ -388,7 +395,7 @@ function main() {
   const previousCatalogPath = path.join(repo, catalogFile);
   if (fs.existsSync(previousCatalogPath)) {
     const oldProducts = JSON.parse(fs.readFileSync(previousCatalogPath, 'utf8'));
-    const retained = new Set(products.map(item => normalize(item.merchant)));
+    const retained = new Set(allOffers.map(item => normalize(item.merchant)));
     const allowed = new Set(String(process.env.AWIN_RIMUOVI_ADVERTISER || '').split(';').map(normalize).filter(Boolean));
     const missing = new Map(oldProducts.filter(item => item.merchant &&
       !retained.has(normalize(item.merchant)) && !allowed.has(normalize(item.merchant)))
@@ -401,6 +408,7 @@ function main() {
   const index = JSON.stringify(catalogIndex(products, content)) + '\n';
   const report = JSON.stringify({
     updatedAt: new Date().toISOString(),
+    discountedOnly: true,
     feeds: feedStats,
     sourceRows: feedStats.reduce((sum, feed) => sum + feed.rows, 0),
     usableOffers: allOffers.length,

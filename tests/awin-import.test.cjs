@@ -17,7 +17,7 @@ test('imports only valid reference prices and caps identifiable variants by sell
         'https://www.awin1.com/pclick.php?a=3150312&p=' + id, 'https://example.test/foto.jpg'].join(','))].join('\n'));
     execFileSync(process.execPath, ['tools/awin/importa-listini-awin.cjs', root, feeds, '3150312']);
     const cards = JSON.parse(readFileSync(join(root, 'catalogo-awin.json')));
-    assert.equal(cards.length, 3);
+    assert.equal(cards.length, 2);
     const variants = cards.filter(card => card.price === '90,00');
     assert.equal(variants.length, 2);
     assert.equal(new Set(variants.map(card => card.size)).size, 2);
@@ -28,7 +28,7 @@ test('imports only valid reference prices and caps identifiable variants by sell
       assert.equal(card.originalPrice, '95,00');
       assert.equal(card.referencePrice, '120,00');
     }
-    assert.equal(cards.find(card => card.price === '100,00').originalPrice, undefined);
+    assert.ok(cards.every(card => card.originalPrice === '95,00'));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -39,7 +39,7 @@ test('selects the lowest discounted total including known shipping', () => {
   try {
     const feeds = join(root, 'LISTINI');
     mkdirSync(feeds);
-    const header = 'product_name,product_gtin,colour,size,sale_price,search_price,currency,merchant_category,delivery_cost,aw_deep_link,aw_image_url';
+    const header = 'product_name,product_gtin,colour,size,sale_price,product_price_old,currency,merchant_category,delivery_cost,aw_deep_link,aw_image_url';
     for (const [merchant, sale, price, shipping] of [['A', 55, 60, 0], ['B', 49, 90, 15], ['C', 39, 90, '']]) {
       const row = ['Scarpe Esempio', '1234567890123', 'Blu', '42', sale, price, 'EUR', 'Scarpe', shipping,
         'https://www.awin1.com/pclick.php?a=3150312&p=' + merchant, 'https://example.test/foto.jpg'];

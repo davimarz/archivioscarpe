@@ -134,7 +134,7 @@
                   !/^https:\/\//i.test(product.url) || !/^https:\/\//i.test(product.image) ||
                   disabledMerchants.has(normalize(product.merchant)) ||
                   !window.isCatalogFootwear(product.name, product.footwear === true ? 'calzature' : '')) return false;
-              return Number.isFinite(numericPrice(product));
+              return Boolean(discountFor(product));
             });
             for (const product of cheapestMerchantOffers(eligible).sort((a, b) => numericPrice(a) - numericPrice(b))) {
               const amount = numericPrice(product);
