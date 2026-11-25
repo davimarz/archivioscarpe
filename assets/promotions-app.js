@@ -309,7 +309,9 @@
         if (offer) discountBadge.textContent = '−' + offer.percent + '%';
         const previous = document.createElement('del');
         previous.className = 'awin-original-price';
-        if (offer) previous.textContent = formatEuro(offer.original);
+        if (offer) {
+          previous.textContent = formatEuro(offer.original) + (product.originalPriceEstimated ? ' (stimato)' : '');
+        }
         price.textContent = formatEuro(offer ? offer.current : numericPrice(product));
         photoFrame.append(img);
         card.append(photoFrame, merchant);
