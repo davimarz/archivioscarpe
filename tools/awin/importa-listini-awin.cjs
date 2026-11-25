@@ -230,7 +230,8 @@ function offer(record, merchant) {
   if (!isFootwear(name, category) && !isFootwear(name, record.google_product_category)) return null;
   const availability = normalize(pick(record.availability, record.in_stock, record.stock_status));
   if (/^(?:0|no|false|out[ _-]?of[ _-]?stock|unavailable|esaurito|non disponibile|pre[ _-]?order)$/.test(availability)) return null;
-  const currency = pick(record.currency, record.currency_code);
+  const currency = pick(record.currency, record.currency_code) ||
+    (/^(?:EUR\s*|€\s*)\d|\d\s*(?:EUR|€)$/i.test(clean(record.product_price_old)) ? 'EUR' : '');
   const current = [record.sale_price, record.search_price, record.store_price, record.price, record.display_price]
     .map(value => cents(value, currency)).find(value => value > 0);
   const image = https(pick(record.merchant_image_url, record.aw_image_url, record.image_link));
@@ -239,7 +240,9 @@ function offer(record, merchant) {
   const rawGtin = pick(record.product_gtin, record.productgtin, record.ean, record.upc, record.gtin);
   const gtin = /^(?:\d{8}|\d{12,14})$/.test(rawGtin) && !/^0+$/.test(rawGtin) ? rawGtin.padStart(14, '0') : '';
   const originalPrice = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
-    record.price_before_discount].map(value => cents(value, currency)).find(value => value > current);
+    record.price_before_discount,
+    ...(cents(record.sale_price, currency) === current ? [record.price] : [])
+  ].map(value => cents(value, currency)).find(value => value > current);
   const referencePrice = [record.rrp_price, record.rrp, record.recommended_retail_price]
     .map(value => cents(value, currency)).find(value => value > current);
   const euro = value => (value / 100).toFixed(2).replace('.', ',');
