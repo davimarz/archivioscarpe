@@ -246,7 +246,9 @@ function offer(record, merchant) {
   const referenceValues = [record.rrp_price, record.rrp, record.recommended_retail_price];
   const referencePrice = referenceValues
     .map(value => cents(value, currency)).find(value => value > current);
-  let originalPrice = explicitOriginal;
+  // Direct-Volley usa il riferimento come base dello sconto nella scheda verificata.
+  let originalPrice = explicitOriginal ||
+    (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined);
   let originalPriceEstimated = false;
   if (!originalPrice && ['4 elementos it', 'maxi sport it'].includes(normalize(merchant))) {
     const rawPercent = clean(record.savings_percent);
