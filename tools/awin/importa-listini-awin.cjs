@@ -3,6 +3,7 @@ const path = require('node:path');
 const { gunzipSync } = require('node:zlib');
 const { execFileSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
+const verifiedStorePrices = require('./prezzi-barrati-verificati.json');
 const { catalogIndex } = require('./indicizza-catalogo-awin.cjs');
 
 const [repo, directory, publisher, ...options] = process.argv.slice(2);
@@ -213,12 +214,14 @@ function offer(record, merchant) {
   const referencePrice = referenceValues
     .map(value => cents(value, currency)).find(value => value > current);
   // Direct-Volley usa il riferimento come base dello sconto nella scheda verificata.
-  // Prezzo barrato verificato sulla scheda Manida per la stessa variante e prezzo di vendita.
+  // I prezzi raccolti dalla scheda valgono per il link esatto e il prezzo del feed verificato.
+  const storeUrl = pick(record.merchant_deep_link, record.merchant_product_url, record.link);
+  const verifiedStorePrice = verifiedStorePrices[merchant]?.[storeUrl]?.[current];
   const verifiedManidaPrice = normalize(merchant) === 'manida it'
     ? manidaVerifiedPrices.get(clean(record.id))?.get(current)
     : undefined;
   let originalPrice = explicitOriginal ||
-    (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined) || verifiedManidaPrice;
+    (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined) || verifiedStorePrice || verifiedManidaPrice;
   let originalPriceEstimated = false;
   if (!originalPrice && ['4 elementos it', 'maxi sport it'].includes(normalize(merchant))) {
     const rawPercent = clean(record.savings_percent);
