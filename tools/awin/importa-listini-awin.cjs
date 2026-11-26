@@ -178,50 +178,10 @@ function cardRank(card) {
     .digest('hex').slice(0, 16);
 }
 
-function limitCatalogVariants(products) {
-  const groups = new Map();
-  for (const item of products) {
-    const key = item.family ? JSON.stringify([item.merchant, item.current, item.family]) : item;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(item);
-  }
-
-  const visible = [];
-  for (const group of groups.values()) {
-    const colors = new Set(group.map(item => normalize(item.color)).filter(Boolean));
-    const sizes = new Set(group.map(item => normalize(item.size)).filter(Boolean));
-    const ranked = group.length === 1 ? group : group.map(item => ({ item, rank: cardRank(item) }))
-      .sort((a, b) => a.rank.localeCompare(b.rank)).map(entry => entry.item);
-    const colorFrequency = new Map(), sizeFrequency = new Map(), pairFrequency = new Map();
-    let knownPairs = 0;
-    const increment = (map, key) => map.set(key, (map.get(key) || 0) + 1);
-    for (const item of ranked) {
-      if (!item.color || !item.size) continue;
-      const color = normalize(item.color), size = normalize(item.size);
-      increment(colorFrequency, color);
-      increment(sizeFrequency, size);
-      increment(pairFrequency, JSON.stringify([color, size]));
-      knownPairs++;
-    }
-    const first = ranked.find(item => {
-      if (!item.color || !item.size) return false;
-      const color = normalize(item.color), size = normalize(item.size);
-      return knownPairs - colorFrequency.get(color) - sizeFrequency.get(size) +
-        pairFrequency.get(JSON.stringify([color, size])) > 0;
-    }) || ranked[0];
-    const diversity = item => Number(Boolean(item.color && first.color && normalize(item.color) !== normalize(first.color))) +
-      Number(Boolean(item.size && first.size && normalize(item.size) !== normalize(first.size)));
-    const second = ranked.filter(item => item !== first).reduce((best, item) =>
-      !best || diversity(item) > diversity(best) ? item : best, null);
-    for (const item of second ? [first, second] : [first]) {
-      const { family, key, current, shipping, auditSignature, ...card } = item;
-      for (const field of ['brand', 'model', 'color', 'size']) if (!card[field]) delete card[field];
-      if (colors.size > 1) card.colorCount = colors.size;
-      if (sizes.size > 1) card.sizeCount = sizes.size;
-      visible.push(card);
-    }
-  }
-  return visible;
+function catalogCard(item) {
+  const { family, key, current, shipping, auditSignature, ...card } = item;
+  for (const field of ['brand', 'model', 'color', 'size']) if (!card[field]) delete card[field];
+  return card;
 }
 
 function offer(record, merchant) {
@@ -285,12 +245,16 @@ function offer(record, merchant) {
 function cheapestOffers(offers) {
   const bestByProduct = new Map();
   for (const item of offers) {
-    const merchantKey = JSON.stringify([normalize(item.merchant), item.key]);
-    const best = bestByProduct.get(merchantKey);
-    const total = item.current + (item.shipping ?? Infinity);
-    const bestTotal = best ? best.current + (best.shipping ?? Infinity) : Infinity;
+    const brand = normalize(item.brand);
+    const model = normalize(item.model);
+    const key = brand && model ? JSON.stringify(['model', brand, model])
+      : brand && item.gtin ? JSON.stringify(['gtin', brand, item.gtin])
+      : JSON.stringify(['seller', normalize(item.merchant), item.family || item.key]);
+    const best = bestByProduct.get(key);
+    const total = item.current + (item.shipping ?? 0);
+    const bestTotal = best && best.current + (best.shipping ?? 0);
     if (!best || total < bestTotal || (total === bestTotal && item.current < best.current)) {
-      bestByProduct.set(merchantKey, item);
+      bestByProduct.set(key, item);
     }
   }
   return [...bestByProduct.values()];
@@ -395,11 +359,11 @@ function main() {
     const price = Number(card.price.replace(',', '.'));
     return price < 50 ? 0 : price <= 150 ? 1 : 2;
   };
-  const products = limitCatalogVariants(cheapest)
+  const products = cheapest.map(catalogCard)
     .map(card => ({ card, band: band(card), rank: cardRank(card) }))
     .sort((a, b) => a.band - b.band || a.rank.localeCompare(b.rank))
     .map(entry => entry.card);
-  console.log('Catalogo: ' + cheapest.length + ' offerte dopo il confronto, ' + products.length + ' dopo il limite di due varianti.');
+  console.log('Catalogo: ' + cheapest.length + ' offerte dopo il confronto tra tutti gli advertiser.');
   if (audit) {
     printGroupingAudit(allOffers, products);
     return;
@@ -408,7 +372,7 @@ function main() {
   if (!products.length) throw new Error('Il catalogo generato non contiene offerte.');
   if (fs.existsSync(previousReportPath)) {
     const previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf8'));
-    if (previous.discountPricePolicy === 'previous-and-current' && Number.isInteger(previous.publishedOffers) &&
+    if (previous.selectionPolicy === 'lowest-price-by-brand-and-model' && Number.isInteger(previous.publishedOffers) &&
         products.length < previous.publishedOffers * 0.7) {
       throw new Error('Offerte in calo di oltre il 30% (' + previous.publishedOffers + ' → ' +
         products.length + '). Controlla i listini prima di sostituire il catalogo.');
@@ -436,6 +400,7 @@ function main() {
     updatedAt: new Date().toISOString(),
     discountedOnly: true,
     discountPricePolicy: 'previous-and-current',
+    selectionPolicy: 'lowest-price-by-brand-and-model',
     feeds: feedStats.map(feed => ({ ...feed, published: publishedByMerchant.get(feed.merchant) ?? 0 })),
     sourceRows: feedStats.reduce((sum, feed) => sum + feed.rows, 0),
     usableOffers: allOffers.length,
