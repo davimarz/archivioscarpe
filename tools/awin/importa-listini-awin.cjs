@@ -184,6 +184,12 @@ function catalogCard(item) {
   return card;
 }
 
+const manidaVerifiedPrices = new Map([
+  ['43566387888375', new Map([[32625, 43500]])],
+  ['43576469946615', new Map([[20625, 27500]])],
+  ['43576516608247', new Map([[18500, 36500]])],
+]);
+
 function offer(record, merchant) {
   const name = pick(record.product_name, record.title);
   const category = [record.merchant_category, record.merchant_product_category_path, record.category_name, record.product_type, record.google_product_category].map(clean).join(' ');
@@ -207,9 +213,10 @@ function offer(record, merchant) {
   const referencePrice = referenceValues
     .map(value => cents(value, currency)).find(value => value > current);
   // Direct-Volley usa il riferimento come base dello sconto nella scheda verificata.
-  // Prezzo barrato verificato sulla scheda Manida per questa variante e prezzo di vendita.
-  const verifiedManidaPrice = normalize(merchant) === 'manida it' &&
-    clean(record.id) === '43566387888375' && current === 32625 ? 43500 : undefined;
+  // Prezzo barrato verificato sulla scheda Manida per la stessa variante e prezzo di vendita.
+  const verifiedManidaPrice = normalize(merchant) === 'manida it'
+    ? manidaVerifiedPrices.get(clean(record.id))?.get(current)
+    : undefined;
   let originalPrice = explicitOriginal ||
     (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined) || verifiedManidaPrice;
   let originalPriceEstimated = false;
