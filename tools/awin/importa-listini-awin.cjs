@@ -199,11 +199,14 @@ function offer(record, merchant) {
   if (/^(?:0|no|false|out[ _-]?of[ _-]?stock|unavailable|esaurito|non disponibile|pre[ _-]?order)$/.test(availability)) return null;
   const currency = pick(record.currency, record.currency_code) ||
     (/^(?:EUR\s*|€\s*)\d|\d\s*(?:EUR|€)$/i.test(clean(record.product_price_old)) ? 'EUR' : '');
-  const current = [record.sale_price, record.search_price, record.store_price, record.price, record.display_price]
+  const feedCurrent = [record.sale_price, record.search_price, record.store_price, record.price, record.display_price]
     .map(value => cents(value, currency)).find(value => value > 0);
   const image = https(pick(record.merchant_image_url, record.aw_image_url, record.image_link));
   const url = trackingLink(record, merchant);
-  if (!name || !current || !image || !url) return null;
+  if (!name || !feedCurrent || !image || !url) return null;
+  const storeUrl = pick(record.merchant_deep_link, record.merchant_product_url, record.link);
+  const verified = verifiedStorePrices[merchant]?.[storeUrl]?.[feedCurrent];
+  const current = verified?.current ?? feedCurrent;
   const rawGtin = pick(record.product_gtin, record.productgtin, record.ean, record.upc, record.gtin);
   const gtin = /^(?:\d{8}|\d{12,14})$/.test(rawGtin) && !/^0+$/.test(rawGtin) ? rawGtin.padStart(14, '0') : '';
   const explicitOriginal = [record.product_price_old, record.original_price, record.originalprice, record.previous_price,
@@ -215,12 +218,11 @@ function offer(record, merchant) {
     .map(value => cents(value, currency)).find(value => value > current);
   // Direct-Volley usa il riferimento come base dello sconto nella scheda verificata.
   // I prezzi raccolti dalla scheda valgono per il link esatto e il prezzo del feed verificato.
-  const storeUrl = pick(record.merchant_deep_link, record.merchant_product_url, record.link);
-  const verifiedStorePrice = verifiedStorePrices[merchant]?.[storeUrl]?.[current];
+  const verifiedStorePrice = verified?.previous ?? verified;
   const verifiedManidaPrice = normalize(merchant) === 'manida it'
     ? manidaVerifiedPrices.get(clean(record.id))?.get(current)
     : undefined;
-  let originalPrice = explicitOriginal ||
+  let originalPrice = (verified?.previous ?? undefined) || explicitOriginal ||
     (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined) || verifiedStorePrice || verifiedManidaPrice;
   let originalPriceEstimated = false;
   if (!originalPrice && ['4 elementos it', 'maxi sport it'].includes(normalize(merchant))) {
