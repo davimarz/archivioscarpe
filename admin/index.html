@@ -393,7 +393,7 @@ function delta(id,value,previous,{money=false}={}){
  if(!Number.isFinite(value)||!Number.isFinite(previous)){node.textContent='Confronto non disponibile';return;}
  const difference=value-previous;
  const sign=difference>0?'+':'';
- node.classList.add(difference>0?'positive':difference<0?'negative':'');
+ if(difference!==0)node.classList.add(difference>0?'positive':'negative');
  if(previous===0){node.textContent=(money?formatMoney('EUR',difference):sign+formatNumber.format(difference))+' sul periodo precedente';return;}
  node.textContent=sign+ratioFormat.format(100*difference/previous)+'% sul periodo precedente';
 }
