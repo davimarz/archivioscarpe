@@ -247,8 +247,11 @@ function offer(record, merchant) {
   const referencePrice = referenceValues
     .map(value => cents(value, currency)).find(value => value > current);
   // Direct-Volley usa il riferimento come base dello sconto nella scheda verificata.
+  // Prezzo barrato verificato sulla scheda Manida per questa variante e prezzo di vendita.
+  const verifiedManidaPrice = normalize(merchant) === 'manida it' &&
+    clean(record.id) === '43566387888375' && current === 32625 ? 43500 : undefined;
   let originalPrice = explicitOriginal ||
-    (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined);
+    (normalize(merchant) === 'direct-volley - it' ? referencePrice : undefined) || verifiedManidaPrice;
   let originalPriceEstimated = false;
   if (!originalPrice && ['4 elementos it', 'maxi sport it'].includes(normalize(merchant))) {
     const rawPercent = clean(record.savings_percent);
