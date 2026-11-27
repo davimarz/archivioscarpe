@@ -765,9 +765,11 @@ function stopLiveTraffic(){
  if(liveChannel){void client.removeChannel(liveChannel);liveChannel=null;}
 }
 function startLiveTraffic(){
- const channel=client.channel('archivioscarpe-admin-traffic',{config:{private:true}});
+ const channel=client.channel('archivioscarpe-admin-traffic');
  liveChannel=channel;
- channel.on('broadcast',{event:'traffic_changed'},scheduleLiveTraffic).subscribe(state=>{
+ channel.on('postgres_changes',{event:'INSERT',schema:'public',table:'app_events'},payload=>{
+  if(['visit','affiliate_click'].includes(payload.new?.event_type))scheduleLiveTraffic();
+ }).subscribe(state=>{
   if(liveChannel!==channel)return;
   liveConnected=state==='SUBSCRIBED';
   scheduleLiveTraffic();
