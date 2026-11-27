@@ -702,7 +702,7 @@ async function loadStats(){
    ? [selectedDates.start,selectedDates.end].map(date=>trendDate.format(new Date(date))).join(' – ')
    : statsPeriod.options[statsPeriod.selectedIndex].text;
   const time=new Intl.DateTimeFormat('it-IT',{timeStyle:'medium',timeZone:'Europe/Rome'}).format(new Date());
-  status.textContent=label+' · Dati del sito aggiornati alle '+time+(statsPeriod.value==='today'?' · Aggiornamento automatico ogni minuto.':'.');
+  status.textContent=label+' · Dati del sito aggiornati alle '+time+(statsPeriod.value==='today'?automaticTrafficLabel():'.');
  }catch(error){
   if(current()&&!socialRows.length)document.getElementById('socialStatus').textContent='Confronto social non disponibile.';
   if(current())status.textContent=String(error?.message||'').includes('AWIN')?'Dati Awin non disponibili. Le statistiche del traffico saranno ricaricate al prossimo tentativo.':'Statistiche non disponibili. Premi Aggiorna per riprovare.';
@@ -729,7 +729,52 @@ customPeriod.addEventListener('submit',event=>{
 setInterval(()=>{
  if(!dashboard.hidden&&!document.hidden&&!refreshStats.disabled&&statsPeriod.value==='today')void loadStats();
 },60000);
+let liveChannel, liveTimer, liveBusy=false, liveConnected=false;
+function scheduleLiveTraffic(){
+ if(dashboard.hidden||document.hidden||statsPeriod.value!=='today')return;
+ clearTimeout(liveTimer);
+ liveTimer=setTimeout(()=>void refreshLiveTraffic().catch(()=>{}),1200);
+}
+async function refreshLiveTraffic(){
+ if(dashboard.hidden||document.hidden||statsPeriod.value!=='today')return;
+ if(liveBusy||refreshStats.disabled){scheduleLiveTraffic();return;}
+ const version=statsVersion,authVersion=checkVersion;
+ const current=()=>version===statsVersion&&authVersion===checkVersion&&!dashboard.hidden;
+ const range=periodBounds('today');
+ liveBusy=true;
+ try{
+  const [now,previous]=await Promise.all([
+   client.rpc('dashboard_admin_report',{since:range.since,until_at:range.until}),
+   client.rpc('dashboard_admin_report',{since:range.previousSince,until_at:range.previousUntil})
+  ]);
+  if(now.error||previous.error||!current())return;
+  renderSocialComparison(now.data,previous.data);
+  renderTraffic(now.data,previous.data);renderQuality(now.data);
+  void loadTikTok(range,now.data,current).catch(()=>{if(current())document.getElementById('tiktokStatus').textContent='Dettaglio per data non disponibile.';});
+  void loadTrend(range,current).catch(()=>{if(current())document.getElementById('trendStatus').textContent='Andamento non disponibile.';});
+  const time=new Intl.DateTimeFormat('it-IT',{timeStyle:'medium',timeZone:'Europe/Rome'}).format(new Date());
+  document.getElementById('statsStatus').textContent='Oggi · Dati del sito aggiornati alle '+time+automaticTrafficLabel();
+ }finally{liveBusy=false;}
+}
+function automaticTrafficLabel(){
+ return liveConnected?' · Aggiornamento in diretta.':' · Aggiornamento automatico ogni minuto.';
+}
+function stopLiveTraffic(){
+ clearTimeout(liveTimer);
+ liveConnected=false;
+ if(liveChannel){void client.removeChannel(liveChannel);liveChannel=null;}
+}
+function startLiveTraffic(){
+ const channel=client.channel('archivioscarpe-admin-traffic',{config:{private:true}});
+ liveChannel=channel;
+ channel.on('broadcast',{event:'traffic_changed'},scheduleLiveTraffic).subscribe(state=>{
+  if(liveChannel!==channel)return;
+  liveConnected=state==='SUBSCRIBED';
+  scheduleLiveTraffic();
+ });
+}
 async function check(){
+ stopLiveTraffic();
  const version=++checkVersion;
  dashboard.hidden=true;login.hidden=true;recovery.hidden=true;message.textContent='Verifica accesso in corso…';
  try {
@@ -744,6 +789,7 @@ async function check(){
   document.getElementById('identity').textContent=user.email || 'Amministratore';
   dashboard.hidden=false;message.textContent='';
   void loadStats();
+  try{startLiveTraffic();}catch{stopLiveTraffic();}
  } catch {if(version===checkVersion){login.hidden=false;message.textContent='Impossibile verificare l’accesso. Riprova.';}}
 }
 document.getElementById('loginForm').addEventListener('submit',async event=>{
