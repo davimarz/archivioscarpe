@@ -258,6 +258,7 @@
 <button type="button" data-social="Instagram" aria-pressed="false">Instagram</button>
 <button type="button" data-social="Facebook" aria-pressed="false">Facebook</button>
 <button type="button" data-social="Threads" aria-pressed="false">Threads</button>
+<button type="button" data-social="WhatsApp" aria-pressed="false">WhatsApp</button>
 </div>
 <div class="topic-block">
 <h3 id="selectedSocial">TikTok</h3>
@@ -555,7 +556,7 @@ function downloadCsv(name,rows){
  const columns=Object.keys(rows[0]),content='\uFEFF'+[columns.join(';'),...rows.map(row=>columns.map(column=>csvCell(row[column])).join(';'))].join('\n');
  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download=name;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-const socialChannels=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['threads','Threads'],['other','Dirette, ricerca e altre sorgenti']];
+const socialChannels=[['instagram','Instagram'],['facebook','Facebook'],['tiktok','TikTok'],['threads','Threads'],['whatsapp','WhatsApp'],['other','Dirette, ricerca e altre sorgenti']];
 let socialRows=[];
 let activeSocial='TikTok', latestSocialReport, latestSocialComparison;
 for(const button of document.querySelectorAll('[data-social]')){
@@ -578,7 +579,7 @@ function renderSocialComparison(report,previous){
  const total=Number(report.visits);
  socialRows=socialChannels.map(([source,canale])=>{
   const visite=source==='other'
-   ? Math.max(0,total-Number(report.instagram||0)-Number(report.facebook||0)-Number(report.tiktok||0)-Number(report.threads||0))
+   ? Math.max(0,total-Number(report.instagram||0)-Number(report.facebook||0)-Number(report.tiktok||0)-Number(report.threads||0)-Number(report.whatsapp||0))
    : Number(report[source]||0);
   return {canale,visite,quota_percento:total?Number((100*visite/total).toFixed(1)):null,
    variazione_visite:visite-Number(previous[source]||0),
@@ -607,6 +608,26 @@ function renderSocialComparison(report,previous){
   appendText(line,'td',formatNumber.format(row.clic_awin_tracciati));
  }
  target.append(labelReportCells(table));
+ const source=socialChannels.find(([,name])=>name===activeSocial)?.[0];
+ const campaigns=report.campaigns.filter(row=>row.source===source);
+ if(campaigns.length){
+  const details=document.createElement('details');
+  appendText(details,'summary','Campagne e link');
+  const campaignTable=document.createElement('table');
+  campaignTable.className='data-table';
+  const heading=campaignTable.createTHead().insertRow();
+  for(const label of ['Campagna','Visite','Clic Awin tracciati'])appendText(heading,'th',label).scope='col';
+  const rows=campaignTable.createTBody();
+  const names={'ig-storia':'Instagram · Storie','ig-storia-prova':'Instagram · Storia di prova'};
+  for(const campaign of campaigns){
+   const row=rows.insertRow();
+   appendText(row,'th',names[campaign.name]||campaign.name).scope='row';
+   appendText(row,'td',formatNumber.format(campaign.visits));
+   appendText(row,'td',formatNumber.format(campaign.clicks));
+  }
+  details.append(labelReportCells(campaignTable));
+  target.append(details);
+ }
  status.textContent='Il totale include tutte le aperture registrate dal sito. Le visite indicate nell’app TikTok possono invece comprendere visualizzazioni del profilo o dei contenuti e quindi non coincidono necessariamente con le visite al sito.';
 }
 function tiktokBreakdown(report){

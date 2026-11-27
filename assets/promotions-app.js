@@ -251,7 +251,7 @@
               (affiliateUrl.searchParams.get('a') === '3150312' || affiliateUrl.searchParams.get('awinaffid') === '3150312')) {
             affiliateUrl.searchParams.set('clickref6', 'archivioscarpe');
             const tracking = new URLSearchParams(location.search);
-            const source = /^(instagram|facebook|tiktok|threads)$/i.test(tracking.get('utm_source') || '')
+            const source = /^(instagram|facebook|tiktok|threads|whatsapp)$/i.test(tracking.get('utm_source') || '')
               ? tracking.get('utm_source').toLowerCase() : '';
             const campaign = awinCatalog.instagramCampaign(tracking.get('utm_campaign'));
             if (source) affiliateUrl.searchParams.set('clickref4', source);
@@ -923,13 +923,14 @@
       const fromTikTok = clickId || /^(tiktok|tik_tok|tt)$/i.test(source)
         || /(?:^|\.)(tiktok\.com|tiktokv\.com|tiktokcdn\.com)$/i.test(referrerHost);
       const fromThreads = /^threads$/i.test(source) || /(?:^|\.)threads\.(net|com)$/i.test(referrerHost);
-      let channel = fromThreads ? 'threads' : fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
+      const fromWhatsApp = /^(whatsapp|wa)$/i.test(source) || /(?:^|\.)whatsapp\.com$/i.test(referrerHost);
+      let channel = fromWhatsApp ? 'whatsapp' : fromThreads ? 'threads' : fromInstagram ? 'instagram' : fromFacebook ? 'facebook' : fromTikTok ? 'tiktok' : 'other';
       try {
         const attributionKey = 'archivio-scarpe-traffic-source';
         if (channel !== 'other') sessionStorage.setItem(attributionKey, channel);
         else {
           const stored = sessionStorage.getItem(attributionKey);
-          if (/^(instagram|facebook|tiktok|threads)$/.test(stored || '')) channel = stored;
+          if (/^(instagram|facebook|tiktok|threads|whatsapp)$/.test(stored || '')) channel = stored;
         }
       } catch {}
       let campaign = channel !== 'other' ? awinCatalog.instagramCampaign(params.get('utm_campaign')) : '';
