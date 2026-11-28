@@ -213,6 +213,29 @@
     #dashboard .data-table tbody th { padding-bottom: 1px; }
     #dashboard .data-table tbody td { padding-block: 1px; }
   }
+
+  [hidden] { display:none !important; }
+  body { background:#f3f6fa; color:#16273b; }
+  #dashboard { font-size:.95rem; line-height:1.45; }
+  #dashboard .dashboard-grid { gap:12px; }
+  #dashboard .panel, #dashboardMetrics > div { background:white; border:1px solid #d6dfe9; border-radius:10px; }
+  #dashboard .panel { padding:clamp(12px,2.5vw,20px); }
+  #dashboard h2 { font-size:1.1rem; line-height:1.25; margin:0 0 10px; }
+  #dashboard h3 { font-size:.95rem; line-height:1.3; margin:10px 0 6px; }
+  #dashboard .muted, #dashboard .data-table td::before { color:#48596d; }
+  #dashboard button, #dashboard select, #dashboard input[type=date] { min-height:40px; border-radius:6px; }
+  #dashboard .social-tabs { display:flex; flex-wrap:wrap; gap:6px; }
+  #dashboard .social-tabs button { flex:0 1 auto; padding-inline:9px; }
+  #dashboard .report-block { margin-top:14px; }
+  #dashboard .chart-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr)); }
+  #dashboard .chart-grid:empty, #dashboard .insight-grid:empty, #dashboard .quality-list:empty, #dashboard .trend-scroll:empty, #dashboard .muted:empty { display:none; }
+  #dashboard .data-table th, #dashboard .data-table td { line-height:1.35; overflow-wrap:anywhere; }
+  #dashboard #dashboardMetrics > div { padding:9px 10px; }
+  #dashboard #dashboardMetrics dd { font-size:1.35rem; }
+  @media (max-width:580px) {
+    #dashboard .insight-grid { grid-template-columns:minmax(0,1fr); }
+    #dashboard button, #dashboard select, #dashboard input[type=date] { min-height:44px; }
+  }
 </style>
 </head>
 <body><main>
@@ -229,7 +252,7 @@
 </form>
 <section id="dashboard" hidden>
 <div class="top"><p id="identity"></p><button id="signout">Esci</button></div>
-<div class="stats-actions"><h2>Riepilogo delle prestazioni</h2><div class="period-tools"><div>
+<div class="stats-actions"><h2>Riepilogo</h2><div class="period-tools"><div>
 <label for="statsPeriod">Periodo</label>
 <select id="statsPeriod">
 <option value="today" selected>Oggi</option>
@@ -238,21 +261,21 @@
 <option value="month">Questo mese</option>
 <option value="year">Quest'anno</option>
 </select></div><button type="button" id="refreshStats">Aggiorna</button></div></div>
-<form id="customPeriod" class="period-tools">
+<form id="customPeriod" class="period-tools" hidden>
 <div><label for="periodStart">Data iniziale</label><input id="periodStart" type="date" required></div>
 <div><label for="periodEnd">Data finale</label><input id="periodEnd" type="date" required></div>
 <button type="submit">Applica date</button>
 </form>
 <p id="statsStatus" role="status"></p>
 <dl id="dashboardMetrics">
+<div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
+<div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
 <div><dt>Ordini con calzature</dt><dd id="statOrders">—</dd><small class="delta" id="deltaOrders"></small></div>
 <div><dt>Commissioni approvate</dt><dd id="statCommission">—</dd><small class="delta" id="deltaCommission"></small></div>
-<div><dt>Clic Awin</dt><dd id="statClicks">—</dd><small class="delta" id="deltaClicks"></small></div>
-<div><dt>Visite</dt><dd id="statVisits">—</dd><small class="delta" id="deltaVisits"></small></div>
 </dl>
 <div class="dashboard-grid">
 <section class="panel panel-wide" id="socialOverview" aria-labelledby="socialHeading">
-<h2 id="socialHeading">Pubblicità e traffico social</h2>
+<h2 id="socialHeading">Traffico dai social</h2>
 <div class="social-tabs" role="group" aria-label="Scegli il social">
 <button type="button" data-social="TikTok" aria-pressed="true">TikTok</button>
 <button type="button" data-social="Instagram" aria-pressed="false">Instagram</button>
@@ -261,29 +284,29 @@
 <button type="button" data-social="WhatsApp" aria-pressed="false">WhatsApp</button>
 </div>
 <div class="topic-block">
-<h3 id="selectedSocial">TikTok</h3>
-<div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Tabella confronto social"></div>
+
+<div id="socialTable" class="trend-scroll" tabindex="0" role="region" aria-label="Visite al sito e clic per canale"></div>
 <p id="socialStatus" class="muted" role="status"></p>
 </div>
 <section class="topic-block" id="tiktokPanel" aria-labelledby="tiktokHeading">
 <h3 id="tiktokHeading">TikTok · organico e a pagamento</h3>
-<div id="tiktokSummary" class="insight-grid"></div>
+
 <p id="tiktokStatus" class="muted" role="status"></p>
-<details><summary>Dettaglio TikTok per data</summary><div id="tiktokTable" class="trend-scroll"></div></details>
+<div id="tiktokTable" class="trend-scroll"></div>
 </section>
 </section>
 <section class="panel panel-wide" aria-labelledby="trendHeading">
-<div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2><p class="muted">Visite e clic verso i negozi nel periodo selezionato.</p></div></div>
+<div class="panel-head"><div><h2 id="trendHeading">Andamento del traffico</h2></div></div>
 <p id="trendStatus" class="muted" role="status"></p>
 <div id="trendCharts" class="chart-grid"></div>
-<details><summary>Valori per data</summary><div id="trendTable" class="trend-scroll"></div></details>
+<div id="trendTable" class="trend-scroll"></div>
 </section>
 <section class="panel panel-wide" aria-labelledby="rankingHeading">
 <h2 id="rankingHeading">Negozi e prodotti più cliccati</h2>
-<div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
+<p id="rankingEmpty" class="muted" hidden>Nessun clic con negozio o prodotto identificato nel periodo.</p><div class="insight-grid"><div><h3>Negozi</h3><ol id="storeRanking" class="ranking-list"></ol></div><div><h3>Primi 10 prodotti</h3><ol id="productRanking" class="ranking-list"></ol></div></div>
 </section>
-<section class="panel panel-wide"><h2>Qualità delle statistiche</h2>
-<p id="dataCheck" class="muted" role="status"></p><div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
+<section class="panel panel-wide" id="qualityPanel" hidden><h2>Copertura del tracciamento</h2>
+<div id="trafficInsights" class="insight-grid"></div><ul id="qualityList" class="quality-list"></ul>
 </section>
 <section class="panel panel-wide" aria-labelledby="awinHeading">
 <div class="panel-head"><div><h2 id="awinHeading">Risultati Awin</h2><p class="muted">Acquisti, valore delle calzature e commissioni attribuiti ad Archivio Scarpe.</p></div></div>
@@ -293,7 +316,7 @@
 <section class="panel panel-wide" aria-labelledby="catalogHeading">
 <h2 id="catalogHeading">Controllo catalogo</h2><p id="catalogStatus" class="muted" role="status">Analisi del catalogo…</p><div id="catalogMetrics" class="catalog-grid"></div>
 </section>
-<section class="panel panel-wide"><h2>Acquisizione e traffico</h2><h3>Aperture delle sezioni</h3><ul id="sectionCounts"></ul></section>
+<section class="panel panel-wide" id="sectionsPanel" hidden><h2>Aperture per sezione</h2><ul id="sectionCounts"></ul></section>
 <section class="panel panel-wide" aria-labelledby="feedListHeading">
 <h2 id="feedListHeading">Listini Awin per advertiser</h2>
 <p class="muted">Articoli nel listino e offerte effettivamente pubblicate nell’ultimo aggiornamento.</p>
@@ -496,30 +519,38 @@ async function loadTrend(range,current){
  const {data,error}=await client.rpc('dashboard_event_trend',{since:range.since,until_at:range.until});
  if(!current())return;if(error)throw error;
  if(!data.length){status.textContent='Nessun dato nel periodo selezionato.';return;}
- charts.append(renderChart(data,'visits','Visite','#173f6b'),renderChart(data,'tiktok','Visite da TikTok','#e34a6f'),renderChart(data,'clicks','Clic Awin','#0b9a9a'));
- table.append(trendTable(data));status.textContent='Sono compresi anche i giorni senza attività.';
+ if(data.length>1){
+  for(const [key,title,color] of [['visits','Visite','#173f6b'],['clicks','Clic Awin','#0b706e']]){
+   if(data.some(row=>Number(row[key])>0))charts.append(renderChart(data,key,title,color));
+  }
+ }
+ table.append(trendTable(data));status.textContent='';
 }
 function renderTraffic(currentReport,previousReport){
  document.getElementById('statVisits').textContent=formatNumber.format(currentReport.visits);delta('deltaVisits',currentReport.visits,previousReport.visits);
  document.getElementById('statClicks').textContent=formatNumber.format(currentReport.clicks);delta('deltaClicks',currentReport.clicks,previousReport.clicks);
  const sections=document.getElementById('sectionCounts');sections.replaceChildren(...currentReport.sections.map(row=>listRow(sectionNames[row.name]||row.name,row.total)));
+ document.getElementById('sectionsPanel').hidden=!currentReport.sections.length;
  const insights=document.getElementById('trafficInsights');insights.replaceChildren();
- setInsight(insights,'Clic ogni 100 visite',currentReport.visits?ratioFormat.format(100*currentReport.clicks/currentReport.visits):'—');
- setInsight(insights,'Sessioni con almeno un clic',currentReport.visitSessions?ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%':'In raccolta');
+ if(currentReport.clicks&&currentReport.visitSessions)setInsight(insights,'Sessioni con almeno un clic',ratioFormat.format(100*currentReport.clickSessions/currentReport.visitSessions)+'%');
  const storeList=document.getElementById('storeRanking'),productList=document.getElementById('productRanking');
- storeList.replaceChildren(...(currentReport.stores.length?currentReport.stores.map(row=>listRow(row.name,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
- productList.replaceChildren(...(currentReport.products.length?currentReport.products.slice(0,10).map(row=>listRow(row.name+' · '+row.merchant,row.clicks)):[listRow('Nessun clic dettagliato',0)]));
+ storeList.replaceChildren(...currentReport.stores.map(row=>listRow(row.name,row.clicks)));
+ productList.replaceChildren(...currentReport.products.slice(0,10).map(row=>listRow(row.name+' · '+row.merchant,row.clicks)));
+ storeList.parentElement.hidden=!currentReport.stores.length;
+ productList.parentElement.hidden=!currentReport.products.length;
+ document.getElementById('rankingEmpty').hidden=Boolean(currentReport.stores.length||currentReport.products.length);
 }
 function renderQuality(report){
- const updated=new Intl.DateTimeFormat('it-IT',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Rome'}).format(new Date());
- document.getElementById('dataCheck').textContent='Aggiornato il '+updated;
- const list=document.getElementById('qualityList'),social=Number(report.instagram)+Number(report.facebook||0)+Number(report.tiktok),tagged=report.campaigns.reduce((sum,row)=>sum+Number(row.visits),0),covered=report.stores.reduce((sum,row)=>sum+Number(row.clicks),0);
- const entries=[
-  social?'Visite social con campagna identificata: '+formatNumber.format(tagged)+' su '+formatNumber.format(social):'Nessuna visita social nel periodo.',
-  report.clicks?'Clic con negozio e prodotto identificati: '+formatNumber.format(covered)+' su '+formatNumber.format(report.clicks):'Nessun clic Awin nel periodo.',
-  report.legacyVisits?'Il dettaglio delle sessioni manca per '+formatNumber.format(report.legacyVisits)+' visite registrate prima del nuovo tracciamento.':'Tutte le nuove visite includono un identificativo di sessione.',
- ];
- list.replaceChildren(...entries.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
+ const list=document.getElementById('qualityList');
+ const social=['instagram','facebook','tiktok','threads','whatsapp'].reduce((sum,key)=>sum+Number(report[key]||0),0);
+ const tagged=report.campaigns.reduce((sum,row)=>sum+Number(row.visits),0);
+ const covered=report.stores.reduce((sum,row)=>sum+Number(row.clicks),0);
+ const entries=[];
+ if(tagged<social)entries.push('Visite social con campagna identificata: '+formatNumber.format(tagged)+' su '+formatNumber.format(social));
+ if(covered<report.clicks)entries.push('Clic con negozio identificato: '+formatNumber.format(covered)+' su '+formatNumber.format(report.clicks));
+ if(report.legacyVisits)entries.push('Visite senza dettaglio di sessione: '+formatNumber.format(report.legacyVisits));
+ list.replaceChildren(...entries.map(value=>{const item=document.createElement('li');item.textContent=value;return item;}));
+ document.getElementById('qualityPanel').hidden=!entries.length&&!(report.clicks&&report.visitSessions);
 }
 function renderFeedList(feeds){
  const target=document.getElementById('feedList');
@@ -570,7 +601,6 @@ document.getElementById('exportSocial').addEventListener('click',()=>downloadCsv
 function renderSocialComparison(report,previous){
  latestSocialReport=report;
  latestSocialComparison=previous;
- document.getElementById('selectedSocial').textContent=activeSocial;
  document.getElementById('tiktokPanel').hidden=activeSocial!=='TikTok';
  const target=document.getElementById('socialTable'),status=document.getElementById('socialStatus'),
   exportButton=document.getElementById('exportSocial');
@@ -595,7 +625,6 @@ function renderSocialComparison(report,previous){
  const body=table.createTBody();
  for(const row of socialRows.filter(row=>row.canale===activeSocial)){
   const line=body.insertRow();const channel=appendText(line,'th',row.canale);channel.scope='row';
-  appendText(channel,'small',row.canale==='TikTok'?' · Organico e a pagamento':row.canale.startsWith('Dirette')?' · Traffico non attribuito ai social':' · Contenuti organici');
   appendText(line,'td',formatNumber.format(row.visite));
   const share=line.insertCell();
   if(row.quota_percento===null)share.textContent='—';
@@ -611,8 +640,8 @@ function renderSocialComparison(report,previous){
  const source=socialChannels.find(([,name])=>name===activeSocial)?.[0];
  const campaigns=report.campaigns.filter(row=>row.source===source);
  if(campaigns.length){
-  const details=document.createElement('details');
-  appendText(details,'summary','Campagne e link');
+  const details=document.createElement('section');details.className='report-block';
+  appendText(details,'h3','Campagne e link');
   const campaignTable=document.createElement('table');
   campaignTable.className='data-table';
   const heading=campaignTable.createTHead().insertRow();
@@ -628,7 +657,7 @@ function renderSocialComparison(report,previous){
   details.append(labelReportCells(campaignTable));
   target.append(details);
  }
- status.textContent='Il totale include tutte le aperture registrate dal sito. Le visite indicate nell’app TikTok possono invece comprendere visualizzazioni del profilo o dei contenuti e quindi non coincidono necessariamente con le visite al sito.';
+ status.textContent='Visite ad Archivio Scarpe attribuite al canale selezionato.';
 }
 function tiktokBreakdown(report){
  const totals={organico:0,pagamento:0,non_classificato:Number(report.tiktok),
@@ -650,11 +679,9 @@ const tiktokColumns=[
 let tiktokRows=[];
 document.getElementById('exportTikTok').addEventListener('click',()=>downloadCsv('report-tiktok.csv',tiktokRows));
 async function loadTikTok(range,report,current){
- const summary=document.getElementById('tiktokSummary'),tableWrap=document.getElementById('tiktokTable'),
+ const tableWrap=document.getElementById('tiktokTable'),
   status=document.getElementById('tiktokStatus'),exportButton=document.getElementById('exportTikTok');
- summary.replaceChildren();tableWrap.replaceChildren();tiktokRows=[];exportButton.disabled=true;
- const totals=tiktokBreakdown(report);
- for(const [key,label] of tiktokColumns)setInsight(summary,label,formatNumber.format(totals[key]));
+ tableWrap.replaceChildren();tiktokRows=[];exportButton.disabled=true;
  status.textContent='Caricamento del dettaglio per data…';
  const start=new Date(range.since),end=new Date(range.until);
  const monthly=end-start>32*86400000;
@@ -678,17 +705,20 @@ async function loadTikTok(range,report,current){
   })));
  }
  if(!current())return;
+ const activeRows=rows.filter(row=>tiktokColumns.some(([key])=>row[key]>0));
+ tiktokRows=rows;exportButton.disabled=!rows.length;
+ if(!activeRows.length){status.textContent='Nessuna visita o clic TikTok tracciato nel periodo.';return;}
  const table=document.createElement('table');table.className='data-table';
  const head=table.createTHead().insertRow();
  for(const label of [monthly?'Mese':'Giorno',...tiktokColumns.map(([,label])=>label)])appendText(head,'th',label).scope='col';
  const body=table.createTBody();
- for(const row of rows){
+ for(const row of activeRows){
   const line=body.insertRow();
   appendText(line,'th',row.periodo).scope='row';
   for(const [key] of tiktokColumns)appendText(line,'td',formatNumber.format(row[key]));
  }
- tableWrap.append(labelReportCells(table));tiktokRows=rows;exportButton.disabled=!rows.length;
- status.textContent='I clic Awin mostrati sono quelli tracciati. Il traffico TikTok privo di un’indicazione organica o pubblicitaria compare senza distinzione.';
+ tableWrap.append(labelReportCells(table));
+ status.textContent='';
 }
 async function loadStats(){
  if(statsPeriod.value==='custom'&&!selectedDates){periodStart.focus();return;}
@@ -732,6 +762,7 @@ async function loadStats(){
 document.getElementById('exportAwin').addEventListener('click',()=>downloadCsv('awin-archivio-scarpe.csv',exportData.awin));
 refreshStats.addEventListener('click',loadStats);
 statsPeriod.addEventListener('change',()=>{
+ customPeriod.hidden=statsPeriod.value!=='custom';
  if(statsPeriod.value==='custom'&&!selectedDates){periodStart.focus();return;}
  void loadStats();
 });
